@@ -4,6 +4,7 @@ compiler: ghc-8.10.4
 
 packages:
 - codegen
+- ghc-not-export
 - libtorch-ffi
 - libtorch-ffi-helper
 - hasktorch

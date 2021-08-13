@@ -1,5 +1,6 @@
 packages:
     codegen/*.cabal
+    ghc-not-export/*.cabal
     libtorch-ffi/*.cabal
     libtorch-ffi-helper/*.cabal
     hasktorch/*.cabal

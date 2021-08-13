@@ -147,7 +147,9 @@ library
                     , safe-exceptions
                     , sysinfo
                     , async
+                    , ghc-not-export
                     , libtorch-ffi-helper
+ ghc-options:       -fplugin GHC.NotExport.Plugin
  extra-libraries:     c10
                     , torch
                     , torch_cpu
