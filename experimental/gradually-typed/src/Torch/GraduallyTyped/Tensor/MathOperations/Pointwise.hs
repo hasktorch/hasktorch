@@ -125,15 +125,15 @@ input `add` other = unsafeThrowableIO $ ATen.cast2 ATen.add_tt input other
 --
 -- TODO: add data type unification of @other@ and @dataType@.
 addScalar ::
-  forall other gradient layout device dataType shape.
-  (Scalar other) =>
+  forall other gradient layout device dataType shape m.
+  (Scalar other, MonadThrow m) =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | input scalar
   other ->
   -- | output
-  Tensor gradient layout device dataType shape
-input `addScalar` other = unsafePerformIO $ ATen.cast2 ATen.add_ts input other
+  m (Tensor gradient layout device dataType shape)
+input `addScalar` other = unsafeThrowableIO $ ATen.cast2 ATen.add_ts input other
 
 -- | Performs the element-wise division of 'tensor1' by 'tensor2',
 -- multiply the result by a scalar 'value' and add it to 'input':
@@ -284,12 +284,13 @@ atan2 input other = unsafeThrowableIO $ ATen.cast2 ATen.atan2_tt input other
 -- The data type of the 'input' tensor must be 'Bool' or an integral data type.
 -- For 'Bool' tensors, the function computes the logical NOT.
 bitwiseNot ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape m.
+  MonadThrow m =>
   -- | input
   Tensor gradient layout device dataType shape ->
   -- | output
-  Tensor gradient layout device ('DataType 'Bool) shape
-bitwiseNot = unsafePerformIO . ATen.cast1 ATen.bitwise_not_t
+  m (Tensor gradient layout device ('DataType 'Bool) shape)
+bitwiseNot = unsafeThrowableIO . ATen.cast1 ATen.bitwise_not_t
 
 -- | Computes the bitwise AND of the 'input' and the 'other' tensor.
 -- The data type of the tensors must be 'Bool' or an integral data type.
@@ -1012,15 +1013,15 @@ input `mul` other = unsafeThrowableIO $ ATen.cast2 ATen.mul_tt input other
 -- See 'mul' for a version of this function where
 -- the 'other' input is a tensor.
 mulScalar ::
-  forall other gradient layout device dataType shape.
-  (Scalar other) =>
+  forall other gradient layout device dataType shape m.
+  (Scalar other, MonadThrow m) =>
   -- | tensor input
   Tensor gradient layout device dataType shape ->
   -- | scalar other input
   other ->
   -- | tensor output
-  Tensor gradient layout device dataType shape
-input `mulScalar` other = unsafePerformIO $ ATen.cast2 ATen.mul_ts input other
+  m (Tensor gradient layout device dataType shape)
+input `mulScalar` other = unsafeThrowableIO $ ATen.cast2 ATen.mul_ts input other
 
 -- | Computes the multivariate log-gamma function with dimension 'p' element-wise, given by
 -- \[
@@ -1031,14 +1032,15 @@ input `mulScalar` other = unsafePerformIO $ ATen.cast2 ATen.mul_ts input other
 -- All elements of the input tensor must be greater than \(\frac{p-1}{2}\).
 -- Otherwise, the computation is halted and an exception is thrown.
 mvlgamma ::
-  forall gradient layout device dataType shape.
+  forall gradient layout device dataType shape m.
+  MonadThrow m =>
   -- | the number of dimensions 'p'
   Int ->
   -- | the input tensor to compute the the multivariate log-gamma function for
   Tensor gradient layout device dataType shape ->
   -- | the output tensor
-  Tensor gradient layout device dataType shape
-mvlgamma p input = unsafePerformIO $ ATen.cast2 ATen.mvlgamma_tl input p
+  m (Tensor gradient layout device dataType shape)
+mvlgamma p input = unsafeThrowableIO $ ATen.cast2 ATen.mvlgamma_tl input p
 
 -- | Returns a new tensor with the negative of the elements of 'input':
 -- \[
@@ -1113,15 +1115,15 @@ input `pow` exponent' = unsafeThrowableIO $ ATen.cast2 ATen.pow_tt input exponen
 -- \mathrm{output}_i = \mathrm{input}_i^{\mathrm{exponent}}.
 -- \]
 powScalar ::
-  forall exponent gradient layout device dataType shape.
-  (Scalar exponent) =>
+  forall exponent gradient layout device dataType shape m.
+  (Scalar exponent, MonadThrow m) =>
   -- | tensor input
   Tensor gradient layout device dataType shape ->
   -- | scalar exponent
   exponent ->
   -- | tensor output
-  Tensor gradient layout device dataType shape
-input `powScalar` exponent' = unsafePerformIO $ ATen.cast2 ATen.pow_ts input exponent'
+  m (Tensor gradient layout device dataType shape)
+input `powScalar` exponent' = unsafeThrowableIO $ ATen.cast2 ATen.pow_ts input exponent'
 
 -- | Takes the power of the scalar 'input' with each element in the tensor 'exponent' and
 -- returns a tensor with the result.
@@ -1301,15 +1303,15 @@ input `sub` other = unsafeThrowableIO $ ATen.cast2 ATen.sub_tt input other
 -- See 'sub' for a version of this function where
 -- the second argument is a tensor.
 subScalar ::
-  forall other gradient layout device dataType shape.
-  (Scalar other) =>
+  forall other gradient layout device dataType shape m.
+  (Scalar other, MonadThrow m) =>
   -- | input tensor
   Tensor gradient layout device dataType shape ->
   -- | input scalar
   other ->
   -- | output tensor
-  Tensor gradient layout device dataType shape
-input `subScalar` other = unsafePerformIO $ ATen.cast2 ATen.sub_ts input other
+  m (Tensor gradient layout device dataType shape)
+input `subScalar` other = unsafeThrowableIO $ ATen.cast2 ATen.sub_ts input other
 
 -- | Returns a new tensor with the square-root of the elements of 'input':
 -- \[

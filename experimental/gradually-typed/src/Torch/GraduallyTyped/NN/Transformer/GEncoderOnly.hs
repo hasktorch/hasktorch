@@ -438,18 +438,18 @@ instance
         embeddedInput =
           ireturn eotInput
             >>>= IxStateT . forward eotEmbedding
-            >>>= ireturn
+            >>>= ilift
               . ( \case
-                    EncoderOnlyTransformerWithoutEmbedScaling -> id
+                    EncoderOnlyTransformerWithoutEmbedScaling -> pure
                     EncoderOnlyTransformerWithEmbedScaling -> flip mulScalar scaling
                 )
                 eotEmbedScaling
         embeddedInputType =
           ireturn eotInputType
             >>>= IxStateT . forward eotTypeEmbedding
-            >>>= ireturn
+            >>>= ilift
               . ( \case
-                    EncoderOnlyTransformerWithoutEmbedScaling -> id
+                    EncoderOnlyTransformerWithoutEmbedScaling -> pure
                     EncoderOnlyTransformerWithEmbedScaling -> flip mulScalar scaling
                 )
                 eotEmbedScaling

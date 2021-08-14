@@ -92,6 +92,7 @@ library
                      , Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
                      , Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
                      , Torch.GraduallyTyped.NN.Transformer.Pegasus
+                     , Torch.GraduallyTyped.NN.Transformer.Generation
                      , Torch.GraduallyTyped.NN.Dropout
                      , Torch.GraduallyTyped.NN.Activation
                      , Torch.GraduallyTyped.NN.Normalization

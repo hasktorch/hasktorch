@@ -427,14 +427,15 @@ data EncoderDecoderTransformerOutput decoderOutput encoderOutput where
     EncoderDecoderTransformerOutput decoderOutput encoderOutput
   deriving stock (Eq, Ord, Show, Generic)
 
-data SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask where
+data SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask where
   SimplifiedEncoderDecoderTransformerOutput ::
-    forall decoderOutput encoderOutput inputPaddingMask.
+    forall decoderOutput encoderOutput decoderInput inputPaddingMask.
     { sedtDecoderOutput :: decoderOutput,
       sedtEncoderOutput :: encoderOutput,
+      sedtOriginalDecoderInput :: decoderInput,
       sedtInputPaddingMask :: inputPaddingMask
     } ->
-    SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask
+    SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask
   deriving stock (Eq, Ord, Show, Generic)
 
 data SimplifiedEncoderDecoderTransformerTrainingOutput loss where
@@ -546,9 +547,9 @@ instance
      in runIxStateT $
           ireturn edtInput
             >>>= IxStateT . forward edtSharedEmbedding
-            >>>= ireturn
+            >>>= ilift
               . ( \case
-                    EncoderDecoderTransformerWithoutEmbedScaling -> id
+                    EncoderDecoderTransformerWithoutEmbedScaling -> pure
                     EncoderDecoderTransformerWithEmbedScaling -> flip mulScalar scaling
                 )
                 edtEmbedScaling
@@ -556,9 +557,9 @@ instance
             >>>= ( \encoderOutput ->
                      ireturn edtDecoderInput
                        >>>= IxStateT . forward edtSharedEmbedding
-                       >>>= ireturn
+                       >>>= ilift
                          . ( \case
-                               EncoderDecoderTransformerWithoutEmbedScaling -> id
+                               EncoderDecoderTransformerWithoutEmbedScaling -> pure
                                EncoderDecoderTransformerWithEmbedScaling -> flip mulScalar scaling
                            )
                            edtEmbedScaling
@@ -629,9 +630,9 @@ instance
      in runIxStateT $
           ireturn edtGenerationDecoderInput
             >>>= IxStateT . forward edtSharedEmbedding
-            >>>= ireturn
+            >>>= ilift
               . ( \case
-                    EncoderDecoderTransformerWithoutEmbedScaling -> id
+                    EncoderDecoderTransformerWithoutEmbedScaling -> pure
                     EncoderDecoderTransformerWithEmbedScaling -> flip mulScalar scaling
                 )
                 edtEmbedScaling
@@ -711,7 +712,7 @@ instance
     (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
     (SimplifiedEncoderDecoderTransformerInput input decoderInput)
     generatorDevice
-    (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
+    (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask)
     generatorOutputDevice
   where
   forward GSimplifiedEncoderDecoderTransformer {..} SimplifiedEncoderDecoderTransformerInput {..} =
@@ -745,7 +746,7 @@ instance
                      )
                        >>>= IxStateT . forward sedtModel
                        >>>= ( \(EncoderDecoderTransformerOutput decoderOutput encoderOutput) ->
-                                ireturn $ SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask
+                                ireturn $ SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput sedtDecoderInput inputPaddingMask
                             )
              )
 
@@ -802,7 +803,7 @@ instance
     (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
     (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput inputPaddingMask)
     generatorDevice
-    (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
+    (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask)
     generatorOutputDevice
   where
   forward GSimplifiedEncoderDecoderTransformer {..} SimplifiedEncoderDecoderTransformerGenerationInput {..} =
@@ -829,7 +830,7 @@ instance
                      )
                        >>>= IxStateT . forward sedtModel
                        >>>= ( \(EncoderDecoderTransformerOutput decoderOutput encoderOutput) ->
-                                ireturn $ SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput sedtGenerationInputPaddingMask
+                                ireturn $ SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput sedtGenerationDecoderInput sedtGenerationInputPaddingMask
                             )
              )
 
@@ -838,7 +839,7 @@ instance
       (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
       (SimplifiedEncoderDecoderTransformerInput input decoderInput)
       generatorDevice
-      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask)
       generatorOutputDevice,
     decoderInput
       ~ Tensor

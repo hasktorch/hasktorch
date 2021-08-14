@@ -16,6 +16,7 @@ module Torch.GraduallyTyped.NN.Transformer
     module Torch.GraduallyTyped.NN.Transformer.RoBERTa,
     module Torch.GraduallyTyped.NN.Transformer.T5,
     module Torch.GraduallyTyped.NN.Transformer.Type,
+    module Torch.GraduallyTyped.NN.Transformer.Generation,
   )
 where
 
@@ -36,3 +37,4 @@ import Torch.GraduallyTyped.NN.Transformer.Pegasus
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa
 import Torch.GraduallyTyped.NN.Transformer.T5
 import Torch.GraduallyTyped.NN.Transformer.Type
+import Torch.GraduallyTyped.NN.Transformer.Generation

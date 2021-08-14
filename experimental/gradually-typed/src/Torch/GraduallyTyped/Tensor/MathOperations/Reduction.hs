@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
@@ -12,7 +13,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall #-}
 
-{-# LANGUAGE ConstraintKinds #-}
 module Torch.GraduallyTyped.Tensor.MathOperations.Reduction where
 
 import Control.Monad.Catch (MonadThrow)
@@ -209,8 +209,8 @@ sAnyDim ::
   SSelectDim selectDim ->
   Tensor gradient layout device dataType shape ->
   m (Tensor gradient layout device ('DataType 'Bool) shape')
-sAnyDim by tensor = unsafeThrowableIO $
-  case forgetIsChecked $ fromSing by of
+sAnyDim selectDim tensor = unsafeThrowableIO $
+  case forgetIsChecked $ fromSing selectDim of
     ByName name ->
       ATen.cast3
         ATen.any_tnb
@@ -379,3 +379,52 @@ meanAll ::
   Tensor gradient layout device dataType shape ->
   Tensor gradient layout device dataType ('Shape '[])
 meanAll = unsafePerformIO . ATen.cast1 ATen.mean_t
+
+type ArgmaxF :: SelectDim (By Symbol Nat) -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
+
+type ArgmaxF selectDim shape = BoolReductionF "argmax" selectDim shape
+
+-- | Argmax of a tensor given a dimension.
+--
+-- >>> g <- sMkGenerator (SDevice SCPU) 0
+-- >>> spec = TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNoName :&: SSize @2 :|: SNoName :&: SSize @5 :|: SNil)
+-- >>> (t, _) <- sRandn spec g
+-- >>> r <- argmax (SSelectDim $ SByIndex @1) t
+-- >>> :type r
+-- r :: Tensor
+--        ('Gradient 'WithoutGradient)
+--        ('Layout 'Dense)
+--        ('Device 'CPU)
+--        ('DataType 'Int64)
+--        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
+-- >>> r
+-- Tensor Int64 [2,1] [[ 0],
+--                     [ 2]]
+argmax ::
+  forall selectDims gradient layout device dataType shape shape' m.
+  (MonadThrow m, shape' ~ ArgmaxF selectDims shape, Catch shape') =>
+  SSelectDim selectDims ->
+  Tensor gradient layout device dataType shape ->
+  m (Tensor gradient layout device ('DataType 'Int64) shape')
+argmax selectDim input =
+  unsafeThrowableIO $
+    let by = forgetIsChecked . fromSing $ selectDim
+     in case by of
+          ByName name -> undefined
+          ByIndex index ->
+            ATen.cast3
+              ATen.argmax_tlb
+              input
+              (fromInteger index :: Int)
+              True -- keepDim
+
+type MaxAllCheckF :: Shape [Dim (Name Symbol) (Size Nat)] -> Constraint
+
+type MaxAllCheckF shape = AllDimsPositiveF "maxAll" shape
+
+maxAll ::
+  forall gradient layout device dataType shape.
+  MaxAllCheckF shape =>
+  Tensor gradient layout device dataType shape ->
+  Tensor gradient layout device dataType ('Shape '[])
+maxAll = unsafePerformIO . ATen.cast1 ATen.max_t

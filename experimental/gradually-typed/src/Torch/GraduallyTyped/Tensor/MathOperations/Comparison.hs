@@ -11,6 +11,7 @@
 
 module Torch.GraduallyTyped.Tensor.MathOperations.Comparison where
 
+import Control.Monad.Catch (MonadThrow)
 import Data.Singletons (SingI (..), SingKind (..))
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
@@ -23,6 +24,7 @@ import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.Cast (cast2, cast3)
+import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
 import qualified Torch.Internal.Managed.Type.Tuple as ATen ()
 import Type.Errors.Pretty (TypeError, type (%), type (<>))
@@ -39,22 +41,24 @@ gt,
   (<=.),
   (==.),
   (/=.) ::
-    forall gradient layout device dataType shape gradient' layout' device' dataType' shape'.
-    Catch (dataType <+> dataType') =>
+    forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
+    (MonadThrow m, Catch (dataType <+> dataType'), shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>
     Tensor gradient layout device dataType shape ->
     Tensor gradient' layout' device' dataType' shape' ->
-    Tensor
-      ('Gradient 'WithoutGradient)
-      (layout <+> layout')
-      (device <+> device')
-      ('DataType 'Bool)
-      (BroadcastShapesF shape shape')
-a `gt` b = unsafePerformIO $ cast2 ATen.gt_tt a b
-a `lt` b = unsafePerformIO $ cast2 ATen.lt_tt a b
-a `ge` b = unsafePerformIO $ cast2 ATen.ge_tt a b
-a `le` b = unsafePerformIO $ cast2 ATen.le_tt a b
-a `eq` b = unsafePerformIO $ cast2 ATen.eq_tt a b
-a `ne` b = unsafePerformIO $ cast2 ATen.ne_tt a b
+    m
+      ( Tensor
+          ('Gradient 'WithoutGradient)
+          (layout <+> layout')
+          (device <+> device')
+          ('DataType 'Bool)
+          shape''
+      )
+a `gt` b = unsafeThrowableIO $ cast2 ATen.gt_tt a b
+a `lt` b = unsafeThrowableIO $ cast2 ATen.lt_tt a b
+a `ge` b = unsafeThrowableIO $ cast2 ATen.ge_tt a b
+a `le` b = unsafeThrowableIO $ cast2 ATen.le_tt a b
+a `eq` b = unsafeThrowableIO $ cast2 ATen.eq_tt a b
+a `ne` b = unsafeThrowableIO $ cast2 ATen.ne_tt a b
 (>.) = gt
 (<.) = lt
 (>=.) = ge
@@ -62,7 +66,8 @@ a `ne` b = unsafePerformIO $ cast2 ATen.ne_tt a b
 (==.) = eq
 (/=.) = ne
 
-data Order = Ascending | Descending deriving stock (Show, Eq, Ord, Generic)
+data Order = Ascending | Descending
+  deriving stock (Show, Eq, Ord, Generic)
 
 data Sorted gradient layout device dataType shape where
   Sorted ::
@@ -71,6 +76,7 @@ data Sorted gradient layout device dataType shape where
       indices :: Tensor ('Gradient 'WithoutGradient) layout device ('DataType 'Int64) shape
     } ->
     Sorted gradient layout device dataType shape
+  deriving stock (Show, Generic)
 
 type SortErrorMessage (by :: By Symbol Nat) (dims :: [Dim (Name Symbol) (Size Nat)]) =
   "Cannot apply sort on the dimension matching"

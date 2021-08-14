@@ -7,8 +7,9 @@
 module Torch.GraduallyTyped.NN.Initialization where
 
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
+import Control.Monad.Indexed ((>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import GHC.Generics (Generic)
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorDims)
 import Torch.GraduallyTyped.Random (Generator, SGetGeneratorDevice)
@@ -76,7 +77,9 @@ sXavierUniform tensorSpec@TensorSpec {..} gain =
       bound = sqrt 3 * std
    in runIxStateT $
         IxStateT (sRandn tensorSpec)
-          >>>= \initTensor -> ireturn $ (initTensor `mulScalar` (bound * 2)) `subScalar` bound
+          >>>= \initTensor -> ilift $ do
+            x <- initTensor `mulScalar` (bound * 2)
+            x `subScalar` bound
 
 -- | Xavier normal initialization
 sXavierNormal ::
@@ -97,7 +100,7 @@ sXavierNormal tensorSpec@TensorSpec {..} gain =
       std = gain * sqrt (2 / (fromIntegral fanIn + fromIntegral fanOut))
    in runIxStateT $
         IxStateT (sRandn tensorSpec)
-          >>>= \initTensor -> ireturn $ initTensor `mulScalar` std
+          >>>= \initTensor -> ilift $ initTensor `mulScalar` std
 
 -- | Get fan in or fan out value depending on selected fan mode, used by Kaiming
 getter :: forall a. FanMode -> ((a, a) -> a)
@@ -123,7 +126,9 @@ sKaimingUniform tensorSpec@TensorSpec {..} fanMode nonLinearity =
       bound = sqrt 3 * std
    in runIxStateT $
         IxStateT (sRandn tensorSpec)
-          >>>= \initTensor -> ireturn $ (initTensor `mulScalar` (bound * 2)) `subScalar` bound
+          >>>= \initTensor -> ilift $ do
+            x <- initTensor `mulScalar` (bound * 2)
+            x `subScalar` bound
 
 -- | Kaiming normal initialization
 sKaimingNormal ::
@@ -143,4 +148,4 @@ sKaimingNormal tensorSpec@TensorSpec {..} fanMode nonLinearity =
       std = gain / sqrt fanValue
    in runIxStateT $
         IxStateT (sRandn tensorSpec)
-          >>>= \initTensor -> ireturn $ initTensor `mulScalar` std
+          >>>= \initTensor -> ilift $ initTensor `mulScalar` std

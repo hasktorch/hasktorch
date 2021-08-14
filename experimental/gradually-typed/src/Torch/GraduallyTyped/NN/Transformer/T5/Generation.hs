@@ -153,7 +153,7 @@ runBeamSearch ::
       model
       (SimplifiedEncoderDecoderTransformerInput input decoderInput)
       generatorDevice
-      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask)
       generatorDevice,
     encoderOutput
       ~ Tensor
@@ -168,7 +168,7 @@ runBeamSearch ::
       model
       (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput' inputPaddingMask)
       generatorDevice
-      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput' inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput' decoderInput inputPaddingMask)
       generatorDevice,
     encoderOutput'
       ~ Tensor
@@ -220,7 +220,7 @@ runBeamSearch maxSteps beamSize model input g =
     getLogProbs :: decoderInput -> StateT (Maybe (encoderOutput, inputPaddingMask), Generator generatorDevice) IO [[[Float]]]
     getLogProbs decoderInput = do
       (maybeStuff, g) <- get
-      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask, g') <- case maybeStuff of
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput _ inputPaddingMask, g') <- case maybeStuff of
         Nothing -> forward model (SimplifiedEncoderDecoderTransformerInput input decoderInput) g
         Just (encoderOutput, inputPaddingMask) -> do
           -- decoderInputBatchDim : _ <- dims decoderInput
@@ -228,8 +228,8 @@ runBeamSearch maxSteps beamSize model input g =
           -- _encoderOutputBatchDim : encoderOutputDims <- dims encoderOutput
           encoderOutputDims <- undefined
           let encoderOutput' = sExpand (SUncheckedShape (decoderInputBatchDim : encoderOutputDims)) encoderOutput
-          (SimplifiedEncoderDecoderTransformerOutput decoderOutput _ _, g') <- forward model (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput' inputPaddingMask) g
-          pure (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask, g')
+          (SimplifiedEncoderDecoderTransformerOutput decoderOutput _ _ _, g') <- forward model (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput' inputPaddingMask) g
+          pure (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask, g')
       put (Just (encoderOutput, inputPaddingMask), g')
       probs <- logSoftmax (SSelectDim $ SByIndex @2) decoderOutput
       case probs of
@@ -375,13 +375,13 @@ getIs ::
       model
       (SimplifiedEncoderDecoderTransformerInput input decoderInput)
       generatorDevice
-      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask)
       generatorDevice,
     HasForward
       model
       (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput inputPaddingMask)
       generatorDevice
-      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask)
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask)
       generatorDevice
   ) =>
   Int ->
@@ -404,7 +404,7 @@ getIs n model input = do
       [tokens]
   decoderOutput <- do
     (mTensors, g) <- get
-    (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask, g') <-
+    (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask, g') <-
       case mTensors of
         Nothing -> forward model (SimplifiedEncoderDecoderTransformerInput input decoderInput) g
         Just (encoderOutput, inputPaddingMask) ->
