@@ -30,6 +30,7 @@ import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked)
 import Torch.GraduallyTyped.Shape.Class (ReplaceDimSizeImplF)
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SSelectDim, SSelectDims, SelectDim (..), SelectDims (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
+import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..))
 import qualified Torch.Internal.Cast as ATen (cast1, cast3)
 import qualified Torch.Internal.Class as ATen (Castable (cast), uncast)
 import Torch.Internal.GC (unsafeThrowableIO)
@@ -387,12 +388,12 @@ type ArgmaxF selectDim shape = BoolReductionF "argmax" selectDim shape
 -- | Argmax of a tensor given a dimension.
 --
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
--- >>> spec = TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNoName :&: SSize @2 :|: SNoName :&: SSize @5 :|: SNil)
+-- >>> spec = TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNoName :&: SSize @2 :|: SNoName :&: SSize @5 :|: SNil)
 -- >>> (t, _) <- sRandn spec g
 -- >>> r <- argmax (SSelectDim $ SByIndex @1) t
 -- >>> :type r
 -- r :: Tensor
---        ('Gradient 'WithoutGradient)
+--        ('Gradient 'WithGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Int64)
@@ -405,7 +406,7 @@ argmax ::
   (MonadThrow m, shape' ~ ArgmaxF selectDims shape, Catch shape') =>
   SSelectDim selectDims ->
   Tensor gradient layout device dataType shape ->
-  m (Tensor gradient layout device ('DataType 'Int64) shape')
+  m (Tensor ('Gradient 'WithoutGradient) layout device ('DataType 'Int64) shape')
 argmax selectDim input =
   unsafeThrowableIO $
     let by = forgetIsChecked . fromSing $ selectDim

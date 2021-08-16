@@ -15,27 +15,36 @@
 
 module Torch.GraduallyTyped.NN.Transformer.Generation where
 
+import Control.Monad.State (MonadState, StateT (..), get, put, evalStateT)
 import Control.Lens (Lens, Traversal, Lens', (^.), (%~))
 import Control.Monad.Catch (MonadThrow)
 import Data.Function (fix)
 import Data.Singletons.Prelude.List (SList (SNil))
 import Foreign.ForeignPtr (ForeignPtr)
-import Torch.GraduallyTyped.DType (DType (..), DataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Index.Type (Index (NegativeIndex), SIndex (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..))
-import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerGenerationInput (..), SimplifiedEncoderDecoderTransformerOutput (..))
+import Torch.GraduallyTyped.NN.Class (HasForward (..), stateDictFromFile, HasStateDict (..))
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerGenerationInput (..), SimplifiedEncoderDecoderTransformerOutput (..), SimplifiedEncoderDecoderTransformerOutput' (..), SimplifiedEncoderDecoderTransformerInput' (..))
 import Torch.GraduallyTyped.Prelude (Catch, pattern (:|:))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), SBy (..), SSelectDim (..), SelectDim (..), Shape (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), SBy (..), SSelectDim (..), SelectDim (..), Shape (..), SShape (..), pattern SNoName, pattern (:&:), SSize (..))
 import Torch.GraduallyTyped.Tensor.Indexing (IndexDims, IndexType (..), Indices (..), SIndexType (..), SIndices (..), (!))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (CatHListF, HasCat (..), SqueezeDimF, UnsqueezeF, sSqueezeDim, sUnsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison ((/=.), (==.))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mul, mulScalar, sub, subScalar)
 import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (ArgmaxF, all, argmax, sAllDim, maxAll, MaxAllCheckF)
-import Torch.GraduallyTyped.Tensor.Type (SGetDataType (..), SGetDevice (..), SGetLayout (..), Tensor, TensorLike (..), sSetDataType, SGetShape (..), sCheckedShape, SGetDim)
+import Torch.GraduallyTyped.Tensor.Type (TensorSpec (..), SGetDataType (..), SGetDevice (..), SGetLayout (..), Tensor, TensorLike (..), sSetDataType, SGetShape (..), sCheckedShape, SGetDim)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (..), mkTransformerInput)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
+import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
+import Torch.GraduallyTyped.NN.Transformer.BART.Common (bartPadTokenId, bartEOSTokenId)
+import Torch.GraduallyTyped.NN.Transformer.BART.Base (bartBaseSpec)
+import Torch.GraduallyTyped.Tensor.Creation (sOnes)
+import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
+import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
+import Torch.GraduallyTyped.NN.Type (SHasDropout (..))
 import Torch.HList (HList (HNil), pattern (:.))
 import qualified Torch.Internal.Class as ATen (Castable)
 import qualified Torch.Internal.Type as ATen
@@ -43,58 +52,87 @@ import Prelude hiding (all)
 import Control.Monad ((<=<), (>=>))
 import Control.Monad.State (MonadState (..))
 import Torch.GraduallyTyped.Layout (Layout(Layout), LayoutType (Dense))
+import qualified Tokenizers
 
 decode ::
   Monad m =>
-  (input -> env -> m (input', env')) ->
-  (input' -> env' -> m (input', env')) ->
-  (input' -> env' -> m Bool) ->
-  input ->
-  env ->
-  m (input', env')
-decode f f' p input env = do
-  (input', env') <- f input env
-  done <- p input' env'
-  if done
-    then pure (input', env')
-    else flip fix (input', env') $ \loop (input'', env'') -> do
-      (input''', env''') <- f' input'' env''
-      done' <- p input''' env'''
-      if done'
-        then pure (input''', env''')
-        else loop (input''', env''')
+  (x -> s -> m (x, s)) ->
+  (x -> s -> m Bool) ->
+  x ->
+  s ->
+  m (x, s)
+decode f p x s = do
+  flip fix (x, s) $ \loop (x', s') -> do
+      (x'', s'') <- f x' s'
+      done <- p x'' s''
+      if done
+        then pure (x'', s'')
+        else loop (x'', s'')
 
--- sedtGreedySearch padTokenId model =
---   decode (\input (unfinishedSequences, g) -> do
---     (output, g') <- forward model input g
---     input' <- bar padTokenId unfinishedSequences output
---     pure (input', (unfinishedSequences, g')))
---     (\input (unfinishedSequences, g) -> do
---     (output, g') <- forward model input g
---     input' <- bar padTokenId unfinishedSequences output
---     pure (input', (unfinishedSequences, g')))
+greedySearch padTokenId eosTokenId model zoom =
+  decode (\input g -> do
+    (output, g') <- forward model input g
+    input' <- (zoom . prepNext %~ greedyNextTokens padTokenId eosTokenId) output
+    pure (input', g')
+  ) (\_ _ -> do
+    unfinishedSequences <- get
+    allSequencesFinished unfinishedSequences
+  )
 
--- Lens s (m t) a (m b)
---   forall f. Functor f => (a -> f (m b)) -> (s -> f (m t))
---
--- Lens a (m b) x (m y)
---   forall f. Functor f => (x -> f (m y)) -> (a -> f (m b))
+testGreedySearch :: [String] -> IO [String]
+testGreedySearch xs =
+  Tokenizers.withTokenizerFromConfigFile "/tmp/bart-base-tokenizer.json" $
+    \tokenizer -> do
+      stateDict <- stateDictFromFile "/tmp/bart-base-state-dict.pt"
 
--- foo :: Lens s (m t) a (m b) -> Lens a (m b) x (m y) -> Lens s (m t) x (m y)
--- foo f g = f . g
+      encoderIds <- traverse (\s -> Tokenizers.encode tokenizer s >>= Tokenizers.getIDs) xs
 
--- foo :: Lens' s a -> Lens' a x -> Lens' s x
--- foo f g = f . g
+      let device = SDevice SCPU
+          padTokenId = bartPadTokenId
+          eosTokenId = bartEOSTokenId
+          batchDim = SNoName :&: SUncheckedSize (fromIntegral $ length encoderIds)
+          seqDim = SNoName :&: SUncheckedSize (fromIntegral $ min 512 (foldr (max . length) 0 encoderIds))
+      
+      let spec = bartBaseSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
+      model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
--- bar :: _ => _
--- bar = sedtOutputToInput . prepNext %~ greedyNextTokens
+      g <- sMkGenerator device 0
+
+      input <- SimplifiedEncoderDecoderTransformerInput'
+                  <$> mkTransformerInput
+                        padTokenId
+                        batchDim
+                        seqDim
+                        device
+                        encoderIds
+      
+      (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g') <- forward model input g
+
+      x <- SimplifiedEncoderDecoderTransformerGenerationInput 
+                <$> mkTransformerInput
+                      padTokenId
+                      batchDim
+                      (SNoName :&: SUncheckedSize 0)
+                      device
+                      []
+                <*> pure encoderOutput
+                <*> pure paddingMask
+
+      us <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ batchDim :|: SNil)
+
+      ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput _ _, _g), _us) <- flip runStateT us $ 
+        greedySearch padTokenId eosTokenId model sedtOutputToInput x g'
+      
+      let decoderIds :: [[Int]] = fromTensor decoderInput
+
+      traverse (Tokenizers.decode tokenizer) decoderIds
 
 sedtOutputToInput ::
   Monad m =>
   Lens
-    (SimplifiedEncoderDecoderTransformerOutput logits encoderOutput originalDecoderInput inputPaddingMask)
+    (SimplifiedEncoderDecoderTransformerOutput logits encoderOutput decoderInput inputPaddingMask)
     (m (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' encoderOutput inputPaddingMask))
-    (logits, originalDecoderInput)
+    (logits, decoderInput)
     (m decoderInput')
 sedtOutputToInput f SimplifiedEncoderDecoderTransformerOutput {..} =
   ( \decoderInput' ->
@@ -104,25 +142,25 @@ sedtOutputToInput f SimplifiedEncoderDecoderTransformerOutput {..} =
     <$> f (sedtDecoderOutput, sedtOriginalDecoderInput)
 
 prepNext ::
-  ( logitsShape' ~ UnsqueezeF ('SelectDim ('ByIndex 1)) ntShape,
-    Catch logitsShape',
-    tensors ~ '[originalDecoderInput, Tensor logitsGradient logitsLayout logitsDevice logitsDataType logitsShape'],
+  ( logits ~ Tensor logitsGradient logitsLayout logitsDevice logitsDataType logitsShape,
+    ntShape' ~ UnsqueezeF ('SelectDim ('ByIndex 1)) ntShape,
+    Catch ntShape',
+    tensors ~ '[decoderInput, Tensor ntGradient ntLayout ntDevice ntDataType ntShape'],
     decoderInput' ~ CatHListF ('SelectDim ('ByIndex 1)) tensors,
     ATen.Castable decoderInput' (ForeignPtr ATen.Tensor),
     ATen.Castable (HList tensors) (ForeignPtr ATen.TensorList),
-    MonadThrow m,
-    logits ~ Tensor logitsGradient logitsLayout logitsDevice logitsDataType logitsShape
+    MonadThrow m
   ) =>
   Lens
-    (logits, originalDecoderInput)
+    (logits, decoderInput)
     (m decoderInput')
     logits
-    (m (Tensor logitsGradient logitsLayout logitsDevice logitsDataType ntShape))
-prepNext f (logits, originalDecoderInput) =
+    (m (Tensor ntGradient ntLayout ntDevice ntDataType ntShape))
+prepNext f (logits, decoderInput) =
   ( \nextTokens -> do
       nextTokens' <- nextTokens
       nextTokens'' <- sUnsqueeze (SSelectDim $ SByIndex @1) nextTokens'
-      sCat (SSelectDim $ SByIndex @1) (originalDecoderInput :. nextTokens'' :. HNil)
+      sCat (SSelectDim $ SByIndex @1) (decoderInput :. nextTokens'' :. HNil)
   )
     <$> f logits
 
@@ -130,24 +168,22 @@ greedyNextTokens ::
   ( nextTokenLogitsShape ~ IndexDims ('Indices '[ 'SliceAll, 'SliceAt ('NegativeIndex 1), 'SliceAll]) logitsShape,
     nextTokensShape ~ ArgmaxF ('SelectDim ('ByIndex 1)) nextTokenLogitsShape,
     Catch nextTokensShape,
-    ntShape ~ SqueezeDimF ('SelectDim ('ByIndex 1)) nextTokensShape,
-    -- ntShape ~ 'Shape '[usDim],
-    usShape ~ 'Shape '[usDim],
-    Catch (ntShape <+> usShape),
-    SGetShape ntShape,
-    SGetDim usDim,
-    Catch usDim,
-    Catch ntShape,
+    nextTokensShape' ~ SqueezeDimF ('SelectDim ('ByIndex 1)) nextTokensShape,
+    ntShape ~ 'Shape '[ntDim],
+    Catch (nextTokensShape' <+> ntShape),
+    SGetShape nextTokensShape',
+    SGetDim ntDim,
+    Catch ntDim,
+    Catch nextTokensShape',
     MonadThrow m,
-    MonadState (Tensor ('Gradient 'WithoutGradient) logitsLayout logitsDevice ('DataType 'Int64) usShape) m,
-    ('Gradient 'WithoutGradient <|> logitsGradient) ~ logitsGradient,
+    MonadState (Tensor ('Gradient 'WithoutGradient) logitsLayout logitsDevice ('DataType 'Int64) ntShape) m,
     SGetDevice logitsDevice,
     SGetLayout logitsLayout
   ) =>
   Int -> 
   Int ->
   Tensor logitsGradient logitsLayout logitsDevice logitsDataType logitsShape ->
-  m (Tensor logitsGradient logitsLayout logitsDevice ('DataType 'Int64) usShape)
+  m (Tensor ('Gradient 'WithoutGradient) logitsLayout logitsDevice ('DataType 'Int64) ntShape)
 greedyNextTokens padTokenId eosTokenId logits = do
   nextTokenLogits <- logits ! SIndices (SSliceAll :|: SSliceAt (SNegativeIndex @1) :|: SSliceAll :|: SNil)
   nextTokens <- argmax (SSelectDim $ SByIndex @1) nextTokenLogits
@@ -177,16 +213,6 @@ allSequencesFinished unfinishedSequences = do
   zero <- sToTensor gradient layout device (0 :: Int)
   isZero <- maxAll unfinishedSequences ==. zero
   pure $ fromTensor isZero
-
--- foo padTokenId unfinishedSequences logits = do
---   nextTokens <- greedyNextTokens logits
---   applyUnfinishedSequences padTokenId unfinishedSequences nextTokens
-
--- bar padTokenId unfinishedSequences = 
---   let foo' = foo padTokenId unfinishedSequences
---   in sedtOutputToInput . prepNext %~ foo'
-
--- baz padTokenId eosTokenId unfinishedSequences logits = do
 
 applyUnfinishedSequences ::
   ( MonadThrow m,
@@ -237,11 +263,3 @@ updateUnfinishedSequences eosTokenId nextTokens unfinishedSequences = do
   isNotEos <- nextTokens /=. eosTokenId'
   isNotEos' <- sSetDataType usDataType isNotEos
   unfinishedSequences `mul` isNotEos'
-
--- initUnfinishedSequences eosTokenId decoderInput = do
---   let gradient = SGradient SWithoutGradient
---       layout = sGetLayout decoderInput
---       device = sGetDevice decoderInput
---   eosTokenId' <- sToTensor gradient layout device eosTokenId
---   isNotEos <- decoderInput ==. eosTokenId'
---   sAllDim (SSelectDim $ SByIndex @1) isNotEos
