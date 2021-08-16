@@ -96,10 +96,11 @@ library
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src
  default-language:    Haskell2010
- ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
+ ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -fplugin GHC.NotExport.Plugin
  build-depends:       async
                     , base >= 4.7 && < 5
                     , libtorch-ffi == 1.9.*
+                    , libtorch-ffi-helper == 1.9.*
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
