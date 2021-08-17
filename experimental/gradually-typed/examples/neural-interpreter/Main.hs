@@ -4,20 +4,22 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
+import qualified Control.Concurrent.MSem as MSem
+import Control.Lens (Lens, Lens', Traversal, (%~), (^.))
 import Control.Monad (join)
 import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Control.Monad.State (evalStateT, runStateT, get)
-import Control.Lens (Lens, Traversal, Lens', (^.), (%~))
+import Control.Monad.State (evalStateT, get, runStateT)
 import Control.Monad.Trans (MonadTrans (..))
 import qualified Data.List as List
 import qualified Data.Set as Set
+import qualified Data.Text as Text
 import Data.Word (Word64)
 import qualified Dataset (STLCData (..), STLCExample (..))
 import GHC.Generics (Generic)
@@ -28,9 +30,7 @@ import qualified Pipes.Concurrent as P
 import qualified Pipes.Prelude as P
 import System.Random (mkStdGen)
 import qualified Tokenizers
-import qualified Control.Concurrent.MSem as MSem
 import Torch.GraduallyTyped
-import qualified Data.Text as Text
 
 -- | Data type for monitoring the training and evaluation losses.
 data Monitor
@@ -39,7 +39,7 @@ data Monitor
   | -- | monitor for evaluation loss
     EvaluationLossMonitor {meLoss :: Float, meEpoch :: Int}
   | -- | monitor for predictions
-    PredictionsMonitor {mpTargets :: [String], mpPredictions :: [String], mpEpoch :: Int}
+    PredictionsMonitor {mpTargets :: [String], mpPredictions :: [String], mpExactMatchAccuracy :: Float, mpEpoch :: Int}
   deriving stock (Eq, Ord, Show, Generic)
 
 -- | A simple monitor that prints the training and evaluation losses to stdout.
@@ -94,7 +94,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
         Tokenizers.getIDs encoding
       detokenize ids = MSem.with tokenizerSem $ do
         Tokenizers.decode tokenizer ids
-    
+
   let -- create a dataset of unique training examples
       trainingLen = 256
       trainingData =
@@ -159,63 +159,68 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
           model' <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
           r <- eval model' batchedStream g1
           pure $ (\(loss, g) -> (EvaluationLossMonitor (fromTensor loss), g)) <$> r
-        
+
         (g3, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
           stateDict' <- getStateDict optim
           Model.NeuralInterpreter t5 <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
-          x <- P.next (P.enumerate batchedStream)
-          case x of
-            Left _ -> pure . Left $ g2
-            Right (batch, producer) ->
-              let step' ((targets, predictions), g) (encoderInput, decoderInput) = do
-                    let postProcess = Text.unpack . 
-                          Text.replace "<unk>" "\\" .
-                          Text.replace "<pad>" mempty . Text.pack
-                    
-                    let decoderIds :: [[Int]] = fromTensor decoderInput
-                    targets' <- traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds
-                  
-                    let input = SimplifiedEncoderDecoderTransformerInput' encoderInput
-                        [Dim _ batchSize, Dim _ _] = getDims encoderInput
-                        batchDim = SNoName :&: SUncheckedSize batchSize
-                    
-                    (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g') <- forward t5 input g
+          let step' ((targets, predictions), g) (encoderInput, decoderInput) = do
+                let postProcess =
+                      Text.unpack
+                        . Text.replace "<unk>" "\\"
+                        . Text.replace "<pad>" mempty
+                        . Text.pack
 
-                    x <- SimplifiedEncoderDecoderTransformerGenerationInput 
-                          <$> mkTransformerInput
-                                t5PadTokenId
-                                batchDim
-                                (SNoName :&: SUncheckedSize 0)
-                                device
-                                []
-                          <*> pure encoderOutput
-                          <*> pure paddingMask
-                    
-                    us <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ batchDim :|: SNil)
-                    
-                    ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _, g''), _us) <- flip runStateT us $ 
-                      decode (\input@(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) g -> do
-                        let [Dim _ _, Dim _ seqLen] = getDims decoderInput'
-                        unfinishedSequences <- get
-                        b <- allSequencesFinished unfinishedSequences
-                        if (b || seqLen >= fromIntegral maxTargetLength) then
-                          pure Nothing
-                        else do
-                            (output, g') <- forward t5 input g
-                            input' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
-                            pure $ Just (input', g')
-                      ) x g'
+                let decoderIds :: [[Int]] = fromTensor decoderInput
+                targets' <- traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds
 
-                    let decoderIds' :: [[Int]] = fromTensor decoderInput'
-                    predictions' <- traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds'
+                let input = SimplifiedEncoderDecoderTransformerInput' encoderInput
+                    [Dim _ batchSize, Dim _ _] = getDims encoderInput
+                    batchDim = SNoName :&: SUncheckedSize batchSize
 
-                    pure ((targets <> targets', predictions <> predictions'), g'')
-                
-                  init'' = pure (mempty, g2)
+                (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g') <- forward t5 input g
 
-                  done' ((targets, predictions), g3) = pure . Right $ (PredictionsMonitor targets predictions, g3)
+                x <-
+                  SimplifiedEncoderDecoderTransformerGenerationInput
+                    <$> mkTransformerInput
+                      t5PadTokenId
+                      batchDim
+                      (SNoName :&: SUncheckedSize 0)
+                      device
+                      []
+                    <*> pure encoderOutput
+                    <*> pure paddingMask
 
-              in P.foldM step' init'' done' producer
+                us <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ batchDim :|: SNil)
+
+                ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _, g''), _us) <-
+                  flip runStateT us $
+                    decode
+                      ( \input@(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) g -> do
+                          let [Dim _ _, Dim _ seqLen] = getDims decoderInput'
+                          unfinishedSequences <- get
+                          b <- allSequencesFinished unfinishedSequences
+                          if b || seqLen >= fromIntegral maxTargetLength
+                            then pure Nothing
+                            else do
+                              (output, g') <- forward t5 input g
+                              input' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
+                              pure $ Just (input', g')
+                      )
+                      x
+                      g'
+
+                let decoderIds' :: [[Int]] = fromTensor decoderInput'
+                predictions' <- traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds'
+
+                pure ((targets <> targets', predictions <> predictions'), g'')
+
+              init'' = pure (mempty, g2)
+
+              done' ((targets, predictions), g3) = do
+                let exactMatchAccuracy = let xs = zip targets predictions in (fromIntegral $ length . filter (uncurry (==)) $ xs) / (fromIntegral $ length xs)
+                pure $ Right (PredictionsMonitor targets predictions exactMatchAccuracy, g3)
+          
+          P.foldM step' init'' done' $ P.enumerate batchedStream
 
         pure (streamingState', g3)
 
@@ -231,6 +236,6 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
   flip runContT pure . P.runEffect $
     P.foldM step init' done (P.each [1 .. numEpochs]) P.>-> monitor
 
-  -- save the model's state dictionary to a file
-  -- stateDict' <- getStateDict optim
-  -- stateDictToFile stateDict' "neuralInterpreter.pt"
+-- save the model's state dictionary to a file
+-- stateDict' <- getStateDict optim
+-- stateDictToFile stateDict' "neuralInterpreter.pt"
