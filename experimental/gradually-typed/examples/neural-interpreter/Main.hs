@@ -30,6 +30,7 @@ import System.Random (mkStdGen)
 import qualified Tokenizers
 import qualified Control.Concurrent.MSem as MSem
 import Torch.GraduallyTyped
+import qualified Data.Text as Text
 
 -- | Data type for monitoring the training and evaluation losses.
 data Monitor
@@ -167,7 +168,8 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
             Left _ -> pure . Left $ g'''
             Right ((encoderInput, decoderInput), producer) -> do
               let input = SimplifiedEncoderDecoderTransformerInput' encoderInput
-                  batchDim = SNoName :&: SUncheckedSize 8
+                  [Dim _ batchSize, Dim _ _] = getDims encoderInput
+                  batchDim = SNoName :&: SUncheckedSize batchSize
               (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g'''') <- forward t5 input g'''
               x <- SimplifiedEncoderDecoderTransformerGenerationInput 
                     <$> mkTransformerInput
@@ -194,7 +196,9 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
 
               let decoderIds :: [[Int]] = fromTensor decoderInput'
               predictions <- traverse (Tokenizers.decode tokenizer) decoderIds
-              let predictions' = predictions
+              let predictions' = Text.unpack . 
+                    Text.replace "<unk>" "/" .
+                    Text.replace "<pad>" mempty . Text.pack <$> predictions
 
               pure . Right $ (PredictionsMonitor predictions', g''''')
 

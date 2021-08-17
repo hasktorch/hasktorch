@@ -20,7 +20,6 @@ import qualified Hedgehog.Internal.Seed as Seed
 import qualified STLC
 import qualified Tokenizers
 import Torch.GraduallyTyped
-import Data.Word (Word64)
 
 type Tokenizer = String -> IO [Int]
 type Detokenizer = [Int] -> IO String
