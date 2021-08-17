@@ -56,27 +56,28 @@ import qualified Tokenizers
 
 decode ::
   Monad m =>
-  (x -> s -> m (x, s)) ->
-  (x -> s -> m Bool) ->
+  (x -> s -> m (Maybe (x, s))) ->
   x ->
   s ->
   m (x, s)
-decode f p x s = do
+decode f x s = do
   flip fix (x, s) $ \loop (x', s') -> do
-      (x'', s'') <- f x' s'
-      done <- p x'' s''
-      if done
-        then pure (x'', s'')
-        else loop (x'', s'')
+      r <- f x' s'
+      case r of
+        Nothing -> pure (x', s')
+        Just (x'', s'') -> loop (x'', s'')
 
 greedySearch padTokenId eosTokenId model zoom =
   decode (\input g -> do
-    (output, g') <- forward model input g
-    input' <- (zoom . prepNext %~ greedyNextTokens padTokenId eosTokenId) output
-    pure (input', g')
-  ) (\_ _ -> do
     unfinishedSequences <- get
-    allSequencesFinished unfinishedSequences
+    b <- allSequencesFinished unfinishedSequences
+    if b then
+      pure Nothing
+    else
+      do
+        (output, g') <- forward model input g
+        input' <- (zoom . prepNext %~ greedyNextTokens padTokenId eosTokenId) output
+        pure $ Just (input', g')      
   )
 
 testGreedySearch :: [String] -> IO [String]

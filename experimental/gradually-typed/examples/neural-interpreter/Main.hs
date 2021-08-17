@@ -182,15 +182,16 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
                     <*> pure paddingMask
               us <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ batchDim :|: SNil)
               ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _, g'''''), _us) <- flip runStateT us $ 
-                decode (\input g -> do
-                  (output, g') <- forward t5 input g
-                  input' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
-                  pure (input', g')
-                ) (\(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) _ -> do
+                decode (\input@(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) g -> do
                   let [Dim _ _, Dim _ seqLen] = getDims decoderInput'
                   unfinishedSequences <- get
                   b <- allSequencesFinished unfinishedSequences
-                  pure (b || seqLen > fromIntegral maxTargetLength)
+                  if (b || seqLen >= fromIntegral maxTargetLength) then
+                    pure Nothing
+                  else do
+                      (output, g') <- forward t5 input g
+                      input' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
+                      pure $ Just (input', g')
                 ) x g''''
 
               let postProcess = Text.unpack . 
