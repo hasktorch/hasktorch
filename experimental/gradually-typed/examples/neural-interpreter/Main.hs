@@ -66,7 +66,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
 
   -- buffered collation function that converts a stream of examples into one of batches
   let collate' =
-        let maxBatchSize = 8
+        let maxBatchSize = 24
             collateFn chunk =
               let batchDim = SNoName :&: SUncheckedSize (fromIntegral $ length chunk)
                   chunk' = (\Dataset.STLCExample {..} -> (exInputIds, exTargetIds)) <$> chunk
@@ -104,6 +104,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
               Set.fromList
                 . List.take trainingLen
                 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64),
+            targetNfSteps = Set.fromList [0, 1, 2, 3, 4, 5, 7, 9, 11, 13, 15, 17, 21],
             maxInputLength,
             maxTargetLength,
             tokenize,
@@ -119,6 +120,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
               Set.fromList
                 . List.take evaluationLen
                 $ Seed.from <$> List.iterate (+ 1) (fromInteger . toInteger $ trainingLen :: Word64),
+            targetNfSteps = Set.fromList [6, 8, 10, 12, 14, 16, 18, 20, 22],
             maxInputLength,
             maxTargetLength,
             tokenize,

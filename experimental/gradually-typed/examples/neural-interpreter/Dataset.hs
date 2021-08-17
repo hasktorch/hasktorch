@@ -7,7 +7,7 @@
 module Dataset where
 
 import Control.Monad (guard)
-import Control.Monad.State (MonadIO (liftIO), evalStateT)
+import Control.Monad.State (MonadIO (liftIO), evalStateT, runState)
 import qualified Data.List as List
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -27,6 +27,7 @@ type Detokenizer = [Int] -> IO String
 data STLCData = STLCData
   { name :: Text,
     seeds :: Set Seed,
+    targetNfSteps :: Set Int,
     maxInputLength :: Int,
     maxTargetLength :: Int,
     tokenize :: Tokenizer,
@@ -40,6 +41,7 @@ data STLCExample a = STLCExample
     exInputIds :: ![Int],
     exDecodedInputIds :: !String,
     exTargetExp :: !(STLC.Exp a),
+    exTargetNfSteps :: !Int,
     exTargetPPrint :: !String,
     exTargetIds :: ![Int],
     exDecodedTargetIds :: !String
@@ -49,16 +51,18 @@ data STLCExample a = STLCExample
 mkExample ::
   Tokenizer ->
   Detokenizer ->
+  Set Int ->
   Int ->
   Int ->
   Seed.Seed ->
   IO (STLCExample Int)
-mkExample tokenize detokenize maxInputLength maxTargetLength seed = flip evalStateT seed . Gen.sample' $ do
+mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed = flip evalStateT seed . Gen.sample' $ do
   exTy <- Gen.genTy
   exInputExp <- Gen.generalize $ Gen.genWellTypedExp exTy
   let exInputPPrint = STLC.pprint exInputExp
-      exTargetExp = STLC.nf exInputExp
-      exTargetPPrint = STLC.pprint exTargetExp
+      (exTargetExp, exTargetNfSteps) = flip runState 0 $ STLC.nf exInputExp
+  guard (exTargetNfSteps `Set.member` targetNfSteps)
+  let exTargetPPrint = STLC.pprint exTargetExp
   exInputIds <- liftIO . tokenize $ exInputPPrint <> "</s>"
   guard (List.length exInputIds <= maxInputLength)
   exTargetIds <- liftIO . tokenize $ exTargetPPrint <> "</s>"
@@ -71,5 +75,5 @@ mkExample tokenize detokenize maxInputLength maxTargetLength seed = flip evalSta
 instance Dataset IO STLCData Seed (STLCExample Int) where
   getItem STLCData {..} seed = do
     guard $ Set.member seed seeds
-    mkExample tokenize detokenize maxInputLength maxTargetLength seed
+    mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed
   keys STLCData {..} = seeds
