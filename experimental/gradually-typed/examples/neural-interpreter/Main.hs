@@ -6,12 +6,15 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main where
 
+import Control.Monad (join)
 import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Control.Monad.State (evalStateT)
+import Control.Monad.State (evalStateT, runStateT, get)
+import Control.Lens (Lens, Traversal, Lens', (^.), (%~))
 import Control.Monad.Trans (MonadTrans (..))
 import qualified Data.List as List
 import qualified Data.Set as Set
@@ -25,14 +28,17 @@ import qualified Pipes.Concurrent as P
 import qualified Pipes.Prelude as P
 import System.Random (mkStdGen)
 import qualified Tokenizers
+import qualified Control.Concurrent.MSem as MSem
 import Torch.GraduallyTyped
 
 -- | Data type for monitoring the training and evaluation losses.
 data Monitor
   = -- | monitor for training loss
-    TrainingMonitor {mtLoss :: Float, mtEpoch :: Int}
+    TrainingLossMonitor {mtLoss :: Float, mtEpoch :: Int}
   | -- | monitor for evaluation loss
-    EvaluationMonitor {meLoss :: Float, meEpoch :: Int}
+    EvaluationLossMonitor {meLoss :: Float, meEpoch :: Int}
+  | -- | monitor for predictions
+    PredictionsMonitor {mpPredictions :: [String], mpEpoch :: Int}
   deriving stock (Eq, Ord, Show, Generic)
 
 -- | A simple monitor that prints the training and evaluation losses to stdout.
@@ -50,7 +56,8 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
       evaluationModelSpec = Model.NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
 
   -- initialize the model from the model specification
-  stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
+  -- stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
+  stateDict <- stateDictFromFile "neuralInterpreter.pt"
   model <- flip evalStateT stateDict $ fromStateDict trainingModelSpec mempty
 
   let maxInputLength = 256
@@ -80,6 +87,13 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
             numCooldownEpochs = 10
          in singleCycleLearningRateSchedule maxLearningRate finalLearningRate numEpochs numWarmupEpochs numCooldownEpochs
 
+  tokenizerSem <- MSem.new (1 :: Int)
+  let tokenize input = MSem.with tokenizerSem $ do
+        encoding <- Tokenizers.encode tokenizer input
+        Tokenizers.getIDs encoding
+      detokenize ids = MSem.with tokenizerSem $ do
+        Tokenizers.decode tokenizer ids
+    
   let -- create a dataset of unique training examples
       trainingLen = 256
       trainingData =
@@ -91,7 +105,8 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
                 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64),
             maxInputLength,
             maxTargetLength,
-            tokenizer
+            tokenize,
+            detokenize
           }
 
       -- create a dataset of unique evaluation examples
@@ -105,7 +120,8 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
                 $ Seed.from <$> List.iterate (+ 1) (fromInteger . toInteger $ trainingLen :: Word64),
             maxInputLength,
             maxTargetLength,
-            tokenizer
+            tokenize,
+            detokenize
           }
 
       -- configure the data loader with 1 worker thread and for random shuffling
@@ -120,28 +136,69 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
         -- setLearningRate optim learningRate
 
         -- helper function for streaming
-        let go streamingState'' data' monitor' closure' = do
+        let go streamingState'' data' closure' = do
               (stream, shuffle) <- P.lift $ streamFromMap streamingState'' data'
-              trainingLoss <- P.lift $ do
+              r <- P.lift $ do
                 batchedStream <- collate' stream
                 lift $ closure' batchedStream
-              case trainingLoss of
+              case r of
                 Left g'' -> pure (g'', shuffle)
-                Right (loss, g'') -> do
-                  P.yield (monitor' (fromTensor loss) epoch)
+                Right (monitor', g'') -> do
+                  P.yield (monitor' epoch)
                   pure (g'', shuffle)
 
         -- train for one epoch on the training set
-        (g'', shuffle) <- go streamingState' trainingData TrainingMonitor $ \batchedStream ->
-          train optim trainingModelSpec batchedStream g'
+        -- (g'', shuffle) <- go streamingState' trainingData $ \batchedStream -> do
+        --   r <- train optim trainingModelSpec batchedStream g'
+        --   pure $ (\(loss, g''') -> (TrainingLossMonitor (fromTensor loss), g''')) <$> r
 
         -- evaluate on the evaluation set
-        (g''', shuffle') <- go streamingState' {shuffle} evaluationData EvaluationMonitor $ \batchedStream -> do
+        (g''', shuffle') <- go streamingState' evaluationData $ \batchedStream -> do
           stateDict' <- getStateDict optim
-          evaluationModel <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
-          eval evaluationModel batchedStream g''
+          model' <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
+          r <- eval model' batchedStream g'
+          pure $ (\(loss, g'''') -> (EvaluationLossMonitor (fromTensor loss), g'''')) <$> r
+        
+        (g'''', shuffle'') <- go streamingState' {shuffle = shuffle'} evaluationData $ \batchedStream -> do
+          stateDict' <- getStateDict optim
+          Model.NeuralInterpreter t5 <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
+          x <- P.next (P.enumerate batchedStream)
+          case x of
+            Left _ -> pure . Left $ g'''
+            Right ((encoderInput, decoderInput), producer) -> do
+              let input = SimplifiedEncoderDecoderTransformerInput' encoderInput
+                  batchDim = SNoName :&: SUncheckedSize 8
+              (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g'''') <- forward t5 input g'''
+              x <- SimplifiedEncoderDecoderTransformerGenerationInput 
+                    <$> mkTransformerInput
+                          t5PadTokenId
+                          batchDim
+                          (SNoName :&: SUncheckedSize 0)
+                          device
+                          []
+                    <*> pure encoderOutput
+                    <*> pure paddingMask
+              us <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ batchDim :|: SNil)
+              ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _, g'''''), _us) <- flip runStateT us $ 
+                decode (\input g -> do
+                  (output, g') <- forward t5 input g
+                  input' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
+                  pure (input', g')
+                ) (\(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) _ -> do
+                  let [Dim _ _, Dim _ seqLen] = getDims decoderInput'
+                  -- liftIO $ print seqLen
+                  unfinishedSequences <- get
+                  b <- allSequencesFinished unfinishedSequences
+                  pure (b || seqLen > fromIntegral maxTargetLength)
+                ) x g''''
 
-        pure (streamingState' {shuffle = shuffle'}, g''')
+              let decoderIds :: [[Int]] = fromTensor decoderInput'
+              predictions <- traverse (Tokenizers.decode tokenizer) decoderIds
+              let predictions' = predictions
+
+              pure . Right $ (PredictionsMonitor predictions', g''''')
+
+        pure (streamingState' {shuffle = shuffle''}, g'''')
 
   -- create a Torch random generator from the seed
   g <- sMkGenerator device seed
@@ -156,5 +213,5 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
     P.foldM step init' done (P.each [1 .. numEpochs]) P.>-> monitor
 
   -- save the model's state dictionary to a file
-  stateDict' <- getStateDict optim
-  stateDictToFile stateDict' "neuralInterpreter.pt"
+  -- stateDict' <- getStateDict optim
+  -- stateDictToFile stateDict' "neuralInterpreter.pt"

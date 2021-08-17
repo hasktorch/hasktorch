@@ -22,12 +22,16 @@ import qualified Tokenizers
 import Torch.GraduallyTyped
 import Data.Word (Word64)
 
+type Tokenizer = String -> IO [Int]
+type Detokenizer = [Int] -> IO String
+
 data STLCData = STLCData
   { name :: Text,
     seeds :: Set Seed,
     maxInputLength :: Int,
     maxTargetLength :: Int,
-    tokenizer :: Tokenizers.Tokenizer
+    tokenize :: Tokenizer,
+    detokenize :: Detokenizer
   }
 
 data STLCExample a = STLCExample
@@ -43,39 +47,30 @@ data STLCExample a = STLCExample
   }
   deriving stock (Show, Eq, Ord, Generic)
 
-mkExample :: Tokenizers.Tokenizer -> Int -> Int -> Seed.Seed -> IO (STLCExample Int)
-mkExample tokenizer maxInputLength maxTargetLength seed = flip evalStateT seed . Gen.sample' $ do
+mkExample ::
+  Tokenizer ->
+  Detokenizer ->
+  Int ->
+  Int ->
+  Seed.Seed ->
+  IO (STLCExample Int)
+mkExample tokenize detokenize maxInputLength maxTargetLength seed = flip evalStateT seed . Gen.sample' $ do
   exTy <- Gen.genTy
   exInputExp <- Gen.generalize $ Gen.genWellTypedExp exTy
   let exInputPPrint = STLC.pprint exInputExp
       exTargetExp = STLC.nf exInputExp
       exTargetPPrint = STLC.pprint exTargetExp
-  exInputEnc <- liftIO $ Tokenizers.encode tokenizer (exInputPPrint <> "</s>")
-  exInputIds <- liftIO $ Tokenizers.getIDs exInputEnc
+  exInputIds <- liftIO . tokenize $ exInputPPrint <> "</s>"
   guard (List.length exInputIds <= maxInputLength)
-  exTargetEnc <- liftIO $ Tokenizers.encode tokenizer (exTargetPPrint <> "</s>")
-  exTargetIds <- liftIO $ Tokenizers.getIDs exTargetEnc
+  exTargetIds <- liftIO . tokenize $ exTargetPPrint <> "</s>"
   guard (List.length exTargetIds <= maxTargetLength)
-  exDecodedInputIds <- liftIO $ Tokenizers.decode tokenizer exInputIds
-  exDecodedTargetIds <- liftIO $ Tokenizers.decode tokenizer exTargetIds
+  exDecodedInputIds <- liftIO $ detokenize exInputIds
+  exDecodedTargetIds <- liftIO $ detokenize exTargetIds
   -- liftIO . putStrLn $ exInputPPrint <> " >>> " <> exTargetPPrint
   pure STLCExample {..}
 
 instance Dataset IO STLCData Seed (STLCExample Int) where
   getItem STLCData {..} seed = do
     guard $ Set.member seed seeds
-    mkExample tokenizer maxInputLength maxTargetLength seed
+    mkExample tokenize detokenize maxInputLength maxTargetLength seed
   keys STLCData {..} = seeds
-
-withTokenizer :: (Tokenizers.Tokenizer -> IO a) -> IO a
-withTokenizer =
-  Tokenizers.withTokenizerFromConfigFile
-    "/tmp/t5-small-tokenizer.json"
-
-testExample :: Word64 -> IO (STLCExample Int)
-testExample s = do
-  withTokenizer $ \tokenizer -> do
-    let maxInputLength = 512
-        maxTargetLength = 512
-        seed = Seed.from s
-    mkExample tokenizer maxInputLength maxTargetLength seed

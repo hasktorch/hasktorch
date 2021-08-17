@@ -202,10 +202,12 @@ executable neural-interpreter
                      , hedgehog
                      , indexed
                      , indexed-extras
+                     , lens
                      , mtl
                      , pipes
                      , pipes-concurrency
                      , random
+                     , SafeSemaphore
                      , template-haskell
                      , text
                      , tokenizers

@@ -13,7 +13,7 @@ import Control.Monad.Indexed.State (IxStateT (..))
 import GHC.Generics (Generic)
 import Torch.GraduallyTyped
 
-newtype NeuralInterpreter transformer = NeuralInterpreter transformer
+newtype NeuralInterpreter transformer = NeuralInterpreter { unNeuralInterpreter :: transformer }
   deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec (NeuralInterpreter transformer) = NeuralInterpreter (ModelSpec transformer)
