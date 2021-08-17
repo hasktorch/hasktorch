@@ -132,7 +132,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
   optim <- liftIO $ mkAdam defaultAdamOptions {learningRate = 1e-4} model
 
   let -- one epoch of training and evaluation
-      step (streamingState', g') epoch = do
+      step (streamingState', g1) epoch = do
         -- let learningRate = learningRateSchedule epoch
         -- setLearningRate optim learningRate
 
@@ -143,75 +143,86 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
                 batchedStream <- collate' stream
                 lift $ closure' batchedStream
               case r of
-                Left g'' -> pure (g'', shuffle)
-                Right (monitor', g'') -> do
+                Left g -> pure (g, shuffle)
+                Right (monitor', g) -> do
                   P.yield (monitor' epoch)
-                  pure (g'', shuffle)
+                  pure (g, shuffle)
 
         -- train for one epoch on the training set
-        -- (g'', shuffle) <- go streamingState' trainingData $ \batchedStream -> do
-        --   r <- train optim trainingModelSpec batchedStream g'
-        --   pure $ (\(loss, g''') -> (TrainingLossMonitor (fromTensor loss), g''')) <$> r
+        -- (g2, shuffle) <- go streamingState' trainingData $ \batchedStream -> do
+        --   r <- train optim trainingModelSpec batchedStream g1
+        --   pure $ (\(loss, g) -> (TrainingLossMonitor (fromTensor loss), g)) <$> r
 
         -- evaluate on the evaluation set
-        (g''', _) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
+        (g2, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
           stateDict' <- getStateDict optim
           model' <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
-          r <- eval model' batchedStream g'
-          pure $ (\(loss, g'''') -> (EvaluationLossMonitor (fromTensor loss), g'''')) <$> r
+          r <- eval model' batchedStream g1
+          pure $ (\(loss, g) -> (EvaluationLossMonitor (fromTensor loss), g)) <$> r
         
-        (g'''', _) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
+        (g3, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
           stateDict' <- getStateDict optim
           Model.NeuralInterpreter t5 <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
           x <- P.next (P.enumerate batchedStream)
           case x of
-            Left _ -> pure . Left $ g'''
-            Right ((encoderInput, decoderInput), producer) -> do
-              let input = SimplifiedEncoderDecoderTransformerInput' encoderInput
-                  [Dim _ batchSize, Dim _ _] = getDims encoderInput
-                  batchDim = SNoName :&: SUncheckedSize batchSize
-              (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g'''') <- forward t5 input g'''
-              x <- SimplifiedEncoderDecoderTransformerGenerationInput 
-                    <$> mkTransformerInput
-                          t5PadTokenId
-                          batchDim
-                          (SNoName :&: SUncheckedSize 0)
-                          device
-                          []
-                    <*> pure encoderOutput
-                    <*> pure paddingMask
-              us <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ batchDim :|: SNil)
-              ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _, g'''''), _us) <- flip runStateT us $ 
-                decode (\input@(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) g -> do
-                  let [Dim _ _, Dim _ seqLen] = getDims decoderInput'
-                  unfinishedSequences <- get
-                  b <- allSequencesFinished unfinishedSequences
-                  if (b || seqLen >= fromIntegral maxTargetLength) then
-                    pure Nothing
-                  else do
-                      (output, g') <- forward t5 input g
-                      input' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
-                      pure $ Just (input', g')
-                ) x g''''
+            Left _ -> pure . Left $ g2
+            Right (batch, producer) ->
+              let step' ((targets, predictions), g) (encoderInput, decoderInput) = do
+                    let postProcess = Text.unpack . 
+                          Text.replace "<unk>" "\\" .
+                          Text.replace "<pad>" mempty . Text.pack
+                    
+                    let decoderIds :: [[Int]] = fromTensor decoderInput
+                    targets' <- traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds
+                  
+                    let input = SimplifiedEncoderDecoderTransformerInput' encoderInput
+                        [Dim _ batchSize, Dim _ _] = getDims encoderInput
+                        batchDim = SNoName :&: SUncheckedSize batchSize
+                    
+                    (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g') <- forward t5 input g
 
-              let postProcess = Text.unpack . 
-                    Text.replace "<unk>" "\\" .
-                    Text.replace "<pad>" mempty . Text.pack
-              let decoderIds :: [[Int]] = fromTensor decoderInput
-              targets <- traverse (Tokenizers.decode tokenizer) decoderIds
-              let targets' = postProcess <$> targets
-              let decoderIds' :: [[Int]] = fromTensor decoderInput'
-              predictions <- traverse (Tokenizers.decode tokenizer) decoderIds'
-              let predictions' = postProcess <$> predictions
+                    x <- SimplifiedEncoderDecoderTransformerGenerationInput 
+                          <$> mkTransformerInput
+                                t5PadTokenId
+                                batchDim
+                                (SNoName :&: SUncheckedSize 0)
+                                device
+                                []
+                          <*> pure encoderOutput
+                          <*> pure paddingMask
+                    
+                    us <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ batchDim :|: SNil)
+                    
+                    ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _, g''), _us) <- flip runStateT us $ 
+                      decode (\input@(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) g -> do
+                        let [Dim _ _, Dim _ seqLen] = getDims decoderInput'
+                        unfinishedSequences <- get
+                        b <- allSequencesFinished unfinishedSequences
+                        if (b || seqLen >= fromIntegral maxTargetLength) then
+                          pure Nothing
+                        else do
+                            (output, g') <- forward t5 input g
+                            input' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
+                            pure $ Just (input', g')
+                      ) x g'
 
-              pure . Right $ (PredictionsMonitor targets' predictions', g''''')
+                    let decoderIds' :: [[Int]] = fromTensor decoderInput'
+                    predictions' <- traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds'
 
-        pure (streamingState', g'''')
+                    pure ((targets <> targets', predictions <> predictions'), g'')
+                
+                  init'' = pure (mempty, g2)
+
+                  done' ((targets, predictions), g3) = pure . Right $ (PredictionsMonitor targets predictions, g3)
+
+              in P.foldM step' init'' done' producer
+
+        pure (streamingState', g3)
 
   -- create a Torch random generator from the seed
-  g <- sMkGenerator device seed
+  g0 <- sMkGenerator device seed
   let -- initialize the training loop
-      init' = pure (streamingState, g)
+      init' = pure (streamingState, g0)
 
   let -- finalize the training loop
       done (_streamingState', _g) = pure ()
