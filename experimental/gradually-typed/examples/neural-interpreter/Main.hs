@@ -39,7 +39,7 @@ data Monitor
   | -- | monitor for evaluation loss
     EvaluationLossMonitor {meLoss :: Float, meEpoch :: Int}
   | -- | monitor for predictions
-    PredictionsMonitor {mpPredictions :: [String], mpEpoch :: Int}
+    PredictionsMonitor {mpTargets :: [String], mpPredictions :: [String], mpEpoch :: Int}
   deriving stock (Eq, Ord, Show, Generic)
 
 -- | A simple monitor that prints the training and evaluation losses to stdout.
@@ -154,13 +154,13 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
         --   pure $ (\(loss, g''') -> (TrainingLossMonitor (fromTensor loss), g''')) <$> r
 
         -- evaluate on the evaluation set
-        (g''', shuffle') <- go streamingState' evaluationData $ \batchedStream -> do
+        (g''', _) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
           stateDict' <- getStateDict optim
           model' <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
           r <- eval model' batchedStream g'
           pure $ (\(loss, g'''') -> (EvaluationLossMonitor (fromTensor loss), g'''')) <$> r
         
-        (g'''', shuffle'') <- go streamingState' {shuffle = shuffle'} evaluationData $ \batchedStream -> do
+        (g'''', _) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
           stateDict' <- getStateDict optim
           Model.NeuralInterpreter t5 <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
           x <- P.next (P.enumerate batchedStream)
@@ -188,21 +188,24 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
                   pure (input', g')
                 ) (\(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) _ -> do
                   let [Dim _ _, Dim _ seqLen] = getDims decoderInput'
-                  -- liftIO $ print seqLen
                   unfinishedSequences <- get
                   b <- allSequencesFinished unfinishedSequences
                   pure (b || seqLen > fromIntegral maxTargetLength)
                 ) x g''''
 
-              let decoderIds :: [[Int]] = fromTensor decoderInput'
-              predictions <- traverse (Tokenizers.decode tokenizer) decoderIds
-              let predictions' = Text.unpack . 
-                    Text.replace "<unk>" "/" .
-                    Text.replace "<pad>" mempty . Text.pack <$> predictions
+              let postProcess = Text.unpack . 
+                    Text.replace "<unk>" "\\" .
+                    Text.replace "<pad>" mempty . Text.pack
+              let decoderIds :: [[Int]] = fromTensor decoderInput
+              targets <- traverse (Tokenizers.decode tokenizer) decoderIds
+              let targets' = postProcess <$> targets
+              let decoderIds' :: [[Int]] = fromTensor decoderInput'
+              predictions <- traverse (Tokenizers.decode tokenizer) decoderIds'
+              let predictions' = postProcess <$> predictions
 
-              pure . Right $ (PredictionsMonitor predictions', g''''')
+              pure . Right $ (PredictionsMonitor targets' predictions', g''''')
 
-        pure (streamingState' {shuffle = shuffle''}, g'''')
+        pure (streamingState', g'''')
 
   -- create a Torch random generator from the seed
   g <- sMkGenerator device seed
