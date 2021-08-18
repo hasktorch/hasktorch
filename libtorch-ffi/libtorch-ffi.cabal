@@ -203,7 +203,6 @@ test-suite spec
                      , libtorch-ffi
                      , hspec
                      , safe-exceptions
-  build-tool-depends:  hspec-discover:hspec-discover
   if os(darwin)
     ld-options: -Wl,-keep_dwarf_unwind
   default-extensions:          Strict

@@ -201,8 +201,6 @@ test-suite spec
                     , lens-family-core
                     , data-default-class
 
-  build-tool-depends: hspec-discover:hspec-discover
-
 test-suite doctests
   if os(darwin) || flag(disable-doctest)
     Buildable: False
