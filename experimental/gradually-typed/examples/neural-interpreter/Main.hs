@@ -49,7 +49,7 @@ monitor = P.map show P.>-> P.stdoutLn'
 main :: IO ()
 main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \tokenizer -> do
   let seed = 31415
-      device = SDevice SCPU
+      device = SDevice (SCUDA @0)
 
   let -- during training, we need to turn dropout on and keep track of the gradient
       trainingModelSpec = Model.NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
@@ -57,8 +57,8 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
       evaluationModelSpec = Model.NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
 
   -- initialize the model from the model specification
-  -- stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
-  stateDict <- stateDictFromFile "neuralInterpreter.pt"
+  stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
+  -- stateDict <- stateDictFromFile "neuralInterpreter.pt"
   model <- flip evalStateT stateDict $ fromStateDict trainingModelSpec mempty
 
   let maxInputLength = 256
@@ -96,7 +96,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
         Tokenizers.decode tokenizer ids
 
   let -- create a dataset of unique training examples
-      trainingLen = 256
+      trainingLen = 65536
       trainingData =
         Dataset.STLCData
           { name = "training",
@@ -104,7 +104,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
               Set.fromList
                 . List.take trainingLen
                 $ Seed.from <$> List.iterate (+ 1) (0 :: Word64),
-            targetNfSteps = Set.fromList [0, 1, 2, 3, 4, 5, 7, 9, 11, 13, 15, 17, 21],
+            targetNfSteps = Set.fromList [0, 1, 2, 3, 4, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39],
             maxInputLength,
             maxTargetLength,
             tokenize,
@@ -112,7 +112,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
           }
 
       -- create a dataset of unique evaluation examples
-      evaluationLen = 32
+      evaluationLen = 4096
       evaluationData =
         Dataset.STLCData
           { name = "evaluation",
@@ -120,7 +120,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
               Set.fromList
                 . List.take evaluationLen
                 $ Seed.from <$> List.iterate (+ 1) (fromInteger . toInteger $ trainingLen :: Word64),
-            targetNfSteps = Set.fromList [6, 8, 10, 12, 14, 16, 18, 20, 22],
+            targetNfSteps = Set.fromList [6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40],
             maxInputLength,
             maxTargetLength,
             tokenize,
@@ -151,18 +151,19 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
                   pure (g, shuffle)
 
         -- train for one epoch on the training set
-        -- (g2, shuffle) <- go streamingState' trainingData $ \batchedStream -> do
-        --   r <- train optim trainingModelSpec batchedStream g1
-        --   pure $ (\(loss, g) -> (TrainingLossMonitor (fromTensor loss), g)) <$> r
+        (g2, shuffle) <- go streamingState' trainingData $ \batchedStream -> do
+          r <- train optim trainingModelSpec batchedStream g1
+          pure $ (\(loss, g) -> (TrainingLossMonitor (fromTensor loss), g)) <$> r
 
         -- evaluate on the evaluation set
-        (g2, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
+        (g3, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
           stateDict' <- getStateDict optim
           model' <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
-          r <- eval model' batchedStream g1
+          r <- eval model' batchedStream g2
+          stateDictToFile stateDict' "neuralInterpreter.pt"
           pure $ (\(loss, g) -> (EvaluationLossMonitor (fromTensor loss), g)) <$> r
 
-        (g3, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
+        (g4, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
           stateDict' <- getStateDict optim
           Model.NeuralInterpreter t5 <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
           let step' ((targets, predictions), g) (encoderInput, decoderInput) = do
@@ -216,15 +217,15 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
 
                 pure ((targets <> targets', predictions <> predictions'), g'')
 
-              init'' = pure (mempty, g2)
+              init'' = pure (mempty, g3)
 
-              done' ((targets, predictions), g3) = do
+              done' ((targets, predictions), g4) = do
                 let exactMatchAccuracy = let xs = zip targets predictions in (fromIntegral $ length . filter (uncurry (==)) $ xs) / (fromIntegral $ length xs)
-                pure $ Right (PredictionsMonitor targets predictions exactMatchAccuracy, g3)
-          
+                pure $ Right (PredictionsMonitor targets predictions exactMatchAccuracy, g4)
+
           P.foldM step' init'' done' $ P.enumerate batchedStream
 
-        pure (streamingState', g3)
+        pure (streamingState' {shuffle}, g4)
 
   -- create a Torch random generator from the seed
   g0 <- sMkGenerator device seed
