@@ -250,6 +250,7 @@ test-suite spec
                      , hspec
                      , hspec-hedgehog
                      , HUnit-approx
+                     , lens
                      , mtl
                      , singletons < 3
                      , tokenizers
