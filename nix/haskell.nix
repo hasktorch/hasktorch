@@ -1,13 +1,8 @@
-############################################################################
-# Builds Haskell packages with Haskell.nix
-############################################################################
 { pkgs
 , lib
-#, buildPackages
 , compiler-nix-name
-, profiling ? false
-, gitrev ? null
-, cudaSupport ? false
+, profiling
+, cudaSupport
 , extras ? (_: {})
 , src ? (pkgs.haskell-nix.haskellLib.cleanGit {
       name = "hasktorch";
@@ -46,13 +41,9 @@ let
       fi
     '';
 
-  # This creates the Haskell package set.
-  # https://input-output-hk.github.io/haskell.nix/user-guide/projects/
   pkgSet = pkgs.haskell-nix.cabalProject' {
     inherit src compiler-nix-name;
 
-    # these extras will provide additional packages
-    # on top of the package set derived from cabal resolution.
     pkg-def-extras = [
       extras
       (hackage: {
@@ -101,20 +92,14 @@ let
         # Some packages are missing identifier.name
         # packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
 
-        # Some tests don't work on every platform
-        # packages.hasktorch.components.all.platforms =
-        #   with stdenv.lib.platforms; lib.mkForce [ linux darwin windows ];
-        # packages.hasktorch.components.tests.all.platforms =
-        #   with stdenv.lib.platforms; lib.mkForce [ linux darwin ];
-
         # Disable doctests for now
         # TODO: see if we can turn these on again (waiting for https://github.com/input-output-hk/haskell.nix/pull/427)
-        packages.codegen.components.tests.doctests.buildable = lib.mkForce false;
-        packages.codegen.components.tests.doctests.doCheck = false;
-        packages.hasktorch.components.tests.doctests.buildable = lib.mkForce false;
-        packages.hasktorch.components.tests.doctests.doCheck = false;
+        #packages.codegen.components.tests.doctests.buildable = lib.mkForce false;
+        #packages.codegen.components.tests.doctests.doCheck = false;
+        #packages.hasktorch.components.tests.doctests.buildable = lib.mkForce false;
+        #packages.hasktorch.components.tests.doctests.doCheck = false;
         # Disable cabal-doctest tests by turning off custom setups
-        packages.hasktorch.package.buildType = lib.mkForce "Simple";
+        #packages.hasktorch.package.buildType = lib.mkForce "Simple";
       }
     ];
   };

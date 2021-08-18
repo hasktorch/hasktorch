@@ -40,9 +40,12 @@
       inherit (iohkNix.lib) collectExes;
 
       supportedSystems = ["x86_64-darwin" "x86_64-linux"];
+      
       gitrev = self.rev or "dirty";
+      
+      profiling = false;
       cudaSupport = false;
-      cudaMajorVersion = "10";
+      cudaMajorVersion = "11";
 
       overlays = [
         haskell-nix.overlay
@@ -72,7 +75,8 @@
             pkgs = prev;
             compiler-nix-name = "ghc8105";
             inherit (prev) lib;
-            inherit gitrev;
+            inherit profiling;
+            inherit cudaSupport;
           });
         })
       ];
@@ -87,7 +91,8 @@
 
         devShell =  import ./shell.nix {
           inherit pkgs;
-          withHoogle = true;
+          inherit cudaSupport;
+          inherit cudaMajorVersion;
         };
 
         flake = pkgs.hasktorchProject.flake {};
