@@ -4,12 +4,13 @@
 module Torch.GraduallyTyped.NN.Transformer.T5.ThreeB where
 
 import Data.Singletons (SingI (sing))
-import Data.Singletons.TypeLits (SNat)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5ModelF, t5ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, STransformerStyle (ST5), TransformerHead, TransformerStyle (T5))
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
@@ -49,13 +50,15 @@ type T5ThreeBVocabDim = 'Dim ('Name "*") ('Size 32128)
 type T5ThreeB
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat)) =
-  T5ModelF 'T5 transformerHead T5ThreeBNumLayers T5ThreeBNumLayers gradient device T5ThreeBHeadDim T5ThreeBHeadEmbedDim T5ThreeBEmbedDim T5ThreeBInputEmbedDim T5ThreeBFFNDim T5ThreeBVocabDim
+  (device :: Device (DeviceType Nat))
+  (hasDropout :: HasDropout) =
+  T5ModelF 'T5 transformerHead T5ThreeBNumLayers T5ThreeBNumLayers gradient device T5ThreeBHeadDim T5ThreeBHeadEmbedDim T5ThreeBEmbedDim T5ThreeBInputEmbedDim T5ThreeBFFNDim T5ThreeBVocabDim hasDropout
 
 -- | T5-3B model specification.
 t5ThreeBSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (T5ThreeB transformerHead gradient device)
+  SHasDropout hasDropout ->
+  ModelSpec (T5ThreeB transformerHead gradient device hasDropout)
 t5ThreeBSpec transformerHead = t5ModelSpec ST5 transformerHead t5ThreeBNumLayers t5ThreeBNumLayers

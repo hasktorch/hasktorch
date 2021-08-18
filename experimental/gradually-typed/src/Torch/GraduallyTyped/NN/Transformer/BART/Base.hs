@@ -4,12 +4,13 @@
 module Torch.GraduallyTyped.NN.Transformer.BART.Base where
 
 import Data.Singletons (SingI (..))
-import Data.Singletons.TypeLits (SNat)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.BART.Common (BARTModelF, bartModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
 
@@ -76,13 +77,15 @@ bartBaseVocabDim = sing
 type BARTBase
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat)) =
-  BARTModelF transformerHead BARTBaseNumLayers gradient device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim
+  (device :: Device (DeviceType Nat))
+  (hasDropout :: HasDropout) =
+  BARTModelF transformerHead BARTBaseNumLayers gradient device BARTBaseHeadDim BARTBaseHeadEmbedDim BARTBaseEmbedDim BARTBaseInputEmbedDim BARTBaseFFNDim BARTBaseVocabDim hasDropout
 
 -- | BART-Base model specification.
 bartBaseSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (BARTBase transformerHead gradient device)
+  SHasDropout hasDropout ->
+  ModelSpec (BARTBase transformerHead gradient device hasDropout)
 bartBaseSpec transformerHead = bartModelSpec transformerHead bartBaseNumLayers

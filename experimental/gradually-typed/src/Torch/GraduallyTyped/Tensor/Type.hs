@@ -25,6 +25,7 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE ViewPatterns #-}
 
+{-# LANGUAGE DeriveGeneric #-}
 module Torch.GraduallyTyped.Tensor.Type where
 
 import Control.Applicative (empty)
@@ -41,7 +42,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty, unzip)
 import Data.Maybe (maybeToList)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (SingI (sing), fromSing)
-import Data.Singletons.Prelude.List (SList (..))
+import Torch.GraduallyTyped.Prelude.List (SList (..))
 import Data.Typeable (Typeable)
 import qualified Data.Vector as V hiding (uncons)
 import qualified Torch.GraduallyTyped.Internal.Vector as V
@@ -73,9 +74,10 @@ import qualified Torch.Internal.Type as ATen (Tensor, TensorList, TensorOptions)
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified Torch.Tensor (Tensor (Unsafe))
 import Prelude hiding (unzip, unzip3)
+import GHC.Generics (Generic)
 
 -- $setup
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
 -- | A gradually typed tensor.
@@ -131,6 +133,7 @@ data
       tsShape :: SShape shape
     } ->
     TensorSpec gradient layout device dataType shape
+  deriving stock (Show, Generic)
 
 -- | Alias for an untyped tensor without gradients.
 type UncheckedTensor = Tensor 'UncheckedGradient 'UncheckedLayout 'UncheckedDevice 'UncheckedDataType 'UncheckedShape

@@ -23,7 +23,7 @@ testMHA = do
       valueEmbedDim = SName @"*" :&: SSize @7
       dropoutP = 0
   g <- sMkGenerator device 0
-  let spec = NamedModel "mha." $ multiHeadAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim dropoutP
+  let spec = NamedModel "mha." $ multiHeadAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim valueEmbedDim SWithDropout dropoutP
   (mha, g') <- initialize spec g
   mha' <- flip evalStateT Map.empty $ do
     toStateDict mempty mha

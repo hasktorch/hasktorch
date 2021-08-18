@@ -14,14 +14,15 @@ module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common where
 import Control.Monad.Catch (MonadThrow)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
-import Data.Singletons.TypeLits (SNat)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EOTEmbeddingF, EOTEncoderF, EOTHeadF, EOTTypeEmbeddingF, GEncoderOnlyTransformer, GSimplifiedEncoderOnlyTransformer (..), encoderOnlyTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (GEncoderOnlyTransformerF, GSimplifiedEncoderOnlyTransformer (..), encoderOnlyTransformerSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkAbsPos (..), MkTransformerAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead, STransformerStyle (SRoBERTa), TransformerHead (..), TransformerStyle (RoBERTa), mkTransformerInput)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Shape (..), Size (..))
@@ -98,18 +99,13 @@ type family
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (vocabDim :: Dim (Name Symbol) (Size Nat))
-    (typeVocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
     Type
   where
-  RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+  RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim hasDropout =
     GSimplifiedEncoderOnlyTransformer
-      ( GEncoderOnlyTransformer
-          inputEmbedDim
-          (EOTEncoderF 'RoBERTa numLayers gradient device RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaPosEncDim)
-          (EOTEmbeddingF 'RoBERTa gradient device RoBERTaDataType inputEmbedDim vocabDim)
-          (EOTTypeEmbeddingF 'RoBERTa gradient device RoBERTaDataType inputEmbedDim typeVocabDim)
-          (EOTHeadF 'RoBERTa transformerHead gradient device RoBERTaDataType inputEmbedDim vocabDim)
-      )
+      (GEncoderOnlyTransformerF 'RoBERTa transformerHead numLayers gradient device RoBERTaDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim RoBERTaPosEncDim vocabDim typeVocabDim hasDropout)
       MkAbsPos
       MkTransformerPaddingMask
       (MkTransformerAttentionMask RoBERTaDataType)
@@ -121,7 +117,7 @@ type family
 -- - @gradient@: whether to compute the gradient of the RoBERTa model.
 -- - @device@: the computational device on which the RoBERTa model parameters are to be allocated.
 robertaModelSpec ::
-  forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
+  forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim hasDropout.
   ( SingI headDim,
     SingI headEmbedDim,
     SingI embedDim,
@@ -134,8 +130,9 @@ robertaModelSpec ::
   SNat numLayers ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-robertaModelSpec transformerHead numLayers gradient device =
+  SHasDropout hasDropout ->
+  ModelSpec (RoBERTaModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim hasDropout)
+robertaModelSpec transformerHead numLayers gradient device hasDropout =
   GSimplifiedEncoderOnlyTransformer
     ( encoderOnlyTransformerSpec
         SRoBERTa
@@ -152,6 +149,7 @@ robertaModelSpec transformerHead numLayers gradient device =
         robertaPosEncDim
         (sing @vocabDim)
         (sing @typeVocabDim)
+        hasDropout
         robertaDropoutP
         robertaEps
     )

@@ -37,7 +37,7 @@ pmap buffer f prod = ContT $ \cont ->
     <$> withBufferLifted
       buffer
       (\output -> runEffect $ enumerate prod >-> P.map f >-> toOutput' output)
-      (cont . Select . fromInput')
+      (\input -> cont $ Select $ fromInput' input)
 
 -- | Run a pipe in parallel over the given stream.
 pmap' :: (MonadIO m, MonadBaseControl IO m) => Buffer b -> Pipe a b m () -> ListT m a -> ContT r m (ListT m b)
@@ -46,7 +46,7 @@ pmap' buffer f prod = ContT $ \cont ->
     <$> withBufferLifted
       buffer
       (\output -> runEffect $ enumerate prod >-> f >-> toOutput' output)
-      (cont . Select . fromInput')
+      (\input -> cont $ Select $ fromInput' input)
 
 -- | Map a ListT transform over the given the stream in parallel. This should be useful
 -- for using functions which groups elements of a stream and yields them downstream.
@@ -56,7 +56,7 @@ pmapGroup buffer f prod = ContT $ \cont ->
     <$> withBufferLifted
       buffer
       (\output -> runEffect $ enumerate (f prod) >-> toOutput' output)
-      (cont . Select . fromInput')
+      (\input -> cont $ Select $ fromInput' input)
 
 -- | Enumerate the given stream, zipping each element with an index.
 enumerateData :: Monad m => ListT m a -> Producer (a, Int) m ()

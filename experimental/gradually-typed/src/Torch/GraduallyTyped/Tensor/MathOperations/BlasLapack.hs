@@ -12,7 +12,7 @@ module Torch.GraduallyTyped.Tensor.MathOperations.BlasLapack where
 import Control.Monad.Catch (MonadThrow)
 import Data.Type.Bool (If)
 import GHC.TypeLits (Nat, Symbol, TypeError)
-import Torch.GraduallyTyped.Prelude (PrependMaybe, Reverse)
+import Torch.GraduallyTyped.Prelude (Catch, PrependMaybe, Reverse)
 import Torch.GraduallyTyped.Shape (BroadcastDimsImplF, Dim (..), Name (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (UnifyCheck, type (<+>), type (<|>))
@@ -22,7 +22,7 @@ import qualified Torch.Internal.Managed.Native as ATen
 import Type.Errors.Pretty (type (%), type (<>))
 
 -- $setup
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
 type MatmulDimsImplF :: [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
@@ -213,8 +213,8 @@ type family MatmulF shape shape' where
 --                      '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "*") ('Size 5),
 --                         'Dim ('Name "*") ('Size 3), 'Dim ('Name "*") ('Size 7)]))
 matmul ::
-  forall m gradient gradient' layout layout' device device' dataType dataType' shape shape'.
-  MonadThrow m =>
+  forall m gradient gradient' layout layout' device device' dataType dataType' shape shape' shape''.
+  (MonadThrow m, shape'' ~ MatmulF shape shape', Catch shape'') =>
   -- input
   Tensor gradient layout device dataType shape ->
   -- other
@@ -226,6 +226,6 @@ matmul ::
         (layout <+> layout')
         (device <+> device')
         (dataType <+> dataType')
-        (MatmulF shape shape')
+        shape''
     )
 input `matmul` other = unsafeThrowableIO $ ATen.cast2 ATen.matmul_tt input other

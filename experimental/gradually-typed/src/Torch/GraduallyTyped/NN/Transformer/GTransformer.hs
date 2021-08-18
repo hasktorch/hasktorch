@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -18,12 +20,12 @@ module Torch.GraduallyTyped.NN.Transformer.GTransformer where
 import Control.Monad.Indexed ((>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
 import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
-import Data.Functor.Indexed (IxPointed (ireturn), (<<$>>), (<<*>>))
+import Data.Functor.Indexed (IxPointed (ireturn))
 import Data.Kind (Type)
-import Data.Singletons.Prelude.List (SList (SNil))
-import Data.Singletons.Prelude.Maybe (SMaybe (SNothing))
-import Data.Singletons.TypeLits (SNat (..))
-import qualified Data.Vector.Sized as VS
+import Torch.GraduallyTyped.Prelude.List (SList (SNil))
+import Torch.GraduallyTyped.Prelude.Maybe (SMaybe (SNothing))
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
@@ -32,15 +34,14 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasSt
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Sparse (Embedding (..), EmbeddingSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.GBlock (DecoderBlockCrossAttentionF, DecoderBlockFeedForwardNetworkF, DecoderBlockSelfAttentionF, EncoderBlockCrossAttentionF, EncoderBlockFeedForwardNetworkF, EncoderBlockSelfAttentionF, GTransformerBlock)
-import Torch.GraduallyTyped.NN.Transformer.GStack (GTransformerStack, decoderStackSpec, encoderStackSpec)
+import Torch.GraduallyTyped.NN.Transformer.GStack (DecoderStackF, EncoderStackF, decoderStackSpec, encoderStackSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
-import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (SWithBias, SWithoutBias))
-import Torch.GraduallyTyped.Prelude (pattern (:|:))
+import Torch.GraduallyTyped.NN.Type (HasBias (..), HasDropout (..), SHasBias (..), SHasDropout (..))
+import Torch.GraduallyTyped.Prelude (Catch, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SDim, SShape (..), SelectDim (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, transpose, unsqueeze)
+import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim, SSelectDim (..), SShape (..), SelectDim (..), Shape (..), Size (..))
+import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (TransposeF, UnsqueezeF, sTranspose, sUnsqueeze, transpose, unsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (add)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
@@ -83,10 +84,37 @@ data
       tFinalDropout :: finalDropout
     } ->
     GTransformer posEnc relPosEnc initialLayerNorm initialDropout stack finalLayerNorm finalDropout
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance
   ModelSpec (GTransformer posEnc relPosEnc initialLayerNorm initialDropout stack finalLayerNorm finalDropout) =
     GTransformer (ModelSpec posEnc) (ModelSpec relPosEnc) (ModelSpec initialLayerNorm) (ModelSpec initialDropout) (ModelSpec stack) (ModelSpec finalLayerNorm) (ModelSpec finalDropout)
+
+type family
+  TransformerEncoderF
+    (style :: TransformerStyle)
+    (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
+    Type
+  where
+  TransformerEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout =
+    GTransformer
+      (TEPosEncF style gradient device dataType inputEmbedDim posEncDim)
+      (TERelPosEncF style gradient device dataType headDim posEncDim)
+      (TEInitialLayerNormF style gradient device dataType inputEmbedDim)
+      (TEInitialDropoutF style hasDropout)
+      (TEStackF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim hasDropout)
+      (TEFinalLayerNormF style gradient device dataType inputEmbedDim)
+      (TEFinalDropoutF style hasDropout)
 
 -- | Specifies the absolute positional encoding layer of a transformer encoder.
 type family
@@ -147,16 +175,18 @@ type family
 -- | Specifies the initial dropout layer of a transformer encoder.
 type family
   TEInitialDropoutF
-    (style :: TransformerStyle) ::
+    (style :: TransformerStyle)
+    (hasDropout :: HasDropout) ::
     Type
   where
-  TEInitialDropoutF 'T5 = Dropout
-  TEInitialDropoutF 'ByT5 = Dropout
-  TEInitialDropoutF 'BART = Dropout
-  TEInitialDropoutF 'MBART = Dropout
-  TEInitialDropoutF 'Pegasus = Dropout
-  TEInitialDropoutF 'BERT = Dropout
-  TEInitialDropoutF 'RoBERTa = Dropout
+  TEInitialDropoutF 'T5 'WithDropout = Dropout
+  TEInitialDropoutF 'ByT5 'WithDropout = Dropout
+  TEInitialDropoutF 'BART 'WithDropout = Dropout
+  TEInitialDropoutF 'MBART 'WithDropout = Dropout
+  TEInitialDropoutF 'Pegasus 'WithDropout = Dropout
+  TEInitialDropoutF 'BERT 'WithDropout = Dropout
+  TEInitialDropoutF 'RoBERTa 'WithDropout = Dropout
+  TEInitialDropoutF _ 'WithoutDropout = ()
 
 -- | Specifies the transformer block stack of a transformer encoder.
 type family
@@ -170,21 +200,12 @@ type family
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat)) ::
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
     Type
   where
-  TEStackF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim =
-    NamedModel
-      ( GTransformerStack
-          ( VS.Vector
-              numLayers
-              ( GTransformerBlock
-                  (EncoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim inputEmbedDim)
-                  EncoderBlockCrossAttentionF
-                  (EncoderBlockFeedForwardNetworkF style gradient device dataType inputEmbedDim ffnDim)
-              )
-          )
-      )
+  TEStackF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim hasDropout =
+    NamedModel (EncoderStackF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim hasDropout)
 
 -- | Specifies the final layer normalization layer of a transformer encoder.
 type family
@@ -207,16 +228,18 @@ type family
 -- | Specifies the final dropout layer of a transformer encoder.
 type family
   TEFinalDropoutF
-    (style :: TransformerStyle) ::
+    (style :: TransformerStyle)
+    (hasDropout :: HasDropout) ::
     Type
   where
-  TEFinalDropoutF 'T5 = Dropout
-  TEFinalDropoutF 'ByT5 = Dropout
-  TEFinalDropoutF 'BART = ()
-  TEFinalDropoutF 'MBART = ()
-  TEFinalDropoutF 'Pegasus = ()
-  TEFinalDropoutF 'BERT = ()
-  TEFinalDropoutF 'RoBERTa = ()
+  TEFinalDropoutF 'T5 'WithDropout = Dropout
+  TEFinalDropoutF 'ByT5 'WithDropout = Dropout
+  TEFinalDropoutF 'BART _ = ()
+  TEFinalDropoutF 'MBART _ = ()
+  TEFinalDropoutF 'Pegasus _ = ()
+  TEFinalDropoutF 'BERT _ = ()
+  TEFinalDropoutF 'RoBERTa _ = ()
+  TEFinalDropoutF _ 'WithoutDropout = ()
 
 -- | Specifies the parameters of a transformer in an encoder configuration.
 --
@@ -233,7 +256,7 @@ type family
 -- - @dropoutP@: the dropout rate.
 -- - @eps@: the epsilon value for numerical stability of the layer normalization.
 transformerEncoderSpec ::
-  forall style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim.
+  forall style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout.
   STransformerStyle style ->
   SNat numLayers ->
   SGradient gradient ->
@@ -245,19 +268,11 @@ transformerEncoderSpec ::
   SDim inputEmbedDim ->
   SDim ffnDim ->
   SDim posEncDim ->
+  SHasDropout hasDropout ->
   Double ->
   Double ->
-  ModelSpec
-    ( GTransformer
-        (TEPosEncF style gradient device dataType inputEmbedDim posEncDim)
-        (TERelPosEncF style gradient device dataType headDim posEncDim)
-        (TEInitialLayerNormF style gradient device dataType inputEmbedDim)
-        (TEInitialDropoutF style)
-        (TEStackF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim)
-        (TEFinalLayerNormF style gradient device dataType inputEmbedDim)
-        (TEFinalDropoutF style)
-    )
-transformerEncoderSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim dropoutP eps =
+  ModelSpec (TransformerEncoderF style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout)
+transformerEncoderSpec style numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim posEncDim hasDropout dropoutP eps =
   let posEncSpec ST5 = ()
       posEncSpec SByT5 = ()
       posEncSpec SBART = NamedModel "embed_positions." posEncSpec'
@@ -282,14 +297,21 @@ transformerEncoderSpec style numLayers gradient device dataType headDim headEmbe
       initialLayerNormSpec SBERT = NamedModel "embeddings.LayerNorm." $ layerNormSpec' SWithBias
       initialLayerNormSpec SRoBERTa = NamedModel "embeddings.LayerNorm." $ layerNormSpec' SWithBias
       initialLayerNormSpec SGPT2 = undefined
-      initialDropoutSpec ST5 = Dropout dropoutP
-      initialDropoutSpec SByT5 = Dropout dropoutP
-      initialDropoutSpec SBART = Dropout dropoutP
-      initialDropoutSpec SMBART = Dropout dropoutP
-      initialDropoutSpec SPegasus = Dropout dropoutP
-      initialDropoutSpec SBERT = Dropout dropoutP
-      initialDropoutSpec SRoBERTa = Dropout dropoutP
-      initialDropoutSpec SGPT2 = undefined
+      initialDropoutSpec ST5 SWithDropout = Dropout dropoutP
+      initialDropoutSpec ST5 SWithoutDropout = ()
+      initialDropoutSpec SByT5 SWithDropout = Dropout dropoutP
+      initialDropoutSpec SByT5 SWithoutDropout = ()
+      initialDropoutSpec SBART SWithDropout = Dropout dropoutP
+      initialDropoutSpec SBART SWithoutDropout = ()
+      initialDropoutSpec SMBART SWithDropout = Dropout dropoutP
+      initialDropoutSpec SMBART SWithoutDropout = ()
+      initialDropoutSpec SPegasus SWithDropout = Dropout dropoutP
+      initialDropoutSpec SPegasus SWithoutDropout = ()
+      initialDropoutSpec SBERT SWithDropout = Dropout dropoutP
+      initialDropoutSpec SBERT SWithoutDropout = ()
+      initialDropoutSpec SRoBERTa SWithDropout = Dropout dropoutP
+      initialDropoutSpec SRoBERTa SWithoutDropout = ()
+      initialDropoutSpec SGPT2 _ = undefined
       stackSpec ST5 = NamedModel "block." $ stackSpec' ST5
       stackSpec SByT5 = NamedModel "block." $ stackSpec' SByT5
       stackSpec SBART = NamedModel "layers." $ stackSpec' SBART
@@ -306,22 +328,58 @@ transformerEncoderSpec style numLayers gradient device dataType headDim headEmbe
       finalLayerNormSpec SBERT = ()
       finalLayerNormSpec SRoBERTa = ()
       finalLayerNormSpec SGPT2 = undefined
-      finalDropoutSpec ST5 = Dropout dropoutP
-      finalDropoutSpec SByT5 = Dropout dropoutP
-      finalDropoutSpec SBART = ()
-      finalDropoutSpec SMBART = ()
-      finalDropoutSpec SPegasus = ()
-      finalDropoutSpec SBERT = ()
-      finalDropoutSpec SRoBERTa = ()
-      finalDropoutSpec SGPT2 = undefined
-   in GTransformer (posEncSpec style) (relPosEncSpec style) (initialLayerNormSpec style) (initialDropoutSpec style) (stackSpec style) (finalLayerNormSpec style) (finalDropoutSpec style)
+      finalDropoutSpec ST5 SWithDropout = Dropout dropoutP
+      finalDropoutSpec ST5 SWithoutDropout = ()
+      finalDropoutSpec SByT5 SWithDropout = Dropout dropoutP
+      finalDropoutSpec SByT5 SWithoutDropout = ()
+      finalDropoutSpec SBART _ = ()
+      finalDropoutSpec SMBART _ = ()
+      finalDropoutSpec SPegasus _ = ()
+      finalDropoutSpec SBERT _ = ()
+      finalDropoutSpec SRoBERTa _ = ()
+      finalDropoutSpec SGPT2 _ = undefined
+   in GTransformer
+        (posEncSpec style)
+        (relPosEncSpec style)
+        (initialLayerNormSpec style)
+        (initialDropoutSpec style hasDropout)
+        (stackSpec style)
+        (finalLayerNormSpec style)
+        (finalDropoutSpec style hasDropout)
   where
     stackSpec' :: _
-    stackSpec' style' = encoderStackSpec style' numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim dropoutP eps
+    stackSpec' style' = encoderStackSpec style' numLayers gradient device dataType headDim headEmbedDim embedDim inputEmbedDim ffnDim hasDropout dropoutP eps
     layerNormSpec' :: _
     layerNormSpec' hasBias = LayerNormSpec hasBias gradient device dataType (SShape $ inputEmbedDim :|: SNil) eps
     relPosEncSpec' = EmbeddingSpec gradient (SLayout SDense) device dataType posEncDim headDim SNothing
     posEncSpec' = EmbeddingSpec gradient (SLayout SDense) device dataType posEncDim inputEmbedDim SNothing
+
+type family
+  TransformerDecoderF
+    (style :: TransformerStyle)
+    (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (encoderOutputEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (posEncDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
+    Type
+  where
+  TransformerDecoderF style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim hasDropout =
+    GTransformer
+      (TDPosEncF style gradient device dataType decoderInputEmbedDim posEncDim)
+      (TDRelPosEncF style gradient device dataType headDim posEncDim)
+      (TDInitialLayerNormF style gradient device dataType decoderInputEmbedDim)
+      (TDInitialDropoutF style hasDropout)
+      (TDStackF style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim hasDropout)
+      (TDFinalLayerNormF style gradient device dataType decoderInputEmbedDim)
+      (TDFinalDropoutF style hasDropout)
 
 -- | Specifies the absolute positional encoding layer of a transformer decoder.
 type family
@@ -376,14 +434,16 @@ type family
 -- | Specifies the initial dropout layer of a transformer decoder.
 type family
   TDInitialDropoutF
-    (style :: TransformerStyle) ::
+    (style :: TransformerStyle)
+    (hasDropout :: HasDropout) ::
     Type
   where
-  TDInitialDropoutF 'T5 = Dropout
-  TDInitialDropoutF 'ByT5 = Dropout
-  TDInitialDropoutF 'BART = Dropout
-  TDInitialDropoutF 'MBART = Dropout
-  TDInitialDropoutF 'Pegasus = Dropout
+  TDInitialDropoutF 'T5 'WithDropout = Dropout
+  TDInitialDropoutF 'ByT5 'WithDropout = Dropout
+  TDInitialDropoutF 'BART 'WithDropout = Dropout
+  TDInitialDropoutF 'MBART 'WithDropout = Dropout
+  TDInitialDropoutF 'Pegasus 'WithDropout = Dropout
+  TDInitialDropoutF _ 'WithoutDropout = ()
 
 -- | Specifies the transformer block stack of a transformer decoder.
 type family
@@ -398,21 +458,12 @@ type family
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (decoderInputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (encoderOutputEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat)) ::
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
     Type
   where
-  TDStackF style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim =
-    NamedModel
-      ( GTransformerStack
-          ( VS.Vector
-              numLayers
-              ( GTransformerBlock
-                  (DecoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim)
-                  (DecoderBlockCrossAttentionF style gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim)
-                  (DecoderBlockFeedForwardNetworkF style gradient device dataType decoderInputEmbedDim ffnDim)
-              )
-          )
-      )
+  TDStackF style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim hasDropout =
+    NamedModel (DecoderStackF style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim hasDropout)
 
 -- | Specifies the final layer normalization layer of a transformer decoder.
 type family
@@ -433,14 +484,16 @@ type family
 -- | Specifies the final dropout layer of a transformer decoder.
 type family
   TDFinalDropoutF
-    (style :: TransformerStyle) ::
+    (style :: TransformerStyle)
+    (hasDropout :: HasDropout) ::
     Type
   where
-  TDFinalDropoutF 'T5 = Dropout
-  TDFinalDropoutF 'ByT5 = Dropout
-  TDFinalDropoutF 'BART = ()
-  TDFinalDropoutF 'MBART = ()
-  TDFinalDropoutF 'Pegasus = ()
+  TDFinalDropoutF 'T5 'WithDropout = Dropout
+  TDFinalDropoutF 'ByT5 'WithDropout = Dropout
+  TDFinalDropoutF 'BART _ = ()
+  TDFinalDropoutF 'MBART _ = ()
+  TDFinalDropoutF 'Pegasus _ = ()
+  TDFinalDropoutF _ 'WithoutDropout = ()
 
 -- | Specifies the parameters of a transformer in a decoder configuration.
 --
@@ -458,7 +511,7 @@ type family
 -- - @dropoutP@: the dropout rate.
 -- - @eps@: the epsilon value for numerical stability of the layer normalization.
 transformerDecoderSpec ::
-  forall style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim.
+  forall style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim hasDropout.
   STransformerStyle style ->
   SNat numLayers ->
   SGradient gradient ->
@@ -471,19 +524,11 @@ transformerDecoderSpec ::
   SDim encoderOutputEmbedDim ->
   SDim ffnDim ->
   SDim posEncDim ->
+  SHasDropout hasDropout ->
   Double ->
   Double ->
-  ModelSpec
-    ( GTransformer
-        (TDPosEncF style gradient device dataType decoderInputEmbedDim posEncDim)
-        (TDRelPosEncF style gradient device dataType headDim posEncDim)
-        (TDInitialLayerNormF style gradient device dataType decoderInputEmbedDim)
-        (TDInitialDropoutF style)
-        (TDStackF style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim)
-        (TDFinalLayerNormF style gradient device dataType decoderInputEmbedDim)
-        (TDFinalDropoutF style)
-    )
-transformerDecoderSpec style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim dropoutP eps =
+  ModelSpec (TransformerDecoderF style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim hasDropout)
+transformerDecoderSpec style numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim posEncDim hasDropout dropoutP eps =
   let posEncSpec ST5 = ()
       posEncSpec SByT5 = ()
       posEncSpec SBART = NamedModel "embed_positions." posEncSpec'
@@ -508,14 +553,19 @@ transformerDecoderSpec style numLayers gradient device dataType headDim headEmbe
       initialLayerNormSpec SBERT = undefined
       initialLayerNormSpec SRoBERTa = undefined
       initialLayerNormSpec SGPT2 = undefined
-      initialDropoutSpec ST5 = Dropout dropoutP
-      initialDropoutSpec SByT5 = Dropout dropoutP
-      initialDropoutSpec SBART = Dropout dropoutP
-      initialDropoutSpec SMBART = Dropout dropoutP
-      initialDropoutSpec SPegasus = Dropout dropoutP
-      initialDropoutSpec SBERT = undefined
-      initialDropoutSpec SRoBERTa = undefined
-      initialDropoutSpec SGPT2 = undefined
+      initialDropoutSpec ST5 SWithDropout = Dropout dropoutP
+      initialDropoutSpec ST5 SWithoutDropout = ()
+      initialDropoutSpec SByT5 SWithDropout = Dropout dropoutP
+      initialDropoutSpec SByT5 SWithoutDropout = ()
+      initialDropoutSpec SBART SWithDropout = Dropout dropoutP
+      initialDropoutSpec SBART SWithoutDropout = ()
+      initialDropoutSpec SMBART SWithDropout = Dropout dropoutP
+      initialDropoutSpec SMBART SWithoutDropout = ()
+      initialDropoutSpec SPegasus SWithDropout = Dropout dropoutP
+      initialDropoutSpec SPegasus SWithoutDropout = ()
+      initialDropoutSpec SBERT _ = undefined
+      initialDropoutSpec SRoBERTa _ = undefined
+      initialDropoutSpec SGPT2 _ = undefined
       stackSpec ST5 = NamedModel "block." $ stackSpec' ST5
       stackSpec SByT5 = NamedModel "block." $ stackSpec' SByT5
       stackSpec SBART = NamedModel "layers." $ stackSpec' SBART
@@ -532,55 +582,46 @@ transformerDecoderSpec style numLayers gradient device dataType headDim headEmbe
       finalLayerNormSpec SBERT = undefined
       finalLayerNormSpec SRoBERTa = undefined
       finalLayerNormSpec SGPT2 = undefined
-      finalDropoutSpec ST5 = Dropout dropoutP
-      finalDropoutSpec SByT5 = Dropout dropoutP
-      finalDropoutSpec SBART = ()
-      finalDropoutSpec SMBART = ()
-      finalDropoutSpec SPegasus = ()
-      finalDropoutSpec SBERT = undefined
-      finalDropoutSpec SRoBERTa = undefined
-      finalDropoutSpec SGPT2 = undefined
-   in GTransformer (posEncSpec style) (relPosEncSpec style) (initialLayerNormSpec style) (initialDropoutSpec style) (stackSpec style) (finalLayerNormSpec style) (finalDropoutSpec style)
+      finalDropoutSpec ST5 SWithDropout = Dropout dropoutP
+      finalDropoutSpec ST5 SWithoutDropout = ()
+      finalDropoutSpec SByT5 SWithDropout = Dropout dropoutP
+      finalDropoutSpec SByT5 SWithoutDropout = ()
+      finalDropoutSpec SBART _ = ()
+      finalDropoutSpec SMBART _ = ()
+      finalDropoutSpec SPegasus _ = ()
+      finalDropoutSpec SBERT _ = undefined
+      finalDropoutSpec SRoBERTa _ = undefined
+      finalDropoutSpec SGPT2 _ = undefined
+   in GTransformer
+        (posEncSpec style)
+        (relPosEncSpec style)
+        (initialLayerNormSpec style)
+        (initialDropoutSpec style hasDropout)
+        (stackSpec style)
+        (finalLayerNormSpec style)
+        (finalDropoutSpec style hasDropout)
   where
     stackSpec' :: _
-    stackSpec' style' = decoderStackSpec style' numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim dropoutP eps
+    stackSpec' style' = decoderStackSpec style' numLayers gradient device dataType headDim headEmbedDim embedDim decoderInputEmbedDim encoderOutputEmbedDim ffnDim hasDropout dropoutP eps
     layerNormSpec' :: _
     layerNormSpec' hasBias = LayerNormSpec hasBias gradient device dataType (SShape $ decoderInputEmbedDim :|: SNil) eps
     relPosEncSpec' = EmbeddingSpec gradient (SLayout SDense) device dataType posEncDim headDim SNothing
     posEncSpec' = EmbeddingSpec gradient (SLayout SDense) device dataType posEncDim decoderInputEmbedDim SNothing
 
 instance
-  ( HasInitialize posEnc generatorDevice posEnc generatorDevice,
-    HasInitialize relPosEnc generatorDevice relPosEnc generatorDevice,
-    HasInitialize initialLayerNorm generatorDevice initialLayerNorm generatorDevice,
-    HasInitialize initialDropout generatorDevice initialDropout generatorDevice,
-    HasInitialize stack generatorDevice stack generatorDevice,
-    HasInitialize finalLayerNorm generatorDevice finalLayerNorm generatorDevice,
-    HasInitialize finalDropout generatorDevice finalDropout generatorDevice
+  ( HasInitialize posEnc generatorDevice posEnc' generatorDevice0,
+    HasInitialize relPosEnc generatorDevice0 relPosEnc' generatorDevice1,
+    HasInitialize initialLayerNorm generatorDevice1 initialLayerNorm' generatorDevice2,
+    HasInitialize initialDropout generatorDevice2 initialDropout' generatorDevice3,
+    HasInitialize stack generatorDevice3 stack' generatorDevice4,
+    HasInitialize finalLayerNorm generatorDevice4 finalLayerNorm' generatorDevice5,
+    HasInitialize finalDropout generatorDevice5 finalDropout' generatorOutputDevice
   ) =>
   HasInitialize
     (GTransformer posEnc relPosEnc initialLayerNorm initialDropout stack finalLayerNorm finalDropout)
     generatorDevice
-    (GTransformer posEnc relPosEnc initialLayerNorm initialDropout stack finalLayerNorm finalDropout)
-    generatorDevice
-  where
-  initialize (GTransformer posEncSpec relPosEncSpec initialLayerNormSpec initialDropoutSpec stackSpec finalLayerNormSpec finalDropoutSpec) =
-    let posEnc = IxStateT . initialize $ posEncSpec
-        relPosEnc = IxStateT . initialize $ relPosEncSpec
-        initialLayerNorm = IxStateT . initialize $ initialLayerNormSpec
-        initialDropout = IxStateT . initialize $ initialDropoutSpec
-        stack = IxStateT . initialize $ stackSpec
-        finalLayerNorm = IxStateT . initialize $ finalLayerNormSpec
-        finalDropout = IxStateT . initialize $ finalDropoutSpec
-     in runIxStateT $
-          GTransformer
-            <<$>> posEnc
-            <<*>> relPosEnc
-            <<*>> initialLayerNorm
-            <<*>> initialDropout
-            <<*>> stack
-            <<*>> finalLayerNorm
-            <<*>> finalDropout
+    (GTransformer posEnc' relPosEnc' initialLayerNorm' initialDropout' stack' finalLayerNorm' finalDropout')
+    generatorOutputDevice
 
 instance
   ( HasStateDict posEnc,
@@ -592,25 +633,6 @@ instance
     HasStateDict finalDropout
   ) =>
   HasStateDict (GTransformer posEnc relPosEnc initialLayerNorm initialDropout stack finalLayerNorm finalDropout)
-  where
-  fromStateDict (GTransformer posEncSpec relPosEncSpec initialLayerNormSpec initialDropoutSpec stackSpec finalLayerNormSpec finalDropoutSpec) k =
-    GTransformer
-      <$> fromStateDict posEncSpec k
-      <*> fromStateDict relPosEncSpec k
-      <*> fromStateDict initialLayerNormSpec k
-      <*> fromStateDict initialDropoutSpec k
-      <*> fromStateDict stackSpec k
-      <*> fromStateDict finalLayerNormSpec k
-      <*> fromStateDict finalDropoutSpec k
-  toStateDict k GTransformer {..} = do
-    () <- toStateDict k tPosEnc
-    () <- toStateDict k tRelPosEnc
-    () <- toStateDict k tInitialLayerNorm
-    () <- toStateDict k tInitialDropout
-    () <- toStateDict k tStack
-    () <- toStateDict k tFinalLayerNorm
-    () <- toStateDict k tFinalDropout
-    pure ()
 
 -- | 'HasForward' instance for 'GTransformer' in an encoder configuration
 -- with absolute positional encoding rather than relative positional encoding.
@@ -660,6 +682,7 @@ instance
       generatorDevice0
       tensor1
       generatorDevice1,
+    Catch (BroadcastShapesF inputShape posEncShape),
     HasForward
       initialDropout
       tensor1
@@ -679,6 +702,7 @@ instance
       generatorDevice2
       tensor3
       generatorDevice3,
+    Catch (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape),
     HasForward
       finalLayerNorm
       tensor3
@@ -703,14 +727,19 @@ instance
     generatorOutputDevice
   where
   forward GTransformer {..} (input, pos, attentionMask) =
-    let attentionBias = unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
+    let attentionBias = ilift $ unsqueeze @('SelectDim ('ByIndex 1)) attentionMask
      in runIxStateT $
           ireturn pos
             >>>= IxStateT . forward tPosEnc
-            >>>= ireturn . (input `add`)
+            >>>= ilift . (input `add`)
             >>>= IxStateT . forward tInitialLayerNorm
             >>>= IxStateT . forward tInitialDropout
-            >>>= (\input' -> IxStateT $ forward tStack (input', attentionBias))
+            >>>= ( \input' ->
+                     attentionBias
+                       >>>= ( \attentionBias' ->
+                                IxStateT $ forward tStack (input', attentionBias')
+                            )
+                 )
             >>>= IxStateT . forward tFinalLayerNorm
             >>>= IxStateT . forward tFinalDropout
 
@@ -771,22 +800,18 @@ instance
           (relPosEncLayout <+> attentionMaskLayout)
           (relPosEncDevice <+> attentionMaskDevice)
           (relPosEncDataType <+> attentionMaskDataType)
-          ( BroadcastShapesF
-              ( TransposeF
-                  ('SelectDim ('ByIndex 1))
-                  ('SelectDim ('ByIndex 2))
-                  ( TransposeF
-                      ('SelectDim ('ByIndex 2))
-                      ('SelectDim ('ByIndex 3))
-                      relPosEncShape
-                  )
-              )
-              (UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape)
-          )
+          (BroadcastShapesF doubleTransposedRelPosEncShape unsqueezedAttentionMaskShape)
       )
       generatorDevice2
       tensor3
       generatorDevice3,
+    transposedRelPosEncShape ~ TransposeF ('SelectDim ('ByIndex 2)) ('SelectDim ('ByIndex 3)) relPosEncShape,
+    Catch transposedRelPosEncShape,
+    doubleTransposedRelPosEncShape ~ TransposeF ('SelectDim ('ByIndex 1)) ('SelectDim ('ByIndex 2)) transposedRelPosEncShape,
+    Catch doubleTransposedRelPosEncShape,
+    unsqueezedAttentionMaskShape ~ UnsqueezeF ('SelectDim ('ByIndex 1)) attentionMaskShape,
+    Catch unsqueezedAttentionMaskShape,
+    Catch (BroadcastShapesF doubleTransposedRelPosEncShape unsqueezedAttentionMaskShape),
     HasForward
       finalLayerNorm
       tensor3
@@ -814,11 +839,11 @@ instance
     let relPosBias =
           ireturn relPos
             >>>= IxStateT . forward tRelPosEnc
-            >>>= ilift . transpose @('SelectDim ('ByIndex 2)) @('SelectDim ('ByIndex 3))
-            >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
+            >>>= ilift . sTranspose (SSelectDim $ SByIndex @2) (SSelectDim $ SByIndex @3)
+            >>>= ilift . sTranspose (SSelectDim $ SByIndex @1) (SSelectDim $ SByIndex @2)
         attentionBias =
           relPosBias
-            >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) attentionMask)
+            >>>= ilift . (sUnsqueeze (SSelectDim $ SByIndex @1) attentionMask >>=) . add
      in runIxStateT $
           ireturn input
             >>>= IxStateT . forward tInitialLayerNorm
@@ -901,6 +926,9 @@ instance
       generatorDevice2
       tensor3
       generatorDevice3,
+    Catch (UnsqueezeF ('SelectDim ('ByIndex 1)) decoderAttentionMaskShape),
+    Catch (UnsqueezeF ('SelectDim ('ByIndex 1)) crossAttentionMaskShape),
+    Catch (BroadcastShapesF decoderInputShape decoderPosEncShape),
     HasForward
       finalLayerNorm
       tensor3
@@ -927,23 +955,29 @@ instance
     generatorOutputDevice
   where
   forward GTransformer {..} (decoderInput, encoderOutput, decoderPos, decoderAttentionMask, crossAttentionMask) =
-    let decoderAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask
-        crossAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
+    let decoderAttentionBias = ilift $ unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask
+        crossAttentionBias = ilift $ unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
      in runIxStateT $
           ireturn decoderPos
             >>>= IxStateT . forward tPosEnc
-            >>>= ireturn . (decoderInput `add`)
+            >>>= ilift . (decoderInput `add`)
             >>>= IxStateT . forward tInitialLayerNorm
             >>>= IxStateT . forward tInitialDropout
             >>>= ( \decoderInput' ->
-                     IxStateT $
-                       forward
-                         tStack
-                         ( decoderInput',
-                           encoderOutput,
-                           decoderAttentionBias,
-                           crossAttentionBias
-                         )
+                     decoderAttentionBias
+                       >>>= ( \decoderAttentionBias' ->
+                                crossAttentionBias
+                                  >>>= ( \crossAttentionBias' ->
+                                           IxStateT $
+                                             forward
+                                               tStack
+                                               ( decoderInput',
+                                                 encoderOutput,
+                                                 decoderAttentionBias',
+                                                 crossAttentionBias'
+                                               )
+                                       )
+                            )
                  )
             >>>= IxStateT . forward tFinalLayerNorm
             >>>= IxStateT . forward tFinalDropout
@@ -1006,28 +1040,26 @@ instance
           (decoderRelPosEncLayout <+> decoderAttentionMaskLayout)
           (decoderRelPosEncDevice <+> decoderAttentionMaskDevice)
           (decoderRelPosEncDataType <+> decoderAttentionMaskDataType)
-          ( BroadcastShapesF
-              ( TransposeF
-                  ('SelectDim ('ByIndex 1))
-                  ('SelectDim ('ByIndex 2))
-                  ( TransposeF
-                      ('SelectDim ('ByIndex 2))
-                      ('SelectDim ('ByIndex 3))
-                      decoderRelPosEncShape
-                  )
-              )
-              (UnsqueezeF ('SelectDim ('ByIndex 1)) decoderAttentionMaskShape)
-          ),
+          (BroadcastShapesF doubleTransposedDecoderRelPosEncShape unsqueezedDecoderAttentionMaskShape),
         Tensor
           crossAttentionMaskGradient
           crossAttentionMaskLayout
           crossAttentionMaskDevice
           crossAttentionMaskDataType
-          (UnsqueezeF ('SelectDim ('ByIndex 1)) crossAttentionMaskShape)
+          unsqueezedCrossAttentionMaskShape
       )
       generatorDevice2
       tensor3
       generatorDevice3,
+    transposedDecoderRelPosEncShape ~ TransposeF ('SelectDim ('ByIndex 2)) ('SelectDim ('ByIndex 3)) decoderRelPosEncShape,
+    Catch transposedDecoderRelPosEncShape,
+    doubleTransposedDecoderRelPosEncShape ~ TransposeF ('SelectDim ('ByIndex 1)) ('SelectDim ('ByIndex 2)) transposedDecoderRelPosEncShape,
+    Catch doubleTransposedDecoderRelPosEncShape,
+    unsqueezedDecoderAttentionMaskShape ~ UnsqueezeF ('SelectDim ('ByIndex 1)) decoderAttentionMaskShape,
+    Catch unsqueezedDecoderAttentionMaskShape,
+    unsqueezedCrossAttentionMaskShape ~ UnsqueezeF ('SelectDim ('ByIndex 1)) crossAttentionMaskShape,
+    Catch unsqueezedCrossAttentionMaskShape,
+    Catch (BroadcastShapesF doubleTransposedDecoderRelPosEncShape unsqueezedDecoderAttentionMaskShape),
     HasForward
       finalLayerNorm
       tensor3
@@ -1061,8 +1093,8 @@ instance
             >>>= ilift . transpose @('SelectDim ('ByIndex 1)) @('SelectDim ('ByIndex 2))
         decoderAttentionBias =
           decoderRelPosBias
-            >>>= ireturn . (`add` unsqueeze @('SelectDim ('ByIndex 1)) decoderAttentionMask)
-        crossAttentionBias = unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
+            >>>= ilift . (sUnsqueeze (SSelectDim $ SByIndex @1) decoderAttentionMask >>=) . add
+        crossAttentionBias = ilift $ unsqueeze @('SelectDim ('ByIndex 1)) crossAttentionMask
      in runIxStateT $
           ireturn decoderInput
             >>>= IxStateT . forward tInitialLayerNorm
@@ -1070,14 +1102,17 @@ instance
             >>>= ( \decoderInput' ->
                      decoderAttentionBias
                        >>>= ( \decoderAttentionBias' ->
-                                IxStateT $
-                                  forward
-                                    tStack
-                                    ( decoderInput',
-                                      encoderOutput,
-                                      decoderAttentionBias',
-                                      crossAttentionBias
-                                    )
+                                crossAttentionBias
+                                  >>>= ( \crossAttentionBias' ->
+                                           IxStateT $
+                                             forward
+                                               tStack
+                                               ( decoderInput',
+                                                 encoderOutput,
+                                                 decoderAttentionBias',
+                                                 crossAttentionBias'
+                                               )
+                                       )
                             )
                  )
             >>>= IxStateT . forward tFinalLayerNorm

@@ -12,7 +12,7 @@ import Prelude (Float, ($), (*), (+), (.), (/))
 import qualified Prelude (pi, sqrt)
 
 -- $setup
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
 -- | Thresholds each element of the input Tensor.

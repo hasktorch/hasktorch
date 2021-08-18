@@ -24,7 +24,7 @@ testEncoderBlock = do
       dropoutP = 0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let spec = NamedModel "block." $ encoderBlockSpec ST5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps
+  let spec = NamedModel "block." $ encoderBlockSpec ST5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim SWithDropout dropoutP eps
   (encoderBlock, g') <- initialize spec g
   encoderBlock' <- flip evalStateT Map.empty $ do
     toStateDict mempty encoderBlock
@@ -51,7 +51,7 @@ testDecoderBlock = do
       dropoutP = 0
       eps = 1e-6
   g <- sMkGenerator device 0
-  let spec = NamedModel "block." $ decoderBlockSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps
+  let spec = NamedModel "block." $ decoderBlockSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim SWithDropout dropoutP eps
   (decoderBlock, g') <- initialize spec g
   decoderBlock' <- flip evalStateT Map.empty $ do
     toStateDict mempty decoderBlock

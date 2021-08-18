@@ -14,14 +14,15 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Common where
 import Control.Monad.Catch (MonadThrow)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
-import Data.Singletons.TypeLits (SNat (..))
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (EDTDecoderF, EDTEncoderF, EDTHeadF, EDTSharedEmbeddingF, GEncoderDecoderTransformer (..), GSimplifiedEncoderDecoderTransformer (..), encoderDecoderTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (GEncoderDecoderTransformerF, GSimplifiedEncoderDecoderTransformer (..), encoderDecoderTransformerSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkRelPos (..), MkTransformerAttentionMask (..), MkTransformerCrossAttentionMask (..), MkTransformerDecoderAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead (), STransformerStyle (SByT5, ST5), ShiftRight (..), TransformerHead (..), TransformerStyle (ByT5, T5), mkTransformerInput)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), Shape (..), Size (..))
@@ -96,34 +97,23 @@ type T5ModelF ::
   Dim (Name Symbol) (Size Nat) ->
   Dim (Name Symbol) (Size Nat) ->
   Dim (Name Symbol) (Size Nat) ->
+  HasDropout ->
   Type
 type family
-  T5ModelF style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim
+  T5ModelF style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout
   where
-  T5ModelF 'T5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
+  T5ModelF 'T5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout =
     GSimplifiedEncoderDecoderTransformer
-      ( GEncoderDecoderTransformer
-          inputEmbedDim
-          (EDTEncoderF 'T5 numEncoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim)
-          (EDTDecoderF 'T5 numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim)
-          (EDTSharedEmbeddingF 'T5 gradient device T5DataType inputEmbedDim vocabDim)
-          (EDTHeadF 'T5 transformerHead gradient device T5DataType inputEmbedDim vocabDim)
-      )
+      (GEncoderDecoderTransformerF 'T5 transformerHead numEncoderLayers numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim hasDropout)
       (MkRelPos T5RelPosEncBucketDim)
       (MkRelPos T5RelPosEncBucketDim)
       MkTransformerPaddingMask
       (MkTransformerAttentionMask T5DataType)
       (MkTransformerCrossAttentionMask T5DataType)
       (MkTransformerDecoderAttentionMask T5DataType)
-  T5ModelF 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
+  T5ModelF 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout =
     GSimplifiedEncoderDecoderTransformer
-      ( GEncoderDecoderTransformer
-          inputEmbedDim
-          (EDTEncoderF 'ByT5 numEncoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim)
-          (EDTDecoderF 'ByT5 numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim)
-          (EDTSharedEmbeddingF 'ByT5 gradient device T5DataType inputEmbedDim vocabDim)
-          (EDTHeadF 'ByT5 transformerHead gradient device T5DataType inputEmbedDim vocabDim)
-      )
+      (GEncoderDecoderTransformerF 'ByT5 transformerHead numEncoderLayers numDecoderLayers gradient device T5DataType headDim headEmbedDim embedDim inputEmbedDim ffnDim T5RelPosEncBucketDim vocabDim hasDropout)
       (MkRelPos T5RelPosEncBucketDim)
       (MkRelPos T5RelPosEncBucketDim)
       MkTransformerPaddingMask
@@ -138,7 +128,7 @@ type family
 -- - @gradient@: whether to compute the gradient of the T5 or ByT5 model.
 -- - @device@: the computational device on which the T5 or ByT5 model parameters are to be allocated.
 t5ModelSpec ::
-  forall style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim.
+  forall style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout.
   ( SingI headDim,
     SingI headEmbedDim,
     SingI embedDim,
@@ -152,8 +142,9 @@ t5ModelSpec ::
   SNat numDecoderLayers ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (T5ModelF style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
-t5ModelSpec style transformerHead numEncoderLayers numDecoderLayers gradient device =
+  SHasDropout hasDropout ->
+  ModelSpec (T5ModelF style transformerHead numEncoderLayers numDecoderLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout)
+t5ModelSpec style transformerHead numEncoderLayers numDecoderLayers gradient device hasDropout =
   case style of
     ST5 ->
       GSimplifiedEncoderDecoderTransformer
@@ -196,6 +187,7 @@ t5ModelSpec style transformerHead numEncoderLayers numDecoderLayers gradient dev
         (sing @ffnDim)
         t5RelPosEncBucketDim
         (sing @vocabDim)
+        hasDropout
         t5DropoutP
         t5Eps
 

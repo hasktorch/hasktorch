@@ -39,7 +39,7 @@ testBart = do
   edtDecoderInput <- sOnes' (SDataType SInt64) (SShape $ batchDim :|: decoderSeqDim :|: SNil)
   edtDecoderAttentionMask <- sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: decoderSeqDim :|: SNil)
   edtCrossAttentionMask <- sOnes' bartDataType (SShape $ SName @"*" :&: SSize @1 :|: decoderSeqDim :|: seqDim :|: SNil)
-  let spec = encoderDecoderTransformerSpec SBART SWithLMHead (SNat @4) (SNat @4) gradient device bartDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim bartPosEncDim vocabDim bartDropoutP bartEps
+  let spec = encoderDecoderTransformerSpec SBART SWithLMHead (SNat @4) (SNat @4) gradient device bartDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim bartPosEncDim vocabDim SWithDropout bartDropoutP bartEps
   (sedtModel, g') <- initialize spec g
   (bartOutput, g'') <- do
     edtPos <- sOnes' (SDataType SInt64) (SShape $ seqDim :|: SNil)
@@ -70,7 +70,7 @@ testBARTAutoencoder prompt = do
 
   let device = SDevice SCPU
 
-  let spec = bartBaseSpec SWithLMHead (SGradient SWithoutGradient) device
+  let spec = bartBaseSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
   model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
   g <- sMkGenerator device 0

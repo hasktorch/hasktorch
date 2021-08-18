@@ -4,12 +4,13 @@
 module Torch.GraduallyTyped.NN.Transformer.T5.Small where
 
 import Data.Singletons (SingI (sing))
-import Data.Singletons.TypeLits (SNat)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5ModelF, t5ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, STransformerStyle (SByT5, ST5), TransformerHead, TransformerStyle (ByT5, T5))
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
 
@@ -52,15 +53,17 @@ t5SmallVocabDim = sing
 type T5Small
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat)) =
-  T5ModelF 'T5 transformerHead T5SmallNumLayers T5SmallNumLayers gradient device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5SmallVocabDim
+  (device :: Device (DeviceType Nat))
+  (hasDropout :: HasDropout) =
+  T5ModelF 'T5 transformerHead T5SmallNumLayers T5SmallNumLayers gradient device T5SmallHeadDim T5SmallHeadEmbedDim T5SmallEmbedDim T5SmallInputEmbedDim T5SmallFFNDim T5SmallVocabDim hasDropout
 
 -- | T5-Small model specification.
 t5SmallSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (T5Small transformerHead gradient device)
+  SHasDropout hasDropout ->
+  ModelSpec (T5Small transformerHead gradient device hasDropout)
 t5SmallSpec transformerHead = t5ModelSpec ST5 transformerHead t5SmallNumLayers t5SmallNumLayers
 
 -- | ByT5-Small number of encoder layers.
@@ -107,13 +110,15 @@ type ByT5SmallVocabDim = 'Dim ('Name "*") ('Size 384)
 type ByT5Small
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat)) =
-  T5ModelF 'ByT5 transformerHead ByT5SmallNumEncoderLayers ByT5SmallNumDecoderLayers gradient device ByT5SmallHeadDim ByT5SmallHeadEmbedDim ByT5SmallEmbedDim ByT5SmallInputEmbedDim ByT5SmallFFNDim ByT5SmallVocabDim
+  (device :: Device (DeviceType Nat))
+  (hasDropout :: HasDropout) =
+  T5ModelF 'ByT5 transformerHead ByT5SmallNumEncoderLayers ByT5SmallNumDecoderLayers gradient device ByT5SmallHeadDim ByT5SmallHeadEmbedDim ByT5SmallEmbedDim ByT5SmallInputEmbedDim ByT5SmallFFNDim ByT5SmallVocabDim hasDropout
 
 -- | ByT5-Small model specification.
 byT5SmallSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (ByT5Small transformerHead gradient device)
+  SHasDropout hasDropout ->
+  ModelSpec (ByT5Small transformerHead gradient device hasDropout)
 byT5SmallSpec transformerHead = t5ModelSpec SByT5 transformerHead byT5SmallNumEncoderLayers byT5SmallNumDecoderLayers

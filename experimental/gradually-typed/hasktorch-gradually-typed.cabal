@@ -25,6 +25,10 @@ Flag disable-doctest
 library
   exposed-modules:     Torch.GraduallyTyped
                      , Torch.GraduallyTyped.Prelude
+                     , Torch.GraduallyTyped.Prelude.List
+                     , Torch.GraduallyTyped.Prelude.Maybe
+                     , Torch.GraduallyTyped.Prelude.TypeLits
+                     , Torch.GraduallyTyped.Prelude.Bool
                      , Torch.GraduallyTyped.Unify
                      , Torch.GraduallyTyped.Scalar
                      , Torch.GraduallyTyped.Tensor
@@ -109,11 +113,10 @@ library
                      , Torch.GraduallyTyped.Internal.TensorOptions
                      , Torch.GraduallyTyped.Internal.Void
                      , Torch.GraduallyTyped.Internal.Vector
-                     , Torch.GraduallyTyped.Examples.LinearRegression
-                     , Torch.GraduallyTyped.Examples.TwoLayerNetwork
                      , Torch.Language
                      , Torch.Language.SpiderSQL
                      , Torch.Data.Parser
+                     , Control.Monad.Fresh
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
@@ -145,7 +148,6 @@ library
                      , pipes-group
                      , pipes-concurrency
                      , random
-                     , singletons < 3
                      , tokenizers
                      , vector
                      , vector-sized
@@ -154,6 +156,68 @@ library
                      , exceptions
                      , template-haskell
                      , megaparsec
+                     , mmorph
+                     , transformers
+                     , hedgehog
+  if impl(ghc >= 9.0)
+    build-depends:     singletons == 3.*
+                     , singletons-base
+                     , singletons-th
+  else
+    build-depends:     singletons < 3
+
+executable linear-regression
+  hs-source-dirs:      examples/linear-regression
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  ghc-options:         -W -Wall -O2 -threaded -rtsopts
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch-gradually-typed
+                     , indexed
+                     , indexed-extras
+
+executable two-layer-network
+  hs-source-dirs:      examples/two-layer-network
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  ghc-options:         -W -Wall -O2 -threaded -rtsopts
+  build-depends:       base >= 4.7 && < 5
+                     , containers
+                     , hasktorch-gradually-typed
+                     , lens
+                     , normaldistribution
+                     , mtl
+                     , pipes
+                     , pipes-concurrency
+                     , random
+                     , vector-sized
+                     , text
+
+executable neural-interpreter
+  hs-source-dirs:      examples/neural-interpreter
+  main-is:             Main.hs
+  other-modules:       Dataset
+                     , Model
+                     , STLC
+                     , Gen
+  default-language:    Haskell2010
+  ghc-options:         -W -Wall -O2 -threaded -rtsopts
+  build-depends:       base >= 4.7 && < 5
+                     , bound
+                     , containers
+                     , deriving-compat
+                     , hasktorch-gradually-typed
+                     , hedgehog
+                     , indexed
+                     , indexed-extras
+                     , mtl
+                     , pipes
+                     , pipes-concurrency
+                     , random
+                     , template-haskell
+                     , text
+                     , tokenizers
+                     , transformers
 
 test-suite spec
   type:                exitcode-stdio-1.0
@@ -193,10 +257,15 @@ test-suite spec
                      , hspec-hedgehog
                      , HUnit-approx
                      , mtl
-                     , singletons < 3
                      , tokenizers
                      , vector
                      , vector-sized
+  if impl(ghc >= 9.0)
+    build-depends:     singletons == 3.*
+                     , singletons-base
+                     , singletons-th
+  else
+    build-depends:     singletons < 3
 
   build-tool-depends: hspec-discover:hspec-discover
 
@@ -210,7 +279,7 @@ test-suite doctests
   ghc-options:         -Wall -threaded -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
-                     , doctest >=0.16.0.1 && <0.17
+                     , doctest >=0.16.0.1 && <0.19
                      , hasktorch
                      , libtorch-ffi == 1.9.*
                      , ghc-typelits-extra
@@ -227,6 +296,11 @@ test-suite doctests
                      , free
                      , logict
                      , parsers
-                     , singletons < 3
                      , HUnit-approx
                      , tokenizers
+  if impl(ghc >= 9.0)
+    build-depends:     singletons == 3.*
+                     , singletons-base
+                     , singletons-th
+  else
+    build-depends:     singletons < 3

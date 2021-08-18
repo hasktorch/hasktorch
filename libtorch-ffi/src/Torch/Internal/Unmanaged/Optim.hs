@@ -303,6 +303,7 @@ stepWithGenerator optimizer generator lossFunc =
           optimizer->zero_grad();
           auto lossWithGenerator = func(&(optimizer->param_groups().at(0).params()),&generator);
           auto loss = std::get<0>(*lossWithGenerator);
+          generator = std::get<1>(*lossWithGenerator);
           loss.backward();
           return loss;
         });

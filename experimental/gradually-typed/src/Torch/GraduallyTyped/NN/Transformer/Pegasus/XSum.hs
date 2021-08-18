@@ -5,12 +5,13 @@
 module Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum where
 
 import Data.Singletons (SingI (..))
-import Data.Singletons.TypeLits (SNat)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Pegasus.Common (PegasusModelF, pegasusModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
 
@@ -59,13 +60,15 @@ pegasusXSumVocabDim = sing
 type PegasusXSum
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat)) =
-  PegasusModelF transformerHead PegasusXSumNumLayers gradient device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim
+  (device :: Device (DeviceType Nat))
+  (hasDropout :: HasDropout) =
+  PegasusModelF transformerHead PegasusXSumNumLayers gradient device PegasusXSumHeadDim PegasusXSumHeadEmbedDim PegasusXSumEmbedDim PegasusXSumInputEmbedDim PegasusXSumFFNDim PegasusXSumVocabDim hasDropout
 
 -- | Pegasus-XSum model specification.
 pegasusXSumSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (PegasusXSum transformerHead gradient device)
+  SHasDropout hasDropout ->
+  ModelSpec (PegasusXSum transformerHead gradient device hasDropout)
 pegasusXSumSpec transformerHead = pegasusModelSpec transformerHead pegasusXSumNumLayers
