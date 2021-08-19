@@ -73,7 +73,7 @@
           # This overlay adds our project to pkgs
           hasktorchProject = import ./nix/haskell.nix (rec {
             pkgs = prev;
-            compiler-nix-name = "ghc8105";
+            compiler-nix-name = "ghc901";
             inherit (prev) lib;
             inherit profiling;
             inherit cudaSupport;
