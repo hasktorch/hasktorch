@@ -81,16 +81,18 @@
                         "mtl" "parsec" "process" "text" "time" "transformers"
                         "unix" "xhtml" "terminfo"
                       ];
+                      packages.haskell-language-server.components.library.ghcOptions = ["-Wall" "-Wredundant-constraints" "-Wno-name-shadowing" "-Wno-unticked-promoted-constructors" "-dynamic"];
+                      packages.haskell-language-server.components.exes.haskell-language-server.ghcOptions = ["-Wall" "-Wredundant-constraints" "-Wno-name-shadowing" "-Wredundant-constraints" "-dynamic" "-rtsopts" "-with-rtsopts=-I0" "-with-rtsopts=-A128M" "-Wno-unticked-promoted-constructors"];
                     }];
                     cabalProject = ''
                       packages:
-                          ./
-                          ./hie-compat
-                          ./shake-bench
-                          ./hls-graph
-                          ./ghcide
-                          ./hls-plugin-api
-                          ./hls-test-utils
+                        ./
+                        ./hie-compat
+                        ./shake-bench
+                        ./hls-graph
+                        ./ghcide
+                        ./hls-plugin-api
+                        ./hls-test-utils
                       --  ./plugins/hls-tactics-plugin
                       --  ./plugins/hls-brittany-plugin
                       --  ./plugins/hls-stylish-haskell-plugin
@@ -188,7 +190,6 @@
                         svg-builder:base,
                         these:base,
                         time-compat:base
-
                     '';
                   })).haskell-language-server.components.exes.haskell-language-server;
             };
