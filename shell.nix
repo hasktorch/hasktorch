@@ -12,17 +12,14 @@ let
   shell = pkgs.hasktorchProject.shellFor {
     name = "hasktorch-dev-shell";
 
-    # If shellFor local packages selection is wrong,
-    # then list all local packages then include source-repository-package that cabal complains about:
-    #packages = ps: with ps; [ ];
+    # packages = ps: with ps; [ ];
 
     tools = {
       cabal = "latest";
-      haskell-language-server = "latest";
+      haskell-language-server = "1.3.0";
     };
 
-    # These programs will be available inside the nix-shell.
-    buildInputs = with haskellPackages; [ ];
+    # buildInputs = with haskellPackages; [ ];
 
     exactDeps = true;
 

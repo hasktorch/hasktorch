@@ -44,15 +44,7 @@ let
   pkgSet = pkgs.haskell-nix.cabalProject' {
     inherit src compiler-nix-name;
 
-    pkg-def-extras = [
-      extras
-      (hackage: {
-        packages = {
-          # see https://github.com/well-typed/cborg/issues/242
-          "primitive" = (((hackage.primitive)."0.7.0.0").revisions).default;
-        };
-      })
-    ];
+    pkg-def-extras = [ extras ];
 
     modules = [
       # Enable profiling
@@ -61,6 +53,24 @@ let
         packages.examples.enableExecutableProfiling = true;
         packages.experimental.enableExecutableProfiling = true;
       })
+
+      # Fix for "exceptions" build problem with ghc 9.0.1 (https://github.com/input-output-hk/haskell.nix/issues/1177)
+      {
+        nonReinstallablePkgs = [
+          "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+          "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+          # ghcjs custom packages
+          "ghcjs-prim" "ghcjs-th"
+          "ghc-bignum" "exceptions" "stm"
+          "ghc-boot"
+          "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"
+          "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+          # "ghci" "haskeline"
+          "hpc"
+          "mtl" "parsec" "process" "text" "time" "transformers"
+          "unix" "xhtml" "terminfo"
+        ];
+      }
 
       # Add non-Haskell dependencies
       {
@@ -85,21 +95,6 @@ let
         packages.hasktorch = {
           preConfigure = setupNumCores "hasktorch";
         };
-      }
-
-      # Misc. build fixes for dependencies
-      {
-        # Some packages are missing identifier.name
-        # packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
-
-        # Disable doctests for now
-        # TODO: see if we can turn these on again (waiting for https://github.com/input-output-hk/haskell.nix/pull/427)
-        #packages.codegen.components.tests.doctests.buildable = lib.mkForce false;
-        #packages.codegen.components.tests.doctests.doCheck = false;
-        #packages.hasktorch.components.tests.doctests.buildable = lib.mkForce false;
-        #packages.hasktorch.components.tests.doctests.doCheck = false;
-        # Disable cabal-doctest tests by turning off custom setups
-        #packages.hasktorch.package.buildType = lib.mkForce "Simple";
       }
     ];
   };
