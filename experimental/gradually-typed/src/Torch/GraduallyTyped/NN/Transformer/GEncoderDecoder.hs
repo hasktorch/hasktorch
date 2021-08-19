@@ -26,9 +26,6 @@ import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import Data.Singletons (SingKind (fromSing))
-import Torch.GraduallyTyped.Prelude.List (SList (SNil))
-import Torch.GraduallyTyped.Prelude.Maybe (SMaybe (SNothing))
-import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
@@ -43,6 +40,9 @@ import Torch.GraduallyTyped.NN.Transformer.GTransformer (TransformerDecoderF, Tr
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (..), STransformerStyle (..), ShiftRight, TransformerHead (WithLMHead, WithoutHead), TransformerStyle (..))
 import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, pattern (:|:))
+import Torch.GraduallyTyped.Prelude.List (SList (SNil))
+import Torch.GraduallyTyped.Prelude.Maybe (SMaybe (SNothing))
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (By (..), Dim (..), Name (..), SBy (..), SDim, SSelectDim (..), SelectDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Indexing (IndexDims, IndexType (..), Indices (..), SIndexType (..), SIndices (..), (!))
@@ -453,7 +453,6 @@ data EncoderDecoderTransformerOutput' encoderOutput where
     EncoderDecoderTransformerOutput' encoderOutput
   deriving stock (Eq, Ord, Show, Generic)
 
-
 data SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask where
   SimplifiedEncoderDecoderTransformerOutput ::
     forall decoderOutput encoderOutput decoderInput inputPaddingMask.
@@ -533,7 +532,7 @@ data SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutp
 -- └───────────────┘                         └───────────────┘
 -- @
 instance
-  (  HasForward
+  ( HasForward
       (GEncoderDecoderTransformer inputEmbedDim encoder decoder sharedEmbedding head)
       (EncoderDecoderTransformerInput' input pos attentionMask)
       generatorDevice
@@ -555,18 +554,28 @@ instance
   where
   forward model EncoderDecoderTransformerInput {..} =
     runIxStateT $
-      IxStateT (forward model EncoderDecoderTransformerInput' { 
-                  edtInput' = edtInput, 
-                  edtPos' = edtPos, 
-                  edtAttentionMask' = edtAttentionMask })
-        >>>= (\EncoderDecoderTransformerOutput' {..} -> 
-            IxStateT (forward model EncoderDecoderTransformerGenerationInput { 
-                  edtGenerationDecoderInput = edtDecoderInput,
-                  edtGenerationEncoderOutput = edtEncoderOutput',
-                  edtGenerationDecoderPos = edtDecoderPos,
-                  edtGenerationDecoderAttentionMask = edtDecoderAttentionMask,
-                  edtGenerationCrossAttentionMask = edtCrossAttentionMask })
-          )
+      IxStateT
+        ( forward
+            model
+            EncoderDecoderTransformerInput'
+              { edtInput' = edtInput,
+                edtPos' = edtPos,
+                edtAttentionMask' = edtAttentionMask
+              }
+        )
+        >>>= ( \EncoderDecoderTransformerOutput' {..} ->
+                 IxStateT
+                   ( forward
+                       model
+                       EncoderDecoderTransformerGenerationInput
+                         { edtGenerationDecoderInput = edtDecoderInput,
+                           edtGenerationEncoderOutput = edtEncoderOutput',
+                           edtGenerationDecoderPos = edtDecoderPos,
+                           edtGenerationDecoderAttentionMask = edtDecoderAttentionMask,
+                           edtGenerationCrossAttentionMask = edtCrossAttentionMask
+                         }
+                   )
+             )
 
 instance
   ( HasForward
@@ -602,7 +611,7 @@ instance
                 )
                 edtEmbedScaling
             >>>= (\input' -> IxStateT $ forward edtEncoder (input', edtPos', edtAttentionMask'))
-            >>>= ( \encoderOutput -> ireturn (EncoderDecoderTransformerOutput' encoderOutput))
+            >>>= (\encoderOutput -> ireturn (EncoderDecoderTransformerOutput' encoderOutput))
 
 -- | 'HasForward' instance for encoder-decoder transformers with optional head.
 -- Use this instance for sequence generation once the encoder's output is available.
@@ -681,18 +690,18 @@ instance
 -- This instance shifts decoder inputs by one token to the right by adding
 -- a model-specific sequence initialization token at the beginning.
 instance
-  (HasForward
-    (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
-    (SimplifiedEncoderDecoderTransformerInput' input)
-    generatorDevice
-    (SimplifiedEncoderDecoderTransformerOutput' encoderOutput inputPaddingMask)
-    generatorDevice',
+  ( HasForward
+      (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
+      (SimplifiedEncoderDecoderTransformerInput' input)
+      generatorDevice
+      (SimplifiedEncoderDecoderTransformerOutput' encoderOutput inputPaddingMask)
+      generatorDevice',
     HasForward
-    (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
-    (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput inputPaddingMask)
-    generatorDevice'
-    (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask)
-    generatorOutputDevice
+      (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
+      (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput inputPaddingMask)
+      generatorDevice'
+      (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput decoderInput inputPaddingMask)
+      generatorOutputDevice
   ) =>
   HasForward
     (GSimplifiedEncoderDecoderTransformer model mkPos mkDecoderPos mkPaddingMask mkAttentionMask mkCrossAttentionMask mkDecoderAttentionMask)
@@ -705,11 +714,13 @@ instance
     runIxStateT $
       IxStateT (forward model SimplifiedEncoderDecoderTransformerInput' {sedtInput' = sedtInput})
         >>>= ( \SimplifiedEncoderDecoderTransformerOutput' {..} ->
-                ireturn $ SimplifiedEncoderDecoderTransformerGenerationInput {
-                  sedtGenerationDecoderInput = sedtDecoderInput,
-                  sedtGenerationEncoderOutput = sedtEncoderOutput',
-                  sedtGenerationInputPaddingMask = sedtInputPaddingMask'
-                })
+                 ireturn $
+                   SimplifiedEncoderDecoderTransformerGenerationInput
+                     { sedtGenerationDecoderInput = sedtDecoderInput,
+                       sedtGenerationEncoderOutput = sedtEncoderOutput',
+                       sedtGenerationInputPaddingMask = sedtInputPaddingMask'
+                     }
+             )
         >>>= IxStateT . forward model
 
 instance
@@ -748,20 +759,21 @@ instance
   forward GSimplifiedEncoderDecoderTransformer {..} SimplifiedEncoderDecoderTransformerInput' {..} =
     runIxStateT $
       IxStateT (forward sedtMkPaddingMask sedtInput')
-        >>>= (\inputPaddingMask ->
-          let pos = IxStateT . forward sedtMkPos $ sedtInput'
-              attentionMask = IxStateT . forward sedtMkAttentionMask $ inputPaddingMask
-          in EncoderDecoderTransformerInput'
-                         sedtInput'
-                         <<$>> pos
-                         <<*>> attentionMask
-        >>>= IxStateT . forward sedtModel
-        >>>= ( \EncoderDecoderTransformerOutput' {..} ->
-                ireturn $ SimplifiedEncoderDecoderTransformerOutput' {
-                    sedtEncoderOutput' = edtEncoderOutput',
-                    sedtInputPaddingMask' = inputPaddingMask
-                }
-            )
+        >>>= ( \inputPaddingMask ->
+                 let pos = IxStateT . forward sedtMkPos $ sedtInput'
+                     attentionMask = IxStateT . forward sedtMkAttentionMask $ inputPaddingMask
+                  in EncoderDecoderTransformerInput'
+                       sedtInput'
+                       <<$>> pos
+                       <<*>> attentionMask
+                       >>>= IxStateT . forward sedtModel
+                       >>>= ( \EncoderDecoderTransformerOutput' {..} ->
+                                ireturn $
+                                  SimplifiedEncoderDecoderTransformerOutput'
+                                    { sedtEncoderOutput' = edtEncoderOutput',
+                                      sedtInputPaddingMask' = inputPaddingMask
+                                    }
+                            )
              )
 
 -- | 'HasForward' instance for simplified encoder-decoder models.
