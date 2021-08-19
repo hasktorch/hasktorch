@@ -87,7 +87,7 @@ executable typed-transformer
                      , pipes-group
                      , pipes-random
                      , pipes-safe
-                     -- , pipes-text
+                     , pipes-text
                      , safe-exceptions
                      , text
                      , monad-control
