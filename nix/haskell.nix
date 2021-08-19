@@ -1,33 +1,20 @@
-{ lib
-, stdenv
-, pkgs
-, haskell-nix
-, buildPackages
-, config ? {}
-# GHC attribute name
-, compiler ? config.haskellNix.compiler or "ghc8104"
-# Enable profiling
-, profiling ? config.haskellNix.profiling or false
-# Version info, to be passed when not building from a git work tree
-, gitrev ? null
-# Enable CUDA support
-, cudaSupport ? false
-# Add packages on top of the package set derived from cabal resolution
+{ pkgs
+, lib
+, compiler-nix-name
+, profiling
+, cudaSupport
 , extras ? (_: {})
-}:
-
-let
-
-  src = haskell-nix.haskellLib.cleanGit {
+, src ? (pkgs.haskell-nix.haskellLib.cleanGit {
       name = "hasktorch";
       src = ../.;
-  };
-
-  projectPackages = lib.attrNames (haskell-nix.haskellLib.selectProjectPackages
-    (haskell-nix.cabalProject {
-      inherit src;
-      compiler-nix-name = compiler;
-    }));
+  })
+, projectPackages ? lib.attrNames (pkgs.haskell-nix.haskellLib.selectProjectPackages
+    (pkgs.haskell-nix.cabalProject' {
+      inherit src compiler-nix-name;
+    }).hsPkgs)
+}:
+let
+  inherit (pkgs) stdenv;
 
   setupNumCores = libname: ''
       case "$(uname)" in
@@ -40,7 +27,7 @@ let
             NUM_CPU=$(nproc --all)
           ;;
       esac
-      
+
       USED_MEM_GB=`echo $TOTAL_MEM_GB | awk '{print int(($1 + 1) / 2)}'`
       USED_NUM_CPU=`echo $NUM_CPU | awk '{print int(($1 + 1) / 2)}'`
       USED_NUM_CPU=`echo $USED_MEM_GB $USED_NUM_CPU | awk '{if($1<x$2) {print $1} else {print $2}}'`
@@ -54,15 +41,9 @@ let
       fi
     '';
 
-  # This creates the Haskell package set.
-  # https://input-output-hk.github.io/haskell.nix/user-guide/projects/
-  pkgSet = haskell-nix.cabalProject {
-    inherit src;
+  pkgSet = pkgs.haskell-nix.cabalProject' {
+    inherit src compiler-nix-name;
 
-    compiler-nix-name = compiler;
-
-    # these extras will provide additional packages
-    # on top of the package set derived from cabal resolution.
     pkg-def-extras = [
       extras
       (hackage: {
@@ -74,14 +55,6 @@ let
     ];
 
     modules = [
-      { compiler.nix-name = compiler; }
-
-      # TODO: Compile all local packages with -Werror:
-      # {
-      #   packages = lib.genAttrs projectPackages
-      #     (name: { configureFlags = [ "--ghc-option=-Werror" ]; });
-      # }
-
       # Enable profiling
       (lib.optionalAttrs profiling {
         enableLibraryProfiling = true;
@@ -114,27 +87,23 @@ let
         };
       }
 
-      # Misc. build fixes for dependencies  
+      # Misc. build fixes for dependencies
       {
         # Some packages are missing identifier.name
-        packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
-
-        # Some tests don't work on every platform
-        # packages.hasktorch.components.all.platforms =
-        #   with stdenv.lib.platforms; lib.mkForce [ linux darwin windows ];
-        # packages.hasktorch.components.tests.all.platforms =
-        #   with stdenv.lib.platforms; lib.mkForce [ linux darwin ];
+        # packages.cryptonite-openssl.package.identifier.name = "cryptonite-openssl";
 
         # Disable doctests for now
         # TODO: see if we can turn these on again (waiting for https://github.com/input-output-hk/haskell.nix/pull/427)
-        packages.codegen.components.tests.doctests.buildable = lib.mkForce false;
-        packages.codegen.components.tests.doctests.doCheck = false;
-        packages.hasktorch.components.tests.doctests.buildable = lib.mkForce false;
-        packages.hasktorch.components.tests.doctests.doCheck = false;
+        #packages.codegen.components.tests.doctests.buildable = lib.mkForce false;
+        #packages.codegen.components.tests.doctests.doCheck = false;
+        #packages.hasktorch.components.tests.doctests.buildable = lib.mkForce false;
+        #packages.hasktorch.components.tests.doctests.doCheck = false;
         # Disable cabal-doctest tests by turning off custom setups
-        packages.hasktorch.package.buildType = lib.mkForce "Simple";
+        #packages.hasktorch.package.buildType = lib.mkForce "Simple";
       }
     ];
   };
 in
-  pkgSet
+  pkgSet // {
+    inherit projectPackages;
+  }

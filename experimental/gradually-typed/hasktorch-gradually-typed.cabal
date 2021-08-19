@@ -25,6 +25,10 @@ Flag disable-doctest
 library
   exposed-modules:     Torch.GraduallyTyped
                      , Torch.GraduallyTyped.Prelude
+                     , Torch.GraduallyTyped.Prelude.List
+                     , Torch.GraduallyTyped.Prelude.Maybe
+                     , Torch.GraduallyTyped.Prelude.TypeLits
+                     , Torch.GraduallyTyped.Prelude.Bool
                      , Torch.GraduallyTyped.Unify
                      , Torch.GraduallyTyped.Scalar
                      , Torch.GraduallyTyped.Tensor
@@ -145,7 +149,6 @@ library
                      , pipes-group
                      , pipes-concurrency
                      , random
-                     , singletons < 3
                      , tokenizers
                      , vector
                      , vector-sized
@@ -157,6 +160,12 @@ library
                      , mmorph
                      , transformers
                      , hedgehog
+  if impl(ghc >= 9.0)
+    build-depends:     singletons == 3.*
+                     , singletons-base
+                     , singletons-th
+  else
+    build-depends:     singletons < 3
 
 executable linear-regression
   hs-source-dirs:      examples/linear-regression
@@ -252,12 +261,15 @@ test-suite spec
                      , HUnit-approx
                      , lens
                      , mtl
-                     , singletons < 3
                      , tokenizers
                      , vector
                      , vector-sized
-
-  build-tool-depends: hspec-discover:hspec-discover
+  if impl(ghc >= 9.0)
+    build-depends:     singletons == 3.*
+                     , singletons-base
+                     , singletons-th
+  else
+    build-depends:     singletons < 3
 
 test-suite doctests
   if os(darwin) || flag(disable-doctest)
@@ -269,7 +281,7 @@ test-suite doctests
   ghc-options:         -Wall -threaded -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
-                     , doctest >=0.16.0.1 && <0.17
+                     , doctest >=0.16.0.1 && <0.19
                      , hasktorch
                      , libtorch-ffi == 1.9.*
                      , ghc-typelits-extra
@@ -286,6 +298,11 @@ test-suite doctests
                      , free
                      , logict
                      , parsers
-                     , singletons < 3
                      , HUnit-approx
                      , tokenizers
+  if impl(ghc >= 9.0)
+    build-depends:     singletons == 3.*
+                     , singletons-base
+                     , singletons-th
+  else
+    build-depends:     singletons < 3

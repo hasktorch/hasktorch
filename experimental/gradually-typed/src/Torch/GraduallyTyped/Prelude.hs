@@ -23,8 +23,8 @@ module Torch.GraduallyTyped.Prelude
     module Data.Proxy,
     module Data.Type.Bool,
     module GHC.TypeLits,
-    module Data.Singletons.Prelude.List,
-    module Data.Singletons.TypeLits,
+    module Torch.GraduallyTyped.Prelude.List,
+    module Torch.GraduallyTyped.Prelude.TypeLits,
     IsChecked (..),
     pattern IsChecked,
     pattern Demoted,
@@ -76,9 +76,8 @@ import Control.Monad (MonadPlus, guard, unless, when)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (Demote, SingKind, fromSing)
-import Data.Singletons.Prelude (SList (..))
-import Data.Singletons.Prelude.List (SList (..))
-import Data.Singletons.TypeLits
+import Torch.GraduallyTyped.Prelude.List (SList (..))
+import Torch.GraduallyTyped.Prelude.TypeLits
 import Data.Type.Bool (If, type (||))
 import Data.Type.Equality (type (==))
 import GHC.Exts (Any)

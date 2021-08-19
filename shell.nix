@@ -1,25 +1,15 @@
-# This file is used by nix-shell.
-# It just takes the shell attribute from default.nix.
 { config ? {}
 , sourcesOverride ? {}
-# If true, activates CUDA support
-, cudaSupport ? false
-# If cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
-# nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
-, cudaMajorVersion ? null
-, withHoogle ? false
-, pkgs ? import ./nix/default.nix {
-    inherit config sourcesOverride cudaSupport cudaMajorVersion;
-  }
+, cudaSupport
+, cudaMajorVersion
+, pkgs
 }:
 
 with pkgs;
 
 let
 
-  # This provides a development environment that can be used with nix-shell or
-  # lorri. See https://input-output-hk.github.io/haskell.nix/user-guide/development/
-  shell = hasktorchHaskellPackages.shellFor {
+  shell = pkgs.hasktorchProject.shellFor {
     name = "hasktorch-dev-shell";
 
     # If shellFor local packages selection is wrong,
@@ -27,20 +17,14 @@ let
     #packages = ps: with ps; [ ];
 
     tools = {
-      cabal = "3.2.0.0";
+      cabal = "latest";
       haskell-language-server = "latest";
     };
 
     # These programs will be available inside the nix-shell.
-    buildInputs =
-      with haskellPackages; [ hlint weeder ghcid ]
-      # TODO: Add additional packages to the shell.
-      ++ [ ];
+    buildInputs = with haskellPackages; [ ];
 
-    # Prevents cabal from choosing alternate plans, so that
-    # *all* dependencies are provided by Nix.
-    # TODO: Set to true as soon as haskell.nix issue #231 is resolved.
-    exactDeps = false;
+    exactDeps = true;
 
     shellHook =
       let
@@ -54,7 +38,7 @@ let
             ;;
           esac
         '';
-        libraryPath = stdenv.lib.optionalString cudaSupport ''
+        libraryPath = lib.optionalString cudaSupport ''
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/run/opengl-driver/lib"
         '';
         tokenizersLibraryPath = ''
@@ -63,29 +47,9 @@ let
       in
         cpath + nproc + libraryPath + tokenizersLibraryPath;
 
-    inherit withHoogle;
-  };
-
-  # Use to get a shell with niv to update the sources. Launch with
-  # nix-shell -A devops ./shell.nix
-  devops = stdenv.mkDerivation {
-    name = "devops-shell";
-    buildInputs = [
-      niv
-    ];
-    shellHook = ''
-      echo "DevOps Tools" \
-      | ${figlet}/bin/figlet -f banner -c \
-      | ${lolcat}/bin/lolcat
-
-      echo "NOTE: you may need to export GITHUB_TOKEN if you hit rate limits with niv"
-      echo "Commands:
-        * niv update <package> - update package
-
-      "
-    '';
+    withHoogle = true;
   };
 
 in
 
-  shell // { inherit devops; }
+  shell

@@ -20,7 +20,7 @@ import qualified Torch.Internal.Managed.Native as ATen
 import Prelude hiding (abs)
 
 -- $setup
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
 -- | Computes the element-wise absolute value of the given 'input' tensor:

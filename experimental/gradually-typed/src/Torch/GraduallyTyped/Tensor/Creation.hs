@@ -44,7 +44,7 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 
 -- $setup
 -- >>> import Data.Int (Int16)
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
 -- | Create a gradually typed tensor of ones.

@@ -11,7 +11,7 @@ module Torch.Internal.Type where
 
 import qualified Language.C.Types as C
 import qualified Data.Map as Map
-
+import qualified Language.Haskell.TH.Lib as TH
 import Foreign.C.Types (CInt)
 import Data.Int
 
@@ -90,6 +90,7 @@ data JitValue
 
 data Optimizer
 
+typeTable :: Map.Map C.TypeSpecifier TH.TypeQ
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
       , (C.TypeName "std::vector", [t|StdVector|])

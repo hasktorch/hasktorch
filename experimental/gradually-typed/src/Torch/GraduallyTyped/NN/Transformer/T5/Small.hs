@@ -4,7 +4,7 @@
 module Torch.GraduallyTyped.NN.Transformer.T5.Small where
 
 import Data.Singletons (SingI (sing))
-import Data.Singletons.TypeLits (SNat)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.NN.Class (ModelSpec)

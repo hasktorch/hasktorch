@@ -14,7 +14,7 @@ module Torch.GraduallyTyped.NN.Transformer.T5.Common where
 import Control.Monad.Catch (MonadThrow)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
-import Data.Singletons.TypeLits (SNat (..))
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
