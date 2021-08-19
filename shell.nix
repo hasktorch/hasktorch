@@ -16,7 +16,7 @@ let
 
     tools = {
       cabal = "latest";
-      # haskell-language-server = "latest";
+      haskell-language-server = "1.3.0";
     };
 
     # buildInputs = with haskellPackages; [ ];
