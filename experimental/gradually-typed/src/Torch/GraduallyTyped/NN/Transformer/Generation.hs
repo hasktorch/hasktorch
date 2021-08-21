@@ -3,53 +3,39 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE RankNTypes #-}
 
 module Torch.GraduallyTyped.NN.Transformer.Generation where
 
-import Control.Monad.State (MonadState, StateT (..), get, put, evalStateT)
-import Control.Lens (Lens, Traversal, Lens', (^.), (%~))
+import Control.Lens (Lens)
 import Control.Monad.Catch (MonadThrow)
+import Control.Monad.State (MonadState (..), get, put)
 import Data.Function (fix)
-import Data.Singletons.Prelude.List (SList (SNil))
 import Foreign.ForeignPtr (ForeignPtr)
-import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
+import Torch.GraduallyTyped.DType (DType (..), DataType (..))
 import Torch.GraduallyTyped.Index.Type (Index (NegativeIndex), SIndex (..))
-import Torch.GraduallyTyped.NN.Class (HasForward (..), stateDictFromFile, HasStateDict (..))
-import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerGenerationInput (..), SimplifiedEncoderDecoderTransformerOutput (..), SimplifiedEncoderDecoderTransformerOutput' (..), SimplifiedEncoderDecoderTransformerInput' (..))
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDecoderTransformerGenerationInput (..), SimplifiedEncoderDecoderTransformerOutput (..))
 import Torch.GraduallyTyped.Prelude (Catch, pattern (:|:))
-import Torch.GraduallyTyped.Random (Generator)
+import Torch.GraduallyTyped.Prelude.List (SList (SNil))
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
-import Torch.GraduallyTyped.Shape.Type (By (..), SBy (..), SSelectDim (..), SelectDim (..), Shape (..), SShape (..), pattern SNoName, pattern (:&:), SSize (..))
+import Torch.GraduallyTyped.Shape.Type (By (..), SBy (..), SSelectDim (..), SelectDim (..), Shape (..))
 import Torch.GraduallyTyped.Tensor.Indexing (IndexDims, IndexType (..), Indices (..), SIndexType (..), SIndices (..), (!))
 import Torch.GraduallyTyped.Tensor.IndexingSlicingJoining (CatHListF, HasCat (..), SqueezeDimF, UnsqueezeF, sSqueezeDim, sUnsqueeze)
 import Torch.GraduallyTyped.Tensor.MathOperations.Comparison ((/=.), (==.))
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (mul, mulScalar, sub, subScalar)
-import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (ArgmaxF, all, argmax, sAllDim, maxAll, MaxAllCheckF)
-import Torch.GraduallyTyped.Tensor.Type (TensorSpec (..), SGetDataType (..), SGetDevice (..), SGetLayout (..), Tensor, TensorLike (..), sSetDataType, SGetShape (..), sCheckedShape, SGetDim)
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (..), mkTransformerInput)
+import Torch.GraduallyTyped.Tensor.MathOperations.Reduction (ArgmaxF, MaxAllCheckF, argmax, maxAll)
+import Torch.GraduallyTyped.Tensor.Type (SGetDataType (..), SGetDevice (..), SGetDim, SGetLayout (..), SGetShape (..), Tensor, TensorLike (..), sCheckedShape, sSetDataType)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
-import Torch.GraduallyTyped.Device (SDevice (..), SDeviceType (..))
-import Torch.GraduallyTyped.NN.Transformer.BART.Common (bartPadTokenId, bartEOSTokenId)
-import Torch.GraduallyTyped.NN.Transformer.BART.Base (bartBaseSpec)
-import Torch.GraduallyTyped.Tensor.Creation (sOnes)
-import Torch.GraduallyTyped.Layout (SLayout (..), SLayoutType (..))
-import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
-import Torch.GraduallyTyped.NN.Type (SHasDropout (..))
 import Torch.HList (HList (HNil), pattern (:.))
-import qualified Torch.Internal.Class as ATen (Castable)
+import qualified Torch.Internal.Class as ATen
 import qualified Torch.Internal.Type as ATen
 import Prelude hiding (all)
-import Control.Monad ((<=<), (>=>))
-import Control.Monad.State (MonadState (..))
-import Torch.GraduallyTyped.Layout (Layout(Layout), LayoutType (Dense))
-import qualified Tokenizers
 
 decode ::
   Monad m =>
@@ -59,10 +45,10 @@ decode ::
   m (x, s)
 decode f x s = do
   flip fix (x, s) $ \loop (x', s') -> do
-      r <- f x' s'
-      case r of
-        Nothing -> pure (x', s')
-        Just (x'', s'') -> loop (x'', s'')
+    r <- f x' s'
+    case r of
+      Nothing -> pure (x', s')
+      Just (x'', s'') -> loop (x'', s'')
 
 sedtOutputToInput ::
   Monad m =>
@@ -117,7 +103,7 @@ greedyNextTokens ::
     SGetDevice logitsDevice,
     SGetLayout logitsLayout
   ) =>
-  Int -> 
+  Int ->
   Int ->
   Tensor logitsGradient logitsLayout logitsDevice logitsDataType logitsShape ->
   m (Tensor ('Gradient 'WithoutGradient) logitsLayout logitsDevice ('DataType 'Int64) ntShape)
