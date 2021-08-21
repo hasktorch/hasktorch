@@ -51,7 +51,7 @@ let
       (lib.optionalAttrs profiling {
         enableLibraryProfiling = true;
         packages.examples.enableExecutableProfiling = true;
-        packages.experimental.enableExecutableProfiling = true;
+        packages.hasktorch-gradually-typed.enableExecutableProfiling = true;
       })
 
       # Fix for "exceptions" build problem with ghc 9.0.1 (https://github.com/input-output-hk/haskell.nix/issues/1177)

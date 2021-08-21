@@ -46,9 +46,9 @@ monitor :: MonadIO m => P.Consumer Monitor m r
 monitor = P.map show P.>-> P.stdoutLn'
 
 main :: IO ()
-main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \tokenizer -> do
+main = Tokenizers.withTokenizerFromConfigFile "/Users/torsten.scholak/Documents/t5-small-tokenizer.json" $ \tokenizer -> do
   let seed = 31415
-      device = SDevice (SCUDA @0)
+      device = SDevice SCPU
 
   let -- during training, we need to turn dropout on and keep track of the gradient
       trainingModelSpec = Model.NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
@@ -56,7 +56,7 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
       evaluationModelSpec = Model.NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
 
   -- initialize the model from the model specification
-  stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
+  stateDict <- stateDictFromFile "/Users/torsten.scholak/Documents/t5-small-state-dict.pt"
   -- stateDict <- stateDictFromFile "neuralInterpreter.pt"
   model <- flip evalStateT stateDict $ fromStateDict trainingModelSpec mempty
 
