@@ -14,7 +14,7 @@ module Torch.GraduallyTyped.NN.Transformer.Generation where
 
 import Control.Lens (Lens)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.State (MonadState (..), get, put)
+import Control.Monad.State (MonadState (..))
 import Data.Function (fix)
 import Foreign.ForeignPtr (ForeignPtr)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..))

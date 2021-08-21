@@ -11,8 +11,7 @@
 module Main where
 
 import qualified Control.Concurrent.MSem as MSem
-import Control.Lens (Lens, Lens', Traversal, (%~), (^.))
-import Control.Monad (join)
+import Control.Lens ((%~))
 import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.State (evalStateT, get, runStateT)
@@ -220,7 +219,9 @@ main = Tokenizers.withTokenizerFromConfigFile "/tmp/t5-small-tokenizer.json" $ \
               init'' = pure (mempty, g3)
 
               done' ((targets, predictions), g4) = do
-                let exactMatchAccuracy = let xs = zip targets predictions in (fromIntegral $ length . filter (uncurry (==)) $ xs) / (fromIntegral $ length xs)
+                let exactMatchAccuracy =
+                      let xs = zip targets predictions
+                       in (fromIntegral $ length . filter (uncurry (==)) $ xs) / (fromIntegral $ length xs)
                 pure $ Right (PredictionsMonitor targets predictions exactMatchAccuracy, g4)
 
           P.foldM step' init'' done' $ P.enumerate batchedStream
