@@ -1,6 +1,18 @@
 {
   description = "Hasktorch";
 
+  nixConfig = {
+    substituters = [
+      https://hydra.iohk.io
+      https://hasktorch.cachix.org
+    ];
+    trusted-public-keys = [
+      hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
+      hasktorch.cachix.org-1:wLjNS6HuFVpmzbmv01lxwjdCOtWRD8pQVR3Zr/wVoQc=
+    ];
+    bash-prompt = "\[\\e[1m\\e[32mdev-hasktorch\\e[0m:\\w\]$ ";
+  };
+
   inputs = {
     nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
     haskell-nix = {
