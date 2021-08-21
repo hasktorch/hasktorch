@@ -40,10 +40,10 @@
       inherit (iohkNix.lib) collectExes;
 
       supportedSystems = ["x86_64-darwin" "x86_64-linux"];
-      
+
       gitrev = self.rev or "dirty";
-      
-      profiling = false;
+
+      profiling = true;
       cudaSupport = false;
       cudaMajorVersion = "11";
 
@@ -70,19 +70,17 @@
                       nonReinstallablePkgs = [
                         "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
                         "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
-                        # ghcjs custom packages
                         "ghcjs-prim" "ghcjs-th"
                         "ghc-bignum" "exceptions" "stm"
                         "ghc-boot"
                         "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"
                         "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
-                        # "ghci" "haskeline"
                         "hpc"
                         "mtl" "parsec" "process" "text" "time" "transformers"
                         "unix" "xhtml" "terminfo"
                       ];
-                      enableLibraryProfiling = true;
-                      packages.haskell-language-server.components.exes.haskell-language-server.enableExecutableProfiling = true;
+                      # enableLibraryProfiling = true;
+                      # packages.haskell-language-server.components.exes.haskell-language-server.enableExecutableProfiling = true;
                       packages.haskell-language-server.components.library.ghcOptions = ["-Wall" "-Wredundant-constraints" "-Wno-name-shadowing" "-Wno-unticked-promoted-constructors" "-dynamic"];
                       packages.haskell-language-server.components.exes.haskell-language-server.ghcOptions = ["-Wall" "-Wredundant-constraints" "-Wno-name-shadowing" "-Wredundant-constraints" "-dynamic" "-fprof-auto" "-rtsopts" "-with-rtsopts=-I0" "-with-rtsopts=-A128M" "-with-rtsopts=-xc" "-Wno-unticked-promoted-constructors"];
                     }];
