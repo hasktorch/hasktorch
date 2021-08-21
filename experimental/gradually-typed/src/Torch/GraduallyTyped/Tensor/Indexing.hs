@@ -7,6 +7,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -20,7 +21,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 
-{-# LANGUAGE PartialTypeSignatures #-}
 module Torch.GraduallyTyped.Tensor.Indexing
   ( IndexType (..),
     SIndexType (..),
@@ -31,22 +31,23 @@ module Torch.GraduallyTyped.Tensor.Indexing
     slice,
     parseSlice,
     setAt,
-    -- toLens,
+    setAtLike,
+    toLens,
+    toLensLike,
   )
 where
 
 import Control.Arrow ((>>>))
-import Control.Lens (Lens, Lens', Traversal)
-import Control.Monad (forM_, void, (<=<), join)
+import Control.Lens (Traversal)
+import Control.Monad (forM_, join, void, (<=<))
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Trans (lift)
 import Data.Coerce (coerce)
 import Data.Foldable (asum)
-import Data.Kind (Constraint, Type)
+import Data.Kind (Type)
 import Data.Singletons (Demote, SingI, SingKind, SomeSing (..), fromSing, sing, toSing, withSomeSing)
 import Data.Singletons.Prelude (Reverse, SBool (..), SList (..), Sing)
 import Data.Singletons.TH (genSingletons)
-import Data.Type.Bool (Not, type (&&))
 import Data.Type.Equality (type (==))
 import Data.Void (Void)
 import Foreign (ForeignPtr, fromBool)
@@ -58,14 +59,13 @@ import qualified Text.Megaparsec.Char as M
 import qualified Text.Megaparsec.Char.Lexer as L
 import Torch.GraduallyTyped.DType (DataType (..))
 import Torch.GraduallyTyped.Index.Type (DemotedIndex (..), Index (..), SIndex (..))
-import Torch.GraduallyTyped.Prelude (Catch, If, IsChecked (..), Seq, When, forgetIsChecked, type (<?))
+import Torch.GraduallyTyped.Prelude (Catch, If, IsChecked (..), forgetIsChecked, type (<?))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF, PrependDimF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
-import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorLike (sToTensor), fromTensor, toTensor)
+import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor (..), TensorLike, fromTensor, toTensor)
 import Torch.GraduallyTyped.Unify (type (<+>))
 import Torch.Internal.GC (unsafeThrowableIO)
 import qualified Torch.Internal.Managed.Native as ATen
-import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Internal.Type as ATen
 import Type.Errors.Pretty (TypeError, type (%), type (<>))
@@ -305,11 +305,7 @@ toTensorIndexList indices = do
 
 setAt ::
   forall gradient layout device dataType shape shape' indices m.
-  ( -- TensorLike a dType dims,
-    -- Catch ('DataType dType <+> dataType),
-    -- Catch ('Shape dims <+> shape'),
-    shape' ~ IndexShape indices shape,
-    Catch (shape' <+> BroadcastShapesF shape shape'),
+  ( shape' ~ BroadcastShapesF shape' (IndexShape indices shape),
     SingI gradient,
     SingI layout,
     SingI device,
@@ -322,21 +318,36 @@ setAt ::
 setAt (UnsafeTensor t') sIndices (UnsafeTensor x) = unsafeThrowableIO $ do
   t <- ATen.clone_t t'
   indexList <- toTensorIndexList indices
-  -- UnsafeTensor x <- toTensor @gradient @layout @device x'
   UnsafeTensor <$> ATen.index_put_ t indexList x
   where
     indices = fmap forgetIsChecked <$> forgetIsChecked (fromSing sIndices)
 
--- instance Ixed (Tensor gradient layout device dataType shape)
+setAtLike ::
+  forall gradient layout device dataType shape indices a dType dims m.
+  ( TensorLike a dType dims,
+    dataType ~ 'DataType dType,
+    Catch ('Shape dims <+> BroadcastShapesF ('Shape dims) (IndexShape indices shape)),
+    SingI gradient,
+    SingI layout,
+    SingI device,
+    MonadThrow m
+  ) =>
+  Tensor gradient layout device dataType shape ->
+  SIndices indices ->
+  a ->
+  m (Tensor gradient layout device dataType shape)
+setAtLike (UnsafeTensor t') sIndices x' = unsafeThrowableIO $ do
+  t <- ATen.clone_t t'
+  indexList <- toTensorIndexList indices
+  UnsafeTensor x <- toTensor @gradient @layout @device x'
+  UnsafeTensor <$> ATen.index_put_ t indexList x
+  where
+    indices = fmap forgetIsChecked <$> forgetIsChecked (fromSing sIndices)
 
 toLens ::
-  forall s a a' gradient layout device dataType shape indices dims dType m.
-  ( TensorLike a' dType dims,
-    'DataType dType ~ dataType,
-    'Shape dims ~ IndexShape indices shape,
-    s ~ Tensor gradient layout device dataType shape,
+  forall gradient layout device dataType shape s a indices m.
+  ( s ~ Tensor gradient layout device dataType shape,
     a ~ Tensor gradient layout device dataType (IndexShape indices shape),
-    Catch ('Shape dims <+> BroadcastShapesF shape ('Shape dims)),
     SingI gradient,
     SingI layout,
     SingI device,
@@ -344,22 +355,31 @@ toLens ::
     Traversable m
   ) =>
   SIndices indices ->
-  Traversal s (m s) a' (m a')
-toLens sIndices (f :: a' -> f (m a')) s =
-  let ma' :: m a' = fromTensor @a' <$> (s ! sIndices :: m a)
-      mfma' :: m (f (m a')) = f <$> ma'
-      set' :: a' -> m s
-      set' a' = do
-        s' <- toTensor a'
-        setAt s sIndices s'
-      set :: m (f (m a')) -> f (m s)
-      set x = 
-        let y :: m (f (m s)) = do
-              x' <- x
-              pure $ (>>= set') <$> x'
-            y'' :: f (m (m s)) = sequenceA y
-        in join <$> y''
-   in set mfma'
+  Traversal s (m s) a a
+toLens sIndices f s =
+  let fmms = sequenceA $ fmap (setAt s sIndices) . f <$> s ! sIndices
+   in join <$> fmms
+
+toLensLike ::
+  forall s gradient layout device dataType shape indices a dType dims shape' m.
+  ( s ~ Tensor gradient layout device dataType shape,
+    TensorLike a dType dims,
+    dataType ~ 'DataType dType,
+    shape' ~ 'Shape dims,
+    shape' ~ IndexShape indices shape,
+    Catch ('Shape dims <+> BroadcastShapesF ('Shape dims) (IndexShape indices shape)),
+    SGetShape shape',
+    SingI gradient,
+    SingI layout,
+    SingI device,
+    MonadThrow m,
+    Traversable m
+  ) =>
+  SIndices indices ->
+  Traversal s (m s) a a
+toLensLike sIndices f s =
+  let fmms = sequenceA $ fmap (setAtLike s sIndices) . f . fromTensor <$> s ! sIndices
+   in join <$> fmms
 
 type Parser = ParsecT Void String TH.Q
 
