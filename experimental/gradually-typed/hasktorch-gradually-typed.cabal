@@ -213,6 +213,7 @@ executable neural-interpreter
                      , indexed-extras
                      , lens
                      , mtl
+                     , optparse-applicative
                      , pipes
                      , pipes-concurrency
                      , random

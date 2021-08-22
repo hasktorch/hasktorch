@@ -75,8 +75,8 @@
                     src = prev.fetchFromGitHub {
                       owner = "haskell";
                       repo = "haskell-language-server";
-                      rev = "790afc6b920ed82e10135014e4a4ab67348d7898";
-                      sha256 = "19prgrlqs66a08vq5xvfx0ms4kxcx4d2hdw565bkhd080l553nb4";
+                      rev = "4dc8f2547deff25b3a74180238c72e8e7765c742";
+                      sha256 = "0l6r2mhcapaf2xp5g3qmk3gpw9mdfd2ry9yyl323z695ir21xkcj";
                     };
                     modules = [{
                       nonReinstallablePkgs = [
