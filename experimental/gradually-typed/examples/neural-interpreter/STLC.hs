@@ -12,6 +12,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module STLC where
 
@@ -26,13 +27,16 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import GHC.Generics (Generic, Generic1)
 import qualified Language.Haskell.TH as TH
+import Data.Hashable (Hashable)
+import Data.Hashable.Lifted (Hashable1)
 
 data Ty
   = -- | Arrow type (functions).
     TArr Ty Ty
   | -- | Integer number type.
     TInt
-  deriving (Eq, Ord, Show, Generic)
+  deriving stock (Eq, Ord, Show, Generic)
+  deriving anyclass (Hashable)
 
 data Exp a
   = -- | Variable.
@@ -56,6 +60,7 @@ data Exp a
   | -- | Sign of a number.
     Sign {exp :: Exp a}
   deriving stock (Functor, Foldable, Traversable, Generic, Generic1)
+  deriving anyclass (Hashable, Hashable1)
 
 instance Applicative Exp where
   pure = Var

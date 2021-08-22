@@ -3,11 +3,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Dataset where
 
 import Control.Monad (guard)
-import Control.Monad.State (MonadIO (liftIO), evalStateT, runState)
+import Control.Monad.State (MonadIO (liftIO), evalStateT, runState, StateT, MonadState (get), modify)
 import qualified Data.List as List
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -18,8 +19,10 @@ import qualified Hedgehog.Internal.Gen as Gen
 import Hedgehog.Internal.Seed (Seed)
 import qualified Hedgehog.Internal.Seed as Seed
 import qualified STLC
-import qualified Tokenizers
 import Torch.GraduallyTyped
+import Data.Hashable (Hashable)
+import Data.HashSet (HashSet)
+import qualified Data.HashSet as HashSet
 
 type Tokenizer = String -> IO [Int]
 type Detokenizer = [Int] -> IO String
@@ -47,6 +50,7 @@ data STLCExample a = STLCExample
     exDecodedTargetIds :: !String
   }
   deriving stock (Show, Eq, Ord, Generic)
+  deriving anyclass (Hashable)
 
 mkExample ::
   Tokenizer ->
@@ -55,7 +59,7 @@ mkExample ::
   Int ->
   Int ->
   Seed.Seed ->
-  IO (STLCExample Int)
+  StateT (HashSet [Int]) IO (STLCExample Int)
 mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed = flip evalStateT seed . Gen.sample' $ do
   exTy <- Gen.genTy
   exInputExp <- Gen.generalize $ Gen.genWellTypedExp exTy
@@ -65,6 +69,9 @@ mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed 
   let exTargetPPrint = STLC.pprint exTargetExp
   exInputIds <- liftIO . tokenize $ exInputPPrint <> "</s>"
   guard (List.length exInputIds <= maxInputLength)
+  exInputIdsCache <- get
+  guard (HashSet.member exInputIds exInputIdsCache)
+  modify (HashSet.insert exInputIds)
   exTargetIds <- liftIO . tokenize $ exTargetPPrint <> "</s>"
   guard (List.length exTargetIds <= maxTargetLength)
   exDecodedInputIds <- liftIO $ detokenize exInputIds
@@ -72,7 +79,7 @@ mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed 
   -- liftIO . putStrLn $ exInputPPrint <> " >>> " <> exTargetPPrint
   pure STLCExample {..}
 
-instance Dataset IO STLCData Seed (STLCExample Int) where
+instance Dataset (StateT (HashSet [Int]) IO) STLCData Seed (STLCExample Int) where
   getItem STLCData {..} seed = do
     guard $ Set.member seed seeds
     mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed

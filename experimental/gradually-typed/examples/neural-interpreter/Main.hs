@@ -19,6 +19,7 @@ import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.State (evalStateT, get, runStateT)
 import Control.Monad.Trans (MonadTrans (..))
+import qualified Data.HashSet as HashSet
 import Data.Int (Int16)
 import qualified Data.List as List
 import qualified Data.Set as Set
@@ -124,7 +125,7 @@ data Monitor
   | -- | monitor for evaluation loss
     EvaluationLossMonitor {meLoss :: Float, meEpoch :: Int}
   | -- | monitor for predictions
-    PredictionsMonitor {mpTargets :: [String], mpPredictions :: [String], mpExactMatchAccuracy :: Float, mpEpoch :: Int}
+    PredictionsMonitor {mpTargets :: [String], mpPredictions :: [String], mpExactMatchAccuracy :: Float, mpExamples :: [Dataset.STLCExample Int], mpEpoch :: Int}
   deriving stock (Eq, Ord, Show, Generic)
 
 -- | A simple monitor that prints the training and evaluation losses to stdout.
@@ -226,16 +227,16 @@ go Config {..} device trainingModelSpec evaluationModelSpec =
 
           -- evaluate on the evaluation set
           (g4, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
-            stateDict' <- getStateDict optim
+            stateDict' <- liftIO $ getStateDict optim
             model' <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
             r <- eval model' (fst <$> batchedStream) g3
-            stateDictToFile stateDict' configModelSavePath
+            liftIO $ stateDictToFile stateDict' configModelSavePath
             pure $ (\(loss, g) -> (EvaluationLossMonitor (fromTensor loss), g)) <$> r
 
           (g5, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
-            stateDict' <- getStateDict optim
-            Model.NeuralInterpreter t5 <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
-            let step' ((targets, predictions), g) (encoderInput, decoderInput) = do
+            stateDict' <- liftIO $ getStateDict optim
+            Model.NeuralInterpreter transformer <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
+            let step' ((targets, predictions, examples), g) ((encoderInput, decoderInput), examples') = do
                   let postProcess =
                         Text.unpack
                           . Text.replace "<unk>" "\\"
@@ -243,13 +244,13 @@ go Config {..} device trainingModelSpec evaluationModelSpec =
                           . Text.pack
 
                   let decoderIds :: [[Int]] = fromTensor decoderInput
-                  targets' <- traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds
+                  targets' <- liftIO $ traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds
 
                   let input = SimplifiedEncoderDecoderTransformerInput' encoderInput
                       [Dim _ batchSize, Dim _ _] = getDims encoderInput
                       batchDim = SNoName :&: SUncheckedSize batchSize
 
-                  (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g') <- forward t5 input g
+                  (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g') <- forward transformer input g
 
                   x <-
                     SimplifiedEncoderDecoderTransformerGenerationInput
@@ -274,7 +275,7 @@ go Config {..} device trainingModelSpec evaluationModelSpec =
                             if b || seqLen >= fromIntegral configMaxTargetLength
                               then pure Nothing
                               else do
-                                (output, g') <- forward t5 input g
+                                (output, g') <- forward transformer input g
                                 input' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
                                 pure $ Just (input', g')
                         )
@@ -282,26 +283,26 @@ go Config {..} device trainingModelSpec evaluationModelSpec =
                         g'
 
                   let decoderIds' :: [[Int]] = fromTensor decoderInput'
-                  predictions' <- traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds'
+                  predictions' <- liftIO $ traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds'
 
-                  pure ((targets <> targets', predictions <> predictions'), g'')
+                  pure ((targets <> targets', predictions <> predictions', examples <> examples'), g'')
 
                 init'' = pure (mempty, g4)
 
-                done' ((targets, predictions), g5) = do
+                done' ((targets, predictions, examples), g5) = do
                   let exactMatchAccuracy =
                         let xs = zip targets predictions
                          in (fromIntegral $ length . filter (uncurry (==)) $ xs) / (fromIntegral $ length xs)
-                  pure $ Right (PredictionsMonitor targets predictions exactMatchAccuracy, g5)
+                  pure $ Right (PredictionsMonitor targets predictions exactMatchAccuracy examples, g5)
 
-            P.foldM step' init'' done' $ P.enumerate (fst <$> batchedStream)
+            P.foldM step' init'' done' $ P.enumerate batchedStream
 
           pure (streamingState' {shuffle}, g5)
 
     let init' = pure (streamingState, g1)
         done (_streamingState', _g) = pure ()
 
-    flip runContT pure . P.runEffect $
+    flip evalStateT HashSet.empty . flip runContT pure . P.runEffect $
       P.foldM step init' done (P.each [1 .. configNumEpochs]) P.>-> monitor
 
 main :: IO ()
