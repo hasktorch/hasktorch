@@ -202,6 +202,8 @@ executable neural-interpreter
                      , Model
                      , STLC
                      , Gen
+                     , Monitor
+                     , Opts
   default-language:    Haskell2010
   ghc-options:         -W -Wall -O2 -threaded -rtsopts
   build-depends:       aeson
@@ -224,6 +226,7 @@ executable neural-interpreter
                      , pipes-safe
                      , random
                      , SafeSemaphore
+                     , stm
                      , template-haskell
                      , terminal-progress-bar
                      , text

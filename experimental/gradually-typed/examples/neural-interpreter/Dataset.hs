@@ -8,8 +8,10 @@
 
 module Dataset where
 
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TVar (TVar, modifyTVar', readTVar)
 import Control.Monad (guard)
-import Control.Monad.State (MonadIO (liftIO), MonadState (get), StateT, evalStateT, modify, runState)
+import Control.Monad.State (MonadIO (liftIO), evalStateT, runState)
 import Data.Aeson.TH (defaultOptions, deriveJSON)
 import Data.HashSet (HashSet)
 import qualified Data.HashSet as HashSet
@@ -23,9 +25,10 @@ import qualified Gen
 import qualified Hedgehog.Internal.Gen as Gen
 import Hedgehog.Internal.Seed (Seed)
 import qualified Hedgehog.Internal.Seed as Seed
+import qualified Pipes.Safe as P
 import qualified STLC
 import Torch.GraduallyTyped
-import qualified Pipes.Safe as P
+import Control.Monad.Reader (ReaderT, MonadReader (ask))
 
 type Tokenizer = String -> IO [Int]
 
@@ -34,7 +37,7 @@ type Detokenizer = [Int] -> IO String
 data STLCData = STLCData
   { name :: Text,
     seeds :: Set Seed,
-    targetNfSteps :: Set Int,
+    targetNfSteps :: Maybe (Set Int),
     maxInputLength :: Int,
     maxTargetLength :: Int,
     tokenize :: Tokenizer,
@@ -61,31 +64,43 @@ $(deriveJSON defaultOptions ''STLCExample)
 mkExample ::
   Tokenizer ->
   Detokenizer ->
-  Set Int ->
+  Maybe (Set Int) ->
   Int ->
   Int ->
   Seed.Seed ->
-  StateT (HashSet [Int]) (P.SafeT IO) (STLCExample Int)
+  ReaderT (TVar (HashSet [Int])) (P.SafeT IO) (STLCExample Int)
 mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed = flip evalStateT seed . Gen.sample' $ do
   exTy <- Gen.genTy
   exInputExp <- Gen.generalize $ Gen.genWellTypedExp exTy
+
+  let (exTargetExp, exTargetNfSteps) = flip runState 0 $ STLC.nf exInputExp
+  guard (maybe True (\s -> exTargetNfSteps `Set.member` s) targetNfSteps)
+
   let exInputPPrint = STLC.pprint exInputExp
-      (exTargetExp, exTargetNfSteps) = flip runState 0 $ STLC.nf exInputExp
-  guard (exTargetNfSteps `Set.member` targetNfSteps)
-  let exTargetPPrint = STLC.pprint exTargetExp
   exInputIds <- liftIO . tokenize $ exInputPPrint <> "</s>"
   guard (List.length exInputIds <= maxInputLength)
-  exInputIdsCache <- get
-  guard (HashSet.member exInputIds exInputIdsCache)
-  modify (HashSet.insert exInputIds)
+
+  cacheHit <- do
+    tvar <- ask
+    liftIO . atomically $ do
+      dedupCache <- readTVar tvar
+      pure $ HashSet.member exInputIds dedupCache
+  guard (not cacheHit)
+
+  () <- do
+    tvar <- ask
+    liftIO . atomically $ modifyTVar' tvar (HashSet.insert exInputIds)
+
+  let exTargetPPrint = STLC.pprint exTargetExp
   exTargetIds <- liftIO . tokenize $ exTargetPPrint <> "</s>"
   guard (List.length exTargetIds <= maxTargetLength)
+
   exDecodedInputIds <- liftIO $ detokenize exInputIds
   exDecodedTargetIds <- liftIO $ detokenize exTargetIds
-  -- liftIO . putStrLn $ exInputPPrint <> " >>> " <> exTargetPPrint
+
   pure STLCExample {..}
 
-instance Dataset (StateT (HashSet [Int]) (P.SafeT IO)) STLCData Seed (STLCExample Int) where
+instance Dataset (ReaderT (TVar (HashSet [Int])) (P.SafeT IO)) STLCData Seed (STLCExample Int) where
   getItem STLCData {..} seed = do
     guard $ Set.member seed seeds
     mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed
