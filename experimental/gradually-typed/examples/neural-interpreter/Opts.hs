@@ -53,7 +53,7 @@ config =
       )
     <*> Opts.option
       Opts.auto
-      (Opts.long "num-evaluation-examples" <> Opts.short 'e' <> Opts.value 4096 <> Opts.showDefault <> Opts.help "Number of evaluation examples")
+      (Opts.long "num-evaluation-examples" <> Opts.value 4096 <> Opts.showDefault <> Opts.help "Number of evaluation examples")
     <*> Opts.optional
       ( Opts.option
           Opts.auto
@@ -68,7 +68,7 @@ config =
       (Opts.long "num-workers" <> Opts.short 'w' <> Opts.value 4 <> Opts.showDefault <> Opts.help "Number of workers for data loading")
     <*> Opts.option
       Opts.auto
-      (Opts.long "buffer-size" <> Opts.short 'b' <> Opts.value 32 <> Opts.showDefault <> Opts.help "Buffer size for streaming")
+      (Opts.long "buffer-size" <> Opts.value 32 <> Opts.showDefault <> Opts.help "Buffer size for streaming")
     <*> Opts.option
       ( Opts.auto >>= \case
           -1 -> pure CPU
@@ -96,10 +96,10 @@ config =
       (Opts.long "seed" <> Opts.short 's' <> Opts.value 31415 <> Opts.showDefault <> Opts.help "Seed")
     <*> Opts.option
       Opts.auto
-      (Opts.long "max-input-length" <> Opts.short 'i' <> Opts.value 256 <> Opts.showDefault <> Opts.help "Maximum input length in tokens")
+      (Opts.long "max-input-length" <> Opts.value 256 <> Opts.showDefault <> Opts.help "Maximum input length in tokens")
     <*> Opts.option
       Opts.auto
-      (Opts.long "max-target-length" <> Opts.short 't' <> Opts.value 128 <> Opts.showDefault <> Opts.help "Maximum target length in tokens")
+      (Opts.long "max-target-length" <> Opts.value 128 <> Opts.showDefault <> Opts.help "Maximum target length in tokens")
     <*> Opts.option
       Opts.auto
       (Opts.long "max-batch-size" <> Opts.short 'b' <> Opts.value 24 <> Opts.showDefault <> Opts.help "Maximum batch size")
