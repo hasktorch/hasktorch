@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -12,23 +13,24 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module STLC where
 
-import Bound (Scope, abstract1, fromScope, instantiate1, toScope, (>>>=))
+import Bound (Scope, Var, abstract1, fromScope, instantiate1, toScope, (>>>=))
 import Control.Monad (MonadPlus (mzero), ap, guard)
 import Control.Monad.Fresh (Fresh, MonadFresh (fresh), runFreshFrom)
-import Control.Monad.Trans.Maybe (MaybeT (..))
 import Control.Monad.State (MonadState, modify)
+import Control.Monad.Trans.Maybe (MaybeT (..))
+import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson.TH (defaultOptions, deriveJSON)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import Data.Functor.Classes (compare1, eq1, showsPrec1)
+import Data.Hashable (Hashable)
+import Data.Hashable.Lifted (Hashable1)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import GHC.Generics (Generic, Generic1)
 import qualified Language.Haskell.TH as TH
-import Data.Hashable (Hashable)
-import Data.Hashable.Lifted (Hashable1)
 
 data Ty
   = -- | Arrow type (functions).
@@ -83,12 +85,27 @@ deriveEq1 ''Exp
 deriveShow1 ''Exp
 deriveOrd1 ''Exp
 
+instance FromJSON Ty
+
+instance FromJSON a => FromJSON (Var () (Exp a))
+
+instance FromJSON a => FromJSON (Scope () Exp a)
+
+instance FromJSON a => FromJSON (Exp a)
+
+instance ToJSON Ty
+
+instance ToJSON a => ToJSON (Var () (Exp a))
+
+instance ToJSON a => ToJSON (Scope () Exp a)
+
+instance ToJSON a => ToJSON (Exp a)
+
 instance Eq a => Eq (Exp a) where (==) = eq1
 
 instance Ord a => Ord (Exp a) where compare = compare1
 
 instance Show a => Show (Exp a) where showsPrec = showsPrec1
-
 
 -- | Smart constructor for lambda terms
 lam :: forall a. Eq a => Ty -> a -> Exp a -> Exp a

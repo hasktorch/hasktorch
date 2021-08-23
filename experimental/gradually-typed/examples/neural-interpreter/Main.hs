@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -19,20 +20,32 @@ import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.State (evalStateT, get, runStateT)
 import Control.Monad.Trans (MonadTrans (..))
+import Data.Aeson (ToJSON (toEncoding))
+import Data.Aeson.Encoding (encodingToLazyByteString)
+import Data.Aeson.TH (defaultOptions, deriveJSON)
+import Data.ByteString.Lazy (snoc, toStrict)
+import Data.Foldable (toList)
 import qualified Data.HashSet as HashSet
 import Data.Int (Int16)
 import qualified Data.List as List
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Data.Text.Lazy as Text.Lazy
 import Data.Word (Word64)
 import qualified Dataset (STLCData (..), STLCExample (..))
 import GHC.Generics (Generic)
 import qualified Hedgehog.Internal.Seed as Seed
 import qualified Model (NeuralInterpreter (..))
 import qualified Options.Applicative as Opts
+import Pipes ((>->))
 import qualified Pipes as P
+import qualified Pipes.ByteString as P hiding (map)
 import qualified Pipes.Concurrent as P
-import qualified Pipes.Prelude as P
+import qualified Pipes.Prelude as P hiding (toHandle)
+import qualified Pipes.Safe as P
+import qualified Pipes.Safe.Prelude as P
+import qualified System.IO as IO
+import qualified System.ProgressBar as PB
 import System.Random (mkStdGen)
 import qualified Tokenizers
 import Torch.GraduallyTyped
@@ -55,7 +68,8 @@ data Config = Config
     configMaxInputLength :: Int,
     configMaxTargetLength :: Int,
     configMaxBatchSize :: Int,
-    configLearningRate :: Double
+    configLearningRate :: Double,
+    configOutputPath :: FilePath
   }
   deriving stock (Show, Generic)
 
@@ -94,11 +108,11 @@ config =
       )
       (Opts.long "model-architecture" <> Opts.short 'a' <> Opts.value T5Small <> Opts.showDefault <> Opts.help "Model architecture")
     <*> Opts.optional
-      (Opts.strOption (Opts.long "model-pretrained-path" <> Opts.short 'p' <> Opts.help "Path to pretrained model. If not specified, a new model will be trained"))
+      (Opts.strOption (Opts.long "model-pretrained-path" <> Opts.short 'p' <> Opts.metavar "PFILE" <> Opts.help "Load pretrained model from PFILE. If not specified, a new model will be trained"))
     <*> Opts.strOption
-      (Opts.long "model-save-path" <> Opts.short 's' <> Opts.help "Path to save model")
+      (Opts.long "model-save-path" <> Opts.short 'm' <> Opts.metavar "MFILE" <> Opts.help "Write model to MFILE")
     <*> Opts.strOption
-      (Opts.long "tokenizer-path" <> Opts.short 't' <> Opts.help "Path to pretrained tokenizer.")
+      (Opts.long "tokenizer-path" <> Opts.short 't' <> Opts.metavar "TFILE" <> Opts.help "Load tokenizer from TFILE")
     <*> Opts.option
       Opts.auto
       (Opts.long "seed" <> Opts.short 's' <> Opts.value 31415 <> Opts.showDefault <> Opts.help "Seed")
@@ -114,6 +128,8 @@ config =
     <*> Opts.option
       Opts.auto
       (Opts.long "learning-rate" <> Opts.short 'l' <> Opts.value 0.0001 <> Opts.showDefault <> Opts.help "Learning rate")
+    <*> Opts.strOption
+      (Opts.long "output-path" <> Opts.short 'o' <> Opts.metavar "OFILE" <> Opts.help "Write output to OFILE")
 
 opts :: Opts.ParserInfo Config
 opts = Opts.info (config <**> Opts.helper) (Opts.fullDesc <> Opts.progDesc "Train a neural interpreter model on a synthetic dataset")
@@ -128,9 +144,68 @@ data Monitor
     PredictionsMonitor {mpTargets :: [String], mpPredictions :: [String], mpExactMatchAccuracy :: Float, mpExamples :: [Dataset.STLCExample Int], mpEpoch :: Int}
   deriving stock (Eq, Ord, Show, Generic)
 
--- | A simple monitor that prints the training and evaluation losses to stdout.
-monitor :: MonadIO m => P.Consumer Monitor m r
-monitor = P.map show P.>-> P.stdoutLn'
+$(deriveJSON defaultOptions ''Monitor)
+
+-- | A simple monitor that prints the training and evaluation losses to stdout
+-- and saves the predictions to a file handle.
+monitor :: MonadIO m => Int -> IO.Handle -> P.Consumer Monitor m r
+monitor numEpochs h =
+  P.tee showProgress
+    >-> P.map (toStrict . flip snoc 0x0a . encodingToLazyByteString . toEncoding)
+    >-> P.toHandle h
+  where
+    showProgress = do
+      let maxRefreshRate = 10
+          epoch =
+            let render progress timing = "epoch " <> PB.runLabel PB.exact progress timing
+             in PB.Label render
+      let metrics =
+            let render PB.Progress {..} _ =
+                  let (trainingLoss, evaluationLoss, exactMatchAccuracy) = progressCustom
+                   in Text.Lazy.pack $
+                        List.intercalate
+                          " | "
+                          ( List.concat
+                              [ toList $ (\x -> "training loss: " <> show x) <$> trainingLoss,
+                                toList $ (\x -> "evaluation loss: " <> show x) <$> evaluationLoss,
+                                toList $ (\x -> "exact match accuracy: " <> show x) <$> exactMatchAccuracy
+                              ]
+                          )
+             in PB.Label render
+      pb <-
+        P.lift . liftIO $
+          PB.newProgressBar
+            PB.defStyle
+              { PB.stylePrefix = epoch,
+                PB.stylePostfix = metrics
+              }
+            maxRefreshRate
+            (PB.Progress 0 numEpochs (Nothing, Nothing, Nothing))
+      P.for P.cat $ \case
+        TrainingLossMonitor {..} ->
+          P.lift . liftIO $
+            PB.updateProgress
+              pb
+              ( \progress ->
+                  let (_trainingLoss, evaluationLoss, exactMatchAccuracy) = PB.progressCustom progress
+                   in progress {PB.progressCustom = (Just mtLoss, evaluationLoss, exactMatchAccuracy)}
+              )
+        EvaluationLossMonitor {..} ->
+          P.lift . liftIO $
+            PB.updateProgress
+              pb
+              ( \progress ->
+                  let (trainingLoss, _evaluationLoss, exactMatchAccuracy) = PB.progressCustom progress
+                   in progress {PB.progressCustom = (trainingLoss, Just meLoss, exactMatchAccuracy)}
+              )
+        PredictionsMonitor {..} ->
+          P.lift . liftIO $
+            PB.updateProgress
+              pb
+              ( \progress ->
+                  let (trainingLoss, evaluationLoss, _exactMatchAccuracy) = PB.progressCustom progress
+                   in progress {PB.progressCustom = (trainingLoss, evaluationLoss, Just mpExactMatchAccuracy)}
+              )
 
 go Config {..} device trainingModelSpec evaluationModelSpec =
   Tokenizers.withTokenizerFromConfigFile configTokenizerPath $ \tokenizer -> do
@@ -302,8 +377,10 @@ go Config {..} device trainingModelSpec evaluationModelSpec =
     let init' = pure (streamingState, g1)
         done (_streamingState', _g) = pure ()
 
-    flip evalStateT HashSet.empty . flip runContT pure . P.runEffect $
-      P.foldM step init' done (P.each [1 .. configNumEpochs]) P.>-> monitor
+    P.runSafeT $
+      P.withFile configOutputPath IO.WriteMode $ \h ->
+        flip evalStateT HashSet.empty . flip runContT pure . P.runEffect $
+          P.foldM step init' done (P.each [1 .. configNumEpochs]) >-> monitor configNumEpochs h
 
 main :: IO ()
 main = do

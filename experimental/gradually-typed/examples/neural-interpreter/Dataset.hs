@@ -1,14 +1,19 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Dataset where
 
 import Control.Monad (guard)
-import Control.Monad.State (MonadIO (liftIO), evalStateT, runState, StateT, MonadState (get), modify)
+import Control.Monad.State (MonadIO (liftIO), MonadState (get), StateT, evalStateT, modify, runState)
+import Data.Aeson.TH (defaultOptions, deriveJSON)
+import Data.HashSet (HashSet)
+import qualified Data.HashSet as HashSet
+import Data.Hashable (Hashable)
 import qualified Data.List as List
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -20,11 +25,10 @@ import Hedgehog.Internal.Seed (Seed)
 import qualified Hedgehog.Internal.Seed as Seed
 import qualified STLC
 import Torch.GraduallyTyped
-import Data.Hashable (Hashable)
-import Data.HashSet (HashSet)
-import qualified Data.HashSet as HashSet
+import qualified Pipes.Safe as P
 
 type Tokenizer = String -> IO [Int]
+
 type Detokenizer = [Int] -> IO String
 
 data STLCData = STLCData
@@ -52,6 +56,8 @@ data STLCExample a = STLCExample
   deriving stock (Show, Eq, Ord, Generic)
   deriving anyclass (Hashable)
 
+$(deriveJSON defaultOptions ''STLCExample)
+
 mkExample ::
   Tokenizer ->
   Detokenizer ->
@@ -59,7 +65,7 @@ mkExample ::
   Int ->
   Int ->
   Seed.Seed ->
-  StateT (HashSet [Int]) IO (STLCExample Int)
+  StateT (HashSet [Int]) (P.SafeT IO) (STLCExample Int)
 mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed = flip evalStateT seed . Gen.sample' $ do
   exTy <- Gen.genTy
   exInputExp <- Gen.generalize $ Gen.genWellTypedExp exTy
@@ -79,7 +85,7 @@ mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed 
   -- liftIO . putStrLn $ exInputPPrint <> " >>> " <> exTargetPPrint
   pure STLCExample {..}
 
-instance Dataset (StateT (HashSet [Int]) IO) STLCData Seed (STLCExample Int) where
+instance Dataset (StateT (HashSet [Int]) (P.SafeT IO)) STLCData Seed (STLCExample Int) where
   getItem STLCData {..} seed = do
     guard $ Set.member seed seeds
     mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed
