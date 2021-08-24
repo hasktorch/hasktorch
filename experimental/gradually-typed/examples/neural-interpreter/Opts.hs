@@ -13,7 +13,7 @@ import GHC.Generics (Generic)
 import qualified Options.Applicative as Opts
 import Torch.GraduallyTyped
 
-data ModelArchitecture = T5Small | T5Large | T5ThreeB | BARTBase | BARTLarge
+data ModelArchitecture = T5Small | T5Base | T5Large | T5ThreeB | BARTBase | BARTLarge
   deriving stock (Show, Generic)
 
 data Config = Config
@@ -77,13 +77,14 @@ config =
     <*> Opts.option
       ( Opts.auto >>= \case
           (0 :: Int) -> pure T5Small
-          1 -> pure T5Large
-          2 -> pure T5ThreeB
-          3 -> pure BARTBase
-          4 -> pure BARTLarge
+          1 -> pure T5Base
+          2 -> pure T5Large
+          3 -> pure T5ThreeB
+          4 -> pure BARTBase
+          5 -> pure BARTLarge
           _ -> Opts.readerError "Invalid model architecture"
       )
-      (Opts.long "model-architecture" <> Opts.short 'a' <> Opts.value T5Small <> Opts.showDefault <> Opts.help "Model architecture. 0 for T5-Small, 1 for T5-Large, 2 for T5-3B, 3 for BART-Base, 4 for BART-Large")
+      (Opts.long "model-architecture" <> Opts.short 'a' <> Opts.value T5Small <> Opts.showDefault <> Opts.help "Model architecture. 0 for T5-Small, 1 for T5-Base, 2 for T5-Large, 3 for T5-ThreeB, 4 for BART-Base, 5 for BART-Large")
     <*> Opts.optional
       (Opts.strOption (Opts.long "model-pretrained-path" <> Opts.short 'p' <> Opts.metavar "PFILE" <> Opts.help "Load pretrained model from PFILE. If not specified, a new model will be trained"))
     <*> Opts.strOption

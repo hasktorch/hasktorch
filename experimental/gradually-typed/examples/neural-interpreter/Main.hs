@@ -24,7 +24,6 @@ import Control.Monad.Reader (ReaderT (runReaderT))
 import Control.Monad.State (evalStateT, get, runStateT)
 import Control.Monad.Trans (MonadTrans (..))
 import qualified Data.HashMap.Strict as HashMap
-import qualified Data.HashSet as HashSet
 import qualified Data.List as List
 import Data.Monoid (Sum (Sum))
 import qualified Data.Set as Set
@@ -150,7 +149,14 @@ go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
 
                   let postProcess =
                         Text.unpack
-                          . Text.replace "<unk>" "\\"
+                          . ( case configModelArchitecture of
+                                Opts.T5Small -> Text.replace "<unk>" "\\"
+                                Opts.T5Base -> Text.replace "<unk>" "\\"
+                                Opts.T5Large -> Text.replace "<unk>" "\\"
+                                Opts.T5ThreeB -> Text.replace "<unk>" "\\"
+                                Opts.BARTBase -> id
+                                Opts.BARTLarge -> id
+                            )
                           . Text.replace "<pad>" mempty
                           . Text.pack
 
@@ -214,11 +220,11 @@ go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
     let init' = pure (streamingState, g1)
         done (_streamingState', _g) = pure ()
 
-    dedupCache <- (,) <$> newTVarIO HashSet.empty <*> newTVarIO HashMap.empty
+    seedCache <- newTVarIO HashMap.empty
 
     P.runSafeT $
       P.withFile configOutputPath IO.WriteMode $ \h ->
-        flip runReaderT dedupCache . flip runContT pure . P.runEffect $
+        flip runReaderT seedCache . flip runContT pure . P.runEffect $
           P.foldM step init' done (P.each [1 .. configNumEpochs]) >-> Monitor.monitor configNumEpochs h
 
 main :: IO ()
@@ -234,6 +240,7 @@ main = do
 
   case configModelArchitecture of
     Opts.T5Small -> go conf device (trainingModelSpec t5SmallSpec) (evaluationModelSpec t5SmallSpec)
+    Opts.T5Base -> go conf device (trainingModelSpec t5BaseSpec) (evaluationModelSpec t5BaseSpec)
     Opts.T5Large -> go conf device (trainingModelSpec t5LargeSpec) (evaluationModelSpec t5LargeSpec)
     Opts.T5ThreeB -> go conf device (trainingModelSpec t5ThreeBSpec) (evaluationModelSpec t5ThreeBSpec)
     Opts.BARTBase -> go conf device (trainingModelSpec bartBaseSpec) (evaluationModelSpec bartBaseSpec)

@@ -18,8 +18,6 @@ import Control.Monad.State (MonadIO (liftIO), evalStateT, runState)
 import Data.Aeson.TH (defaultOptions, deriveJSON)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.HashSet (HashSet)
-import qualified Data.HashSet as HashSet
 import Data.Hashable (Hashable)
 import qualified Data.List as List
 import Data.Set (Set)
@@ -76,10 +74,10 @@ mkExample ::
   Int ->
   Int ->
   Seed.Seed ->
-  ReaderT (TVar (HashSet [Int]), TVar (HashMap Seed (STLCExample Int))) (P.SafeT IO) (STLCExample Int)
+  ReaderT (TVar (HashMap Seed (STLCExample Int))) (P.SafeT IO) (STLCExample Int)
 mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed = do
   mex <- do
-    (_, tvar) <- ask
+    tvar <- ask
     liftIO . atomically $ do
       seedCache <- readTVar tvar
       pure $ HashMap.lookup seed seedCache
@@ -98,17 +96,6 @@ mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed 
         exInputIds <- liftIO . tokenize $ exInputPPrint <> "</s>"
         guard (List.length exInputIds <= maxInputLength)
 
-        cacheHit <- do
-          (tvar, _) <- ask
-          liftIO . atomically $ do
-            dedupCache <- readTVar tvar
-            pure $ HashSet.member exInputIds dedupCache
-        guard (not cacheHit)
-
-        () <- do
-          (tvar, _) <- ask
-          liftIO . atomically $ modifyTVar' tvar (HashSet.insert exInputIds)
-
         let exTargetPPrint = STLC.pprint exTargetExp
         exTargetIds <- liftIO . tokenize $ exTargetPPrint <> "</s>"
         guard (List.length exTargetIds <= maxTargetLength)
@@ -119,12 +106,12 @@ mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed 
         pure $ STLCExample {..}
 
       () <- do
-        (_, tvar) <- ask
+        tvar <- ask
         liftIO . atomically $ modifyTVar' tvar (HashMap.insert seed ex)
 
       pure ex
 
-instance Dataset (ReaderT (TVar (HashSet [Int]), TVar (HashMap Seed (STLCExample Int))) (P.SafeT IO)) STLCData Seed (STLCExample Int) where
+instance Dataset (ReaderT (TVar (HashMap Seed (STLCExample Int))) (P.SafeT IO)) STLCData Seed (STLCExample Int) where
   getItem STLCData {..} seed = do
     guard $ Set.member seed seeds
     mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed
