@@ -48,7 +48,7 @@ config =
     <*> Opts.optional
       ( Opts.option
           Opts.auto
-          ( Opts.long "training-nf-reduction-steps" <> Opts.value (Set.fromList [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) <> Opts.showDefault <> Opts.help "Number of normal-form reduction steps allowed during training. If not specified, all steps are allowed."
+          ( Opts.long "training-nf-reduction-steps" <> Opts.help "Number of normal-form reduction steps allowed during training. If not specified, all steps are allowed."
           )
       )
     <*> Opts.option
@@ -57,7 +57,7 @@ config =
     <*> Opts.optional
       ( Opts.option
           Opts.auto
-          ( Opts.long "evaluation-nf-reduction-steps" <> Opts.value (Set.fromList [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) <> Opts.showDefault <> Opts.help "Number of normal-form reduction steps allowed during evaluation. If not specified, all steps are allowed."
+          ( Opts.long "evaluation-nf-reduction-steps" <> Opts.help "Number of normal-form reduction steps allowed during evaluation. If not specified, all steps are allowed."
           )
       )
     <*> Opts.option
