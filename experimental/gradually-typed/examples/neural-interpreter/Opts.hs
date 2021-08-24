@@ -12,6 +12,8 @@ import Data.Word (Word64)
 import GHC.Generics (Generic)
 import qualified Options.Applicative as Opts
 import Torch.GraduallyTyped
+import qualified Data.Set as Set
+import Data.Functor ((<&>))
 
 data ModelArchitecture = T5Small | T5Base | T5Large | T5ThreeB | BARTBase | BARTLarge
   deriving stock (Show, Generic)
@@ -46,8 +48,8 @@ config =
       (Opts.long "num-training-examples" <> Opts.short 'n' <> Opts.value 65536 <> Opts.showDefault <> Opts.help "Number of training examples")
     <*> Opts.optional
       ( Opts.option
-          Opts.auto
-          ( Opts.long "training-nf-reduction-steps" <> Opts.help "Number of normal-form reduction steps allowed during training. If not specified, all steps are allowed."
+          (Opts.auto <&> Set.fromList)
+          ( Opts.long "training-nf-reduction-steps" <> Opts.help "Number of normal-form reduction steps allowed during training. If not specified, all steps are allowed. Say \"[1,2,3]\" to allow only 1, 2, and 3 steps."
           )
       )
     <*> Opts.option
@@ -55,8 +57,8 @@ config =
       (Opts.long "num-evaluation-examples" <> Opts.value 4096 <> Opts.showDefault <> Opts.help "Number of evaluation examples")
     <*> Opts.optional
       ( Opts.option
-          Opts.auto
-          ( Opts.long "evaluation-nf-reduction-steps" <> Opts.help "Number of normal-form reduction steps allowed during evaluation. If not specified, all steps are allowed."
+          (Opts.auto <&> Set.fromList)
+          ( Opts.long "evaluation-nf-reduction-steps" <> Opts.help "Number of normal-form reduction steps allowed during evaluation. If not specified, all steps are allowed. Say \"[4,5]\" to allow only 4 and 5 steps."
           )
       )
     <*> Opts.option
@@ -73,7 +75,7 @@ config =
           -1 -> pure CPU
           i -> pure (CUDA i)
       )
-      (Opts.long "device" <> Opts.short 'd' <> Opts.value CPU <> Opts.showDefault <> Opts.help "Device. -1 for CPU, 0 for CUDA 0, 1 for CUDA 1, etc.")
+      (Opts.long "device" <> Opts.short 'd' <> Opts.value CPU <> Opts.showDefault <> Opts.help "Device. Say -1 for CPU, 0 for CUDA 0, 1 for CUDA 1, etc.")
     <*> Opts.option
       ( Opts.auto >>= \case
           (0 :: Int) -> pure T5Small
@@ -84,7 +86,7 @@ config =
           5 -> pure BARTLarge
           _ -> Opts.readerError "Invalid model architecture"
       )
-      (Opts.long "model-architecture" <> Opts.short 'a' <> Opts.value T5Small <> Opts.showDefault <> Opts.help "Model architecture. 0 for T5-Small, 1 for T5-Base, 2 for T5-Large, 3 for T5-ThreeB, 4 for BART-Base, 5 for BART-Large")
+      (Opts.long "model-architecture" <> Opts.short 'a' <> Opts.value T5Small <> Opts.showDefault <> Opts.help "Model architecture. Say 0 for T5-Small, 1 for T5-Base, 2 for T5-Large, 3 for T5-ThreeB, 4 for BART-Base, 5 for BART-Large")
     <*> Opts.optional
       (Opts.strOption (Opts.long "model-pretrained-path" <> Opts.short 'p' <> Opts.metavar "PFILE" <> Opts.help "Load pretrained model from PFILE. If not specified, a new model will be trained"))
     <*> Opts.strOption

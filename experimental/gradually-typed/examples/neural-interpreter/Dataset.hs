@@ -105,9 +105,9 @@ mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed 
 
         pure $ STLCExample {..}
 
-      () <- do
-        tvar <- ask
-        liftIO . atomically $ modifyTVar' tvar (HashMap.insert seed ex)
+      -- () <- do
+      --   tvar <- ask
+      --   liftIO . atomically $ modifyTVar' tvar (HashMap.insert seed ex)
 
       pure ex
 
