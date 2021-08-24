@@ -5,31 +5,37 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Main where
 
 import qualified Control.Concurrent.MSem as MSem
-import Control.Concurrent.STM.TVar (newTVarIO)
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TVar (newTVarIO, swapTVar)
 import Control.Lens ((%~))
 import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Control.Monad.Reader (ReaderT (runReaderT))
+import Control.Monad.Reader (MonadReader (ask), ReaderT (runReaderT))
 import Control.Monad.State (evalStateT, get, runStateT)
 import Control.Monad.Trans (MonadTrans (..))
 import qualified Data.HashSet as HashSet
 import qualified Data.List as List
+import Data.Monoid (Sum (Sum))
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import Data.Word (Word64)
 import qualified Dataset (STLCData (..), STLCExample (..))
 import qualified Hedgehog.Internal.Seed as Seed
 import qualified Model (NeuralInterpreter (..))
+import qualified Monitor
 import qualified Options.Applicative as Opts
+import qualified Opts
 import Pipes ((>->))
 import qualified Pipes as P
 import qualified Pipes.Concurrent as P
@@ -40,9 +46,8 @@ import qualified System.IO as IO
 import System.Random (mkStdGen)
 import qualified Tokenizers
 import Torch.GraduallyTyped
-import qualified Monitor
-import qualified Opts
 
+go :: _ => _
 go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
   Tokenizers.withTokenizerFromConfigFile configTokenizerPath $ \tokenizer -> do
     -- create a Torch random generator from the seed
@@ -116,11 +121,13 @@ go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
 
     let -- one epoch of training and evaluation
         step (streamingState', g2) epoch = do
-          -- let learningRate = learningRateSchedule epoch
-          -- setLearningRate optim learningRate
+          -- reset deduplication hash set
+          _ <- do
+            tvar <- ask
+            liftIO . atomically $ swapTVar tvar HashSet.empty
 
           -- helper function for streaming
-          let go streamingState'' data' closure' = do
+          let go' streamingState'' data' closure' = do
                 (stream, shuffle) <- P.lift $ streamFromMap streamingState'' data'
                 r <- P.lift $ do
                   batchedStream <- collate' stream
@@ -132,22 +139,20 @@ go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
                     pure (g, shuffle)
 
           -- train for one epoch on the training set
-          (g3, shuffle) <- go streamingState' trainingData $ \batchedStream -> do
+          (g3, shuffle) <- go' streamingState' trainingData $ \batchedStream -> do
             r <- train optim trainingModelSpec (fst <$> batchedStream) g2
-            pure $ (\(loss, g) -> (Monitor.TrainingLossMonitor (fromTensor loss), g)) <$> r
+            pure $ (\(loss, g) -> (Monitor.TrainingMonitor (fromTensor loss), g)) <$> r
 
           -- evaluate on the evaluation set
-          (g4, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
+          (g4, _sample) <- go' streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
             stateDict' <- liftIO $ getStateDict optim
-            model' <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
-            r <- eval model' (fst <$> batchedStream) g3
-            liftIO $ stateDictToFile stateDict' configModelSavePath
-            pure $ (\(loss, g) -> (Monitor.EvaluationLossMonitor (fromTensor loss), g)) <$> r
+            model'@(Model.NeuralInterpreter transformer) <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
 
-          (g5, _sample) <- go streamingState' {shuffle = Sequential} evaluationData $ \batchedStream -> do
-            stateDict' <- liftIO $ getStateDict optim
-            Model.NeuralInterpreter transformer <- flip evalStateT stateDict' $ fromStateDict evaluationModelSpec mempty
-            let step' ((targets, predictions, examples), g) ((encoderInput, decoderInput), examples') = do
+            let step' (((loss, targets, predictions, examples), _), g) (((encoderInput, decoderInput), examples'), iter) = do
+                  (loss', g') <- forward model' (encoderInput, decoderInput) g
+                  loss'' <- sCheckedShape (SShape SNil) =<< sCheckedGradient (SGradient SWithoutGradient) loss'
+                  let loss''' :: Float = fromTensor loss''
+
                   let postProcess =
                         Text.unpack
                           . Text.replace "<unk>" "\\"
@@ -161,7 +166,7 @@ go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
                       [Dim _ batchSize, Dim _ _] = getDims encoderInput
                       batchDim = SNoName :&: SUncheckedSize batchSize
 
-                  (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g') <- forward transformer input g
+                  (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g'') <- forward transformer input g'
 
                   x <-
                     SimplifiedEncoderDecoderTransformerGenerationInput
@@ -176,39 +181,40 @@ go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
 
                   us <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ batchDim :|: SNil)
 
-                  ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _, g''), _us) <-
+                  ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _, g'''), _us) <-
                     flip runStateT us $
                       decode
-                        ( \input@(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) g -> do
+                        ( \input'@(SimplifiedEncoderDecoderTransformerGenerationInput decoderInput' _ _) g -> do
                             let [Dim _ _, Dim _ seqLen] = getDims decoderInput'
                             unfinishedSequences <- get
                             b <- allSequencesFinished unfinishedSequences
                             if b || seqLen >= fromIntegral configMaxTargetLength
                               then pure Nothing
                               else do
-                                (output, g') <- forward transformer input g
-                                input' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
-                                pure $ Just (input', g')
+                                (output, g') <- forward transformer input' g
+                                input'' <- (sedtOutputToInput . prepNext %~ greedyNextTokens t5PadTokenId t5EOSTokenId) output
+                                pure $ Just (input'', g')
                         )
                         x
-                        g'
+                        g''
 
                   let decoderIds' :: [[Int]] = fromTensor decoderInput'
                   predictions' <- liftIO $ traverse ((postProcess <$>) . Tokenizers.decode tokenizer) decoderIds'
 
-                  pure ((targets <> targets', predictions <> predictions', examples <> examples'), g'')
+                  pure (((loss <> Sum loss''', targets <> targets', predictions <> predictions', examples <> examples'), iter), g''')
 
-                init'' = pure (mempty, g4)
+                init'' = pure ((mempty, 0), g3)
 
-                done' ((targets, predictions, examples), g5) = do
-                  let exactMatchAccuracy =
+                done' (((Sum loss, targets, predictions, examples), iter), g4) = do
+                  let avgLoss = loss / fromIntegral iter
+                      exactMatchAccuracy =
                         let xs = zip targets predictions
-                         in (fromIntegral $ length . filter (uncurry (==)) $ xs) / (fromIntegral $ length xs)
-                  pure $ Right (Monitor.PredictionsMonitor targets predictions exactMatchAccuracy examples, g5)
+                         in fromIntegral (length . filter (uncurry (==)) $ xs) / fromIntegral (length xs)
+                  pure $ Right (Monitor.EvaluationMonitor avgLoss targets predictions exactMatchAccuracy examples, g4)
 
-            P.foldM step' init'' done' $ P.enumerate batchedStream
+            P.foldM step' init'' done' $ P.zip (P.enumerate batchedStream) (P.each [0 :: Int ..])
 
-          pure (streamingState' {shuffle}, g5)
+          pure (streamingState' {shuffle}, g4)
 
     let init' = pure (streamingState, g1)
         done (_streamingState', _g) = pure ()
@@ -226,24 +232,14 @@ main = do
 
   let device = SUncheckedDevice configDevice
 
+  let trainingModelSpec :: _
+      trainingModelSpec transformerSpec = Model.NeuralInterpreter $ transformerSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
+      evaluationModelSpec :: _
+      evaluationModelSpec transformerSpec = Model.NeuralInterpreter $ transformerSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
+
   case configModelArchitecture of
-    Opts.T5Small -> do
-      let trainingModelSpec = Model.NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
-          evaluationModelSpec = Model.NeuralInterpreter $ t5SmallSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
-      go conf device trainingModelSpec evaluationModelSpec
-    Opts.T5Large -> do
-      let trainingModelSpec = Model.NeuralInterpreter $ t5LargeSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
-          evaluationModelSpec = Model.NeuralInterpreter $ t5LargeSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
-      go conf device trainingModelSpec evaluationModelSpec
-    Opts.T5ThreeB -> do
-      let trainingModelSpec = Model.NeuralInterpreter $ t5ThreeBSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
-          evaluationModelSpec = Model.NeuralInterpreter $ t5ThreeBSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
-      go conf device trainingModelSpec evaluationModelSpec
-    Opts.BARTBase -> do
-      let trainingModelSpec = Model.NeuralInterpreter $ bartBaseSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
-          evaluationModelSpec = Model.NeuralInterpreter $ bartBaseSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
-      go conf device trainingModelSpec evaluationModelSpec
-    Opts.BARTLarge -> do
-      let trainingModelSpec = Model.NeuralInterpreter $ bartLargeSpec SWithLMHead (SGradient SWithGradient) device SWithDropout
-          evaluationModelSpec = Model.NeuralInterpreter $ bartLargeSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
-      go conf device trainingModelSpec evaluationModelSpec
+    Opts.T5Small -> go conf device (trainingModelSpec t5SmallSpec) (evaluationModelSpec t5SmallSpec)
+    Opts.T5Large -> go conf device (trainingModelSpec t5LargeSpec) (evaluationModelSpec t5LargeSpec)
+    Opts.T5ThreeB -> go conf device (trainingModelSpec t5ThreeBSpec) (evaluationModelSpec t5ThreeBSpec)
+    Opts.BARTBase -> go conf device (trainingModelSpec bartBaseSpec) (evaluationModelSpec bartBaseSpec)
+    Opts.BARTLarge -> go conf device (trainingModelSpec bartLargeSpec) (evaluationModelSpec bartLargeSpec)

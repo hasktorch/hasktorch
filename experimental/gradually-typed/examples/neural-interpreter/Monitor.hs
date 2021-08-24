@@ -25,31 +25,27 @@ import qualified Pipes.Prelude as P hiding (toHandle)
 import qualified System.IO as IO
 import qualified System.ProgressBar as PB
 
--- | Data type for monitoring the training and evaluation losses.
+-- | Data type for monitoring the training and evaluation metrics.
 data Monitor
-  = -- | monitor for training loss
-    TrainingLossMonitor
+  = -- | monitor for training metrics
+    TrainingMonitor
       { mtLoss :: !Float,
         mtEpoch :: !Int
       }
-  | -- | monitor for evaluation loss
-    EvaluationLossMonitor
+  | -- | monitor for evaluation metrics
+    EvaluationMonitor
       { meLoss :: !Float,
+        meTargets :: ![String],
+        mePredictions :: ![String],
+        meExactMatchAccuracy :: !Float,
+        meExamples :: ![Dataset.STLCExample Int],
         meEpoch :: !Int
-      }
-  | -- | monitor for predictions
-    PredictionsMonitor
-      { mpTargets :: ![String],
-        mpPredictions :: ![String],
-        mpExactMatchAccuracy :: !Float,
-        mpExamples :: ![Dataset.STLCExample Int],
-        mpEpoch :: !Int
       }
   deriving stock (Eq, Ord, Show, Generic)
 
 $(deriveJSON defaultOptions ''Monitor)
 
--- | A simple monitor that prints the training and evaluation losses to stdout
+-- | A simple monitor that prints the training and evaluation metrics to stdout
 -- and saves the predictions to a file handle.
 monitor :: MonadIO m => Int -> IO.Handle -> P.Consumer Monitor m r
 monitor numEpochs h =
@@ -85,7 +81,7 @@ monitor numEpochs h =
             maxRefreshRate
             (PB.Progress 0 numEpochs (Nothing, Nothing, Nothing))
       P.for P.cat $ \case
-        TrainingLossMonitor {..} ->
+        TrainingMonitor {..} ->
           P.lift . liftIO $
             PB.updateProgress
               pb
@@ -93,19 +89,11 @@ monitor numEpochs h =
                   let (_trainingLoss, evaluationLoss, exactMatchAccuracy) = PB.progressCustom progress
                    in progress {PB.progressDone = mtEpoch, PB.progressCustom = (Just mtLoss, evaluationLoss, exactMatchAccuracy)}
               )
-        EvaluationLossMonitor {..} ->
+        EvaluationMonitor {..} ->
           P.lift . liftIO $
             PB.updateProgress
               pb
               ( \progress ->
-                  let (trainingLoss, _evaluationLoss, exactMatchAccuracy) = PB.progressCustom progress
-                   in progress {PB.progressDone = meEpoch, PB.progressCustom = (trainingLoss, Just meLoss, exactMatchAccuracy)}
-              )
-        PredictionsMonitor {..} ->
-          P.lift . liftIO $
-            PB.updateProgress
-              pb
-              ( \progress ->
-                  let (trainingLoss, evaluationLoss, _exactMatchAccuracy) = PB.progressCustom progress
-                   in progress {PB.progressDone = mpEpoch, PB.progressCustom = (trainingLoss, evaluationLoss, Just mpExactMatchAccuracy)}
+                  let (trainingLoss, _evaluationLoss, _exactMatchAccuracy) = PB.progressCustom progress
+                   in progress {PB.progressDone = meEpoch, PB.progressCustom = (trainingLoss, Just meLoss, Just meExactMatchAccuracy)}
               )

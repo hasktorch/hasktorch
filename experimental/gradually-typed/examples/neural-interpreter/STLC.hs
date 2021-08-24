@@ -22,7 +22,6 @@ import Control.Monad.Fresh (Fresh, MonadFresh (fresh), runFreshFrom)
 import Control.Monad.State (MonadState, modify)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Aeson.TH (defaultOptions, deriveJSON)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import Data.Functor.Classes (compare1, eq1, showsPrec1)
 import Data.Hashable (Hashable)
@@ -81,10 +80,6 @@ instance Monad Exp where
   (Abs e) >>= f = Abs (e >>= f)
   (Sign e) >>= f = Sign (e >>= f)
 
-deriveEq1 ''Exp
-deriveShow1 ''Exp
-deriveOrd1 ''Exp
-
 instance FromJSON Ty
 
 instance FromJSON a => FromJSON (Var () (Exp a))
@@ -100,6 +95,10 @@ instance ToJSON a => ToJSON (Var () (Exp a))
 instance ToJSON a => ToJSON (Scope () Exp a)
 
 instance ToJSON a => ToJSON (Exp a)
+
+deriveEq1 ''Exp
+deriveShow1 ''Exp
+deriveOrd1 ''Exp
 
 instance Eq a => Eq (Exp a) where (==) = eq1
 
