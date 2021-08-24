@@ -4,15 +4,20 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Dataset where
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TVar (TVar, modifyTVar', readTVar)
 import Control.Monad (guard)
+import Control.Monad.Reader (MonadReader (ask), ReaderT)
 import Control.Monad.State (MonadIO (liftIO), evalStateT, runState)
 import Data.Aeson.TH (defaultOptions, deriveJSON)
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HashMap
 import Data.HashSet (HashSet)
 import qualified Data.HashSet as HashSet
 import Data.Hashable (Hashable)
@@ -28,7 +33,10 @@ import qualified Hedgehog.Internal.Seed as Seed
 import qualified Pipes.Safe as P
 import qualified STLC
 import Torch.GraduallyTyped
-import Control.Monad.Reader (ReaderT, MonadReader (ask))
+
+deriving instance Generic Seed
+
+deriving instance Hashable Seed
 
 type Tokenizer = String -> IO [Int]
 
@@ -68,39 +76,55 @@ mkExample ::
   Int ->
   Int ->
   Seed.Seed ->
-  ReaderT (TVar (HashSet [Int])) (P.SafeT IO) (STLCExample Int)
-mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed = flip evalStateT seed . Gen.sample' $ do
-  exTy <- Gen.genTy
-  exInputExp <- Gen.generalize $ Gen.genWellTypedExp exTy
-
-  let (exTargetExp, exTargetNfSteps) = flip runState 0 $ STLC.nf exInputExp
-  guard (maybe True (\s -> exTargetNfSteps `Set.member` s) targetNfSteps)
-
-  let exInputPPrint = STLC.pprint exInputExp
-  exInputIds <- liftIO . tokenize $ exInputPPrint <> "</s>"
-  guard (List.length exInputIds <= maxInputLength)
-
-  cacheHit <- do
-    tvar <- ask
+  ReaderT (TVar (HashSet [Int]), TVar (HashMap Seed (STLCExample Int))) (P.SafeT IO) (STLCExample Int)
+mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed = do
+  mex <- do
+    (_, tvar) <- ask
     liftIO . atomically $ do
-      dedupCache <- readTVar tvar
-      pure $ HashSet.member exInputIds dedupCache
-  guard (not cacheHit)
+      seedCache <- readTVar tvar
+      pure $ HashMap.lookup seed seedCache
 
-  () <- do
-    tvar <- ask
-    liftIO . atomically $ modifyTVar' tvar (HashSet.insert exInputIds)
+  case mex of
+    Just ex -> pure ex
+    Nothing -> do
+      ex <- flip evalStateT seed . Gen.sample' $ do
+        exTy <- Gen.genTy
+        exInputExp <- Gen.generalize $ Gen.genWellTypedExp exTy
 
-  let exTargetPPrint = STLC.pprint exTargetExp
-  exTargetIds <- liftIO . tokenize $ exTargetPPrint <> "</s>"
-  guard (List.length exTargetIds <= maxTargetLength)
+        let (exTargetExp, exTargetNfSteps) = flip runState 0 $ STLC.nf exInputExp
+        guard (maybe True (\s -> exTargetNfSteps `Set.member` s) targetNfSteps)
 
-  exDecodedInputIds <- liftIO $ detokenize exInputIds
-  exDecodedTargetIds <- liftIO $ detokenize exTargetIds
+        let exInputPPrint = STLC.pprint exInputExp
+        exInputIds <- liftIO . tokenize $ exInputPPrint <> "</s>"
+        guard (List.length exInputIds <= maxInputLength)
 
-  pure STLCExample {..}
+        cacheHit <- do
+          (tvar, _) <- ask
+          liftIO . atomically $ do
+            dedupCache <- readTVar tvar
+            pure $ HashSet.member exInputIds dedupCache
+        guard (not cacheHit)
 
-instance Dataset (ReaderT (TVar (HashSet [Int])) (P.SafeT IO)) STLCData Seed (STLCExample Int) where
+        () <- do
+          (tvar, _) <- ask
+          liftIO . atomically $ modifyTVar' tvar (HashSet.insert exInputIds)
+
+        let exTargetPPrint = STLC.pprint exTargetExp
+        exTargetIds <- liftIO . tokenize $ exTargetPPrint <> "</s>"
+        guard (List.length exTargetIds <= maxTargetLength)
+
+        exDecodedInputIds <- liftIO $ detokenize exInputIds
+        exDecodedTargetIds <- liftIO $ detokenize exTargetIds
+
+        pure $ STLCExample {..}
+
+      () <- do
+        (_, tvar) <- ask
+        liftIO . atomically $ modifyTVar' tvar (HashMap.insert seed ex)
+
+      pure ex
+
+instance Dataset (ReaderT (TVar (HashSet [Int]), TVar (HashMap Seed (STLCExample Int))) (P.SafeT IO)) STLCData Seed (STLCExample Int) where
   getItem STLCData {..} seed = do
     guard $ Set.member seed seeds
     mkExample tokenize detokenize targetNfSteps maxInputLength maxTargetLength seed

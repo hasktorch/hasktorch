@@ -16,14 +16,14 @@
 module Main where
 
 import qualified Control.Concurrent.MSem as MSem
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TVar (newTVarIO, swapTVar)
+import Control.Concurrent.STM.TVar (newTVarIO)
 import Control.Lens ((%~))
 import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Control.Monad.Reader (MonadReader (ask), ReaderT (runReaderT))
+import Control.Monad.Reader (ReaderT (runReaderT))
 import Control.Monad.State (evalStateT, get, runStateT)
 import Control.Monad.Trans (MonadTrans (..))
+import qualified Data.HashMap.Strict as HashMap
 import qualified Data.HashSet as HashSet
 import qualified Data.List as List
 import Data.Monoid (Sum (Sum))
@@ -121,11 +121,6 @@ go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
 
     let -- one epoch of training and evaluation
         step (streamingState', g2) epoch = do
-          -- reset deduplication hash set
-          _ <- do
-            tvar <- ask
-            liftIO . atomically $ swapTVar tvar HashSet.empty
-
           -- helper function for streaming
           let go' streamingState'' data' closure' = do
                 (stream, shuffle) <- P.lift $ streamFromMap streamingState'' data'
@@ -219,7 +214,7 @@ go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
     let init' = pure (streamingState, g1)
         done (_streamingState', _g) = pure ()
 
-    dedupCache <- newTVarIO HashSet.empty
+    dedupCache <- (,) <$> newTVarIO HashSet.empty <*> newTVarIO HashMap.empty
 
     P.runSafeT $
       P.withFile configOutputPath IO.WriteMode $ \h ->

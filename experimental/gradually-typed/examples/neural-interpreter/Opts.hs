@@ -8,7 +8,6 @@ module Opts where
 import Control.Applicative ((<**>))
 import Data.Int (Int16)
 import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.Word (Word64)
 import GHC.Generics (Generic)
 import qualified Options.Applicative as Opts
