@@ -79,18 +79,18 @@
                       sha256 = "0rxnkijdvglhamqfn8krsnnpj3s7kz2v5n5ndy37a41l161jqczx";
                     };
                     modules = [{
-                      nonReinstallablePkgs = [
-                        "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
-                        "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
-                        "ghcjs-prim" "ghcjs-th"
-                        "ghc-bignum" "exceptions" "stm"
-                        "ghc-boot"
-                        "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"
-                        "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
-                        "hpc"
-                        "mtl" "parsec" "process" "text" "time" "transformers"
-                        "unix" "xhtml" "terminfo"
-                      ];
+                      # nonReinstallablePkgs = [
+                      #   "rts" "ghc-heap" "ghc-prim" "integer-gmp" "integer-simple" "base"
+                      #   "deepseq" "array" "ghc-boot-th" "pretty" "template-haskell"
+                      #   "ghcjs-prim" "ghcjs-th"
+                      #   "ghc-bignum" "exceptions" "stm"
+                      #   "ghc-boot"
+                      #   "ghc" "Cabal" "Win32" "array" "binary" "bytestring" "containers"
+                      #   "directory" "filepath" "ghc-boot" "ghc-compact" "ghc-prim"
+                      #   "hpc"
+                      #   "mtl" "parsec" "process" "text" "time" "transformers"
+                      #   "unix" "xhtml" "terminfo"
+                      # ];
                       # enableLibraryProfiling = true;
                       # packages.haskell-language-server.enableExecutableProfiling = true;
                       packages.haskell-language-server.components.library.ghcOptions = ["-Wall" "-Wredundant-constraints" "-Wno-name-shadowing" "-Wno-unticked-promoted-constructors" "-dynamic"];
