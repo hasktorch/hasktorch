@@ -12,14 +12,11 @@
 module Main where
 
 import qualified Control.Concurrent.MSem as MSem
-import Control.Concurrent.STM.TVar (newTVarIO)
 import Control.Lens ((%~))
 import Control.Monad.Cont (runContT)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Control.Monad.Reader (ReaderT (runReaderT))
 import Control.Monad.State (evalStateT, get, runStateT)
 import Control.Monad.Trans (MonadTrans (..))
-import qualified Data.HashMap.Strict as HashMap
 import qualified Data.List as List
 import Data.Monoid (Sum (Sum))
 import qualified Data.Set as Set
@@ -216,15 +213,13 @@ go config@Opts.Config {..} device trainingModelSpec evaluationModelSpec =
     let init' = pure (streamingState, g1)
         done (_streamingState', _g) = pure ()
 
-    seedCache <- newTVarIO HashMap.empty
-
     let outputStream = do
           P.yield (Monitor.ConfigMonitor config)
           P.foldM step init' done (P.each [1 .. configNumEpochs])
 
     P.runSafeT $
       P.withFile configOutputPath IO.WriteMode $ \h ->
-        flip runReaderT seedCache . flip runContT pure . P.runEffect $
+        flip runContT pure . P.runEffect $
           outputStream >-> Monitor.monitor configNumEpochs h
 
 main :: IO ()
