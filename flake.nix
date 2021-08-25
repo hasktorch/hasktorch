@@ -10,7 +10,7 @@
       hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
       hasktorch.cachix.org-1:wLjNS6HuFVpmzbmv01lxwjdCOtWRD8pQVR3Zr/wVoQc=
     ];
-    bash-prompt = "\[\\e[1m\\e[32mdev-hasktorch\\e[0m:\\w\]$ ";
+    bash-prompt = "\\[\\033[1m\\][dev-hasktorch]\\[\\033\[m\\]\\040\\w$\\040";
   };
 
   inputs = {
