@@ -151,6 +151,15 @@ type family Init (xs :: [a]) :: [a] where
   Init (x ': '[]) = '[]
   Init (x ': xs) = x ': Init xs
 
+type family Tail (xs :: [a]) :: [a] where
+  Tail '[] = TypeError (Text "Tail of empty list.")
+  Tail '[x] = '[]
+  Tail (x ': xs) = xs
+
+type family Head (xs :: [a]) :: a where
+  Head '[] = TypeError (Text "Head of empty list.")
+  Head (x ': xs) = x
+  
 type family Last (xs :: [a]) :: a where
   Last '[] = TypeError (Text "Last of empty list.")
   Last (x ': '[]) = x
@@ -217,6 +226,12 @@ type family ReplaceDim (dim :: Nat) (shape :: [Nat]) (n :: Nat) :: Maybe [Nat] w
   ReplaceDim 0 (_ ': t) n = Just (n ': t)
   ReplaceDim dim (h ': t) n = AppendToMaybe h (ReplaceDim (dim - 1) t n)
   ReplaceDim _ _ _ = Nothing
+
+type family CheckReplace (dim :: Nat) (shape :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
+  CheckReplace dim shape Nothing = DimOutOfBound shape dim
+  CheckReplace _ _ (Just result) = result
+
+type ReplaceDim' dim shape n = CheckReplace dim shape (ReplaceDim dim shape n)
 
 type family If c t e where
   If 'True t e = t

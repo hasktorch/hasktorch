@@ -2910,6 +2910,15 @@ upsampleNearest2d ::
   Tensor
 upsampleNearest2d (outputHeight, outputWidth) scales_h scales_w self = unsafePerformIO $ cast4 ATen.upsample_nearest2d_tldd self [outputHeight, outputWidth] scales_h scales_w
 
+-- | Applies a 2D nearest neighbor upsampling to an input signal composed of several input channels.
+upsampleNearest2d' ::
+  -- | output_size
+  (Int, Int) ->
+  -- | self
+  Tensor ->
+  Tensor
+upsampleNearest2d' (outputHeight, outputWidth) self = unsafePerformIO $ cast2 ATen.upsample_nearest2d_tl self [outputHeight, outputWidth]
+
 -- | Splits the tensor into chunks of given size if possible.
 split ::
   -- | split-size

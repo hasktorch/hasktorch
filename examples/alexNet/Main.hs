@@ -23,7 +23,7 @@ import           Torch.NN                            as N
 import           Torch.Functional                    as F       hiding (take)
 import qualified Torch.DType                         as D
 import qualified Torch.Vision                        as V
-import qualified Torch.Typed.Vision                  as V       hiding (getImages')
+import qualified Torch.Typed.Vision                  as V       hiding (getImages', hwc2chw, readImageAsRGB8)
 
 data DataSet = DataSet {
     images  :: [Tensor],

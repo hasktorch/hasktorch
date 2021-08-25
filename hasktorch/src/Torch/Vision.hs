@@ -20,17 +20,20 @@ import Control.Monad
   ( MonadPlus,
     forM_,
     when,
+    (<=<)
   )
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BSI
 import Data.Int
 import qualified Data.Vector.Storable as V
 import Data.Word
+import qualified Data.List as List (transpose, unfoldr)
 import qualified Foreign.ForeignPtr as F
 import qualified Foreign.Ptr as F
 import GHC.Exts (IsList (fromList))
 import qualified Language.C.Inline as C
 import Pipes
+import System.Directory (listDirectory, doesFileExist)
 import System.IO.Unsafe
 import System.Random (mkStdGen, randoms)
 import qualified Torch.DType as D
@@ -42,10 +45,11 @@ import Torch.Internal.Cast
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import Torch.NN
 import Torch.Tensor
+import Torch.TensorFactories (onesLike, zeros')
 import qualified Torch.Tensor as D
 import qualified Torch.TensorOptions as D
-import qualified Torch.Typed.Vision as I
-import Prelude hiding (max, min)
+import Torch.Typed.Vision as I (MnistData (..), length, getLabel, FolderData (..), getImageFolder)
+import Prelude hiding (max, min, length)
 import qualified Prelude as P
 
 C.include "<stdint.h>"
@@ -66,7 +70,7 @@ instance Monad m => Datastream m Int (MNIST m) (Tensor, Tensor) where
         let input = getImages' batchSize 784 mnistData indexes
         yield (input, target)
     where
-      numIters = I.length mnistData `Prelude.div` batchSize
+      numIters = length mnistData `Prelude.div` batchSize
 
 instance Applicative m => Dataset m (MNIST m) Int (Tensor, Tensor) where
   getItem MNIST {..} ix =
@@ -75,7 +79,7 @@ instance Applicative m => Dataset m (MNIST m) Int (Tensor, Tensor) where
         labels = getLabels' batchSize mnistData indexes
      in pure (imgs, labels)
 
-  keys MNIST {..} = fromList [0 .. I.length mnistData `Prelude.div` batchSize - 1]
+  keys MNIST {..} = fromList [0 .. length mnistData `Prelude.div` batchSize - 1]
 
 getLabels' :: Int -> I.MnistData -> [Int] -> Tensor
 getLabels' n mnist imageIdxs =
@@ -102,6 +106,114 @@ getImages' n dataDim mnist imageIdxs = unsafePerformIO $ do
           dataDim
   return $ D.toType D.Float t
 
+
+data ImageFolder (m :: * -> *) = ImageFolder { folderData :: FolderData, finalShape :: (Int, Int, Int, Int) }
+
+instance Monad m => Datastream m Int (ImageFolder m) (Tensor, Tensor) where
+  streamSamples ImageFolder {..} seed = Select $
+    for (each [1 .. numIters]) $
+      \iter -> do
+        let (n, _, h, w) = finalShape
+            from = (iter - 1) * n
+            to = (iter * n) - 1
+            indexes = [from .. to]
+            input = squeezeDim 0 . unsafePerformIO $ getFolderImages folderData indexes [h, w]
+            labels = _toType D.Int64 . onesLike $ input
+        yield (input, labels)
+    where
+      (batchSize, _, _, _) = finalShape 
+      numIters = P.length (imageNames folderData) `Prelude.div` batchSize
+
+instance Applicative m => Dataset m (ImageFolder m) Int (Tensor, Tensor) where
+  getItem ImageFolder{..} ix =  
+    let
+      (n, _, h, w) = finalShape
+      indexes = [ix * n .. (ix+1) * n - 1]
+      imgs = unsafePerformIO $ getFolderImages folderData indexes [h, w]
+      labels = _toType D.Int64 . onesLike $ imgs
+    in pure (imgs, labels)
+
+  keys ImageFolder{..} = fromList [ 0 .. P.length (imageNames folderData) `Prelude.div` batchSize - 1]
+    where 
+     (batchSize, _, _, _) = finalShape
+
+getFolderImage :: FilePath -> [FilePath] -> Int -> IO Tensor
+getFolderImage path names imgIdx = (readImageAsRGB8 . (++) path . (!!) names) (imgIdx `P.mod` P.length names) >>=
+                                  \case
+                                      Left error -> throwIO $ userError "Path contains non-image files"
+                                      Right tensor -> return . _toType D.Float . hwc2chw $ tensor 
+
+getFolderImages ::
+  FolderData ->
+  [Int] ->
+  [Int] ->
+  IO Tensor
+getFolderImages folder imgIdxs size = (>>= return . squeezeDim 0 . stack (Dim 1) . concat) 
+                                        $ mapM mappingFunc . zip3 (sourcePaths folder :: [FilePath]) (imageNames folder :: [[FilePath]]) $ (formattedIdxs :: [[Int]])
+                                            where 
+                                              formattedIdxs = List.transpose . takeWhile (not . null) . List.unfoldr (Just . splitAt (P.length $ sourcePaths folder)) $ imgIdxs :: [[Int]]
+                                              mappingFunc :: (FilePath, [FilePath], [Int]) -> IO [Tensor]
+                                              mappingFunc (path, names, idxs) =  mapM ((\x -> return $ resize x size "bilinear" True) <=< getFolderImage path names :: Int -> IO Tensor) idxs
+
+getFolderLabels ::
+  FolderData ->
+  [Int] ->
+  Tensor 
+getFolderLabels folder imgIdxs = stack (Dim 0) . concat
+                         $ zipWith mappingFunc 
+                            (sourceLabels folder)
+                            formattedIdxs
+                            where 
+                              formattedIdxs = List.transpose . takeWhile (not . null) . List.unfoldr (Just . splitAt (P.length $ sourcePaths folder)) $ imgIdxs :: [[Int]]
+                              mappingFunc :: Int -> [Int] -> [Tensor]
+                              mappingFunc label section = map (\_ -> addScalar label (zeros' [])) section
+
+-- END ImageFolder Dataset --
+
+
+_castSqueezeIn :: Tensor -> (Tensor, Bool, Bool, D.DType)
+_castSqueezeIn tensor' =
+  let needSqueeze = False
+      needCast = False
+      adjust :: Bool -> Bool -> D.DType -> Tensor -> (Tensor, Bool, Bool, D.DType)
+      adjust needSqueeze needCast dtype' tensor
+            | dtype tensor /= D.Float = adjust needSqueeze True dtype' $ _toType D.Float tensor
+            | dim tensor < 4 = adjust True needCast dtype' $ unsqueeze (Dim 0) tensor
+            | dim tensor > 4 = error $ "Tensor must have 4 or fewer dimensions; not " ++ show (dim tensor)
+            | otherwise = (tensor, needSqueeze, needCast, dtype')
+  in adjust needSqueeze needCast (dtype tensor') tensor'
+
+
+_castSqueezeOut :: Tensor -> Bool -> Bool -> D.DType -> Tensor
+_castSqueezeOut tensor needSqueeze needCast dtype'=
+  case (needSqueeze, needCast) of
+    (_, True) -> _castSqueezeOut (_toType dtype' tensor) needSqueeze False dtype'
+    (True, _) -> _castSqueezeOut (squeezeDim 0 tensor) False needCast dtype'
+    (False, False) -> tensor
+
+-- Partial Haskell implementation of the pytorch/Torch interpolate
+-- TODO: Use typeclasses and instances to clean up ugly type conversion
+interpolate :: Tensor -> (Int, Int) -> String -> Bool -> Tensor
+interpolate tensor (sizeH, sizeW) mode alignCorners = 
+    case mode of
+      "nearest"  -> upsampleNearest2d' (sizeH, sizeW) tensor
+      "bilinear" -> upsampleBilinear2d (sizeH, sizeW) alignCorners tensor
+      _          -> error $ "The mode provided (" ++ show mode ++ ") is not implemented. Try \"nearest\" or \"bilinear\""
+      
+ 
+
+resize :: Tensor -> [Int] -> String -> Bool -> Tensor
+resize tensor' size'' mode alignCorners =
+    let size' = case size'' of
+                [n, c, h, w] -> (h, w) 
+                [c, h, w]    -> (h, w)
+                [h, w]       -> (h, w)
+                [wh]         -> (wh, wh)
+                _ -> error "Invalid output size"
+        (tensor, needSqueeze, needCast, dtype') = _castSqueezeIn tensor'
+        ftensor = interpolate tensor size' mode alignCorners
+    in  _castSqueezeOut ftensor needSqueeze needCast dtype'
+
 -- http://paulbourke.net/dataformats/asciiart/
 grayScale10 = " .:-=+*#%@"
 
@@ -124,7 +236,7 @@ dispImage img = do
   where
     downSamp = 2
     grayScale = grayScale10
-    paletteMax = (fromIntegral $ length grayScale) - 1.0
+    paletteMax = (fromIntegral $ P.length grayScale) - 1.0
     img' = reshape [28, 28] img
     scaled :: [[Float]] =
       let (mn, mx) = (min img', max img')
@@ -579,7 +691,7 @@ fromDynImage image = unsafePerformIO $ case image of
 
 fromImages :: [I.Image I.PixelRGB8] -> IO D.Tensor
 fromImages imgs = do
-  let num_imgs = length imgs
+  let num_imgs = P.length imgs
       channel = 3
       (I.Image width height _) = head imgs
   when (num_imgs == 0) $ do
@@ -590,7 +702,7 @@ fromImages imgs = do
       let (fptr, len) = V.unsafeToForeignPtr0 vec
           whc = width * height * channel
       when (len /= whc) $ do
-        throwIO $ userError "vector's length is not the same as tensor' one."
+        throwIO $ userError "vector's P.length is not the same as tensor' one."
       when (width /= width') $ do
         throwIO $ userError "image's width is not the same as first image's one"
       when (height /= height') $ do
@@ -606,7 +718,7 @@ writeImage width height channel pixel tensor = do
     let (fptr, len) = V.unsafeToForeignPtr0 vec
         whc = width * height * channel
     if (len /= whc)
-      then throwIO $ userError $ "vector's length(" ++ show len ++ ") is not the same as tensor' one."
+      then throwIO $ userError $ "vector's P.length(" ++ show len ++ ") is not the same as tensor' one."
       else do
         F.withForeignPtr fptr $ \ptr2 -> do
           BSI.memcpy (F.castPtr ptr2) (F.castPtr ptr1) len
