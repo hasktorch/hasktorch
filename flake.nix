@@ -55,7 +55,7 @@
 
       gitrev = self.rev or "dirty";
 
-      profiling = true;
+      profiling = false;
       cudaSupport = false;
       cudaMajorVersion = "11";
 
@@ -75,8 +75,8 @@
                     src = prev.fetchFromGitHub {
                       owner = "haskell";
                       repo = "haskell-language-server";
-                      rev = "4dc8f2547deff25b3a74180238c72e8e7765c742";
-                      sha256 = "0l6r2mhcapaf2xp5g3qmk3gpw9mdfd2ry9yyl323z695ir21xkcj";
+                      rev = "d7a745e9b5ae76a4bf4ee79a9fdf41cf6f1662bf";
+                      sha256 = "0rxnkijdvglhamqfn8krsnnpj3s7kz2v5n5ndy37a41l161jqczx";
                     };
                     modules = [{
                       nonReinstallablePkgs = [
@@ -116,6 +116,7 @@
                         ./plugins/hls-explicit-imports-plugin
                         ./plugins/hls-refine-imports-plugin
                         ./plugins/hls-hlint-plugin
+                        ./plugins/hls-rename-plugin
                         ./plugins/hls-retrie-plugin
                         ./plugins/hls-haddock-comments-plugin
                       --  ./plugins/hls-splice-plugin
@@ -231,7 +232,7 @@
         (final: prev: {
           hasktorchProject = import ./nix/haskell.nix (rec {
             pkgs = prev;
-            compiler-nix-name = "ghc901";
+            compiler-nix-name = "ghc8105";
             inherit (prev) lib;
             inherit profiling;
             inherit cudaSupport;
