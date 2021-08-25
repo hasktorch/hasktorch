@@ -221,7 +221,6 @@ executable neural-interpreter
                      , mtl
                      , optparse-applicative
                      , pipes
-                     , pipes-bytestring
                      , pipes-concurrency
                      , pipes-safe
                      , random

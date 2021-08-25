@@ -12,27 +12,27 @@ import Control.Monad.IO.Class (MonadIO (liftIO))
 import Data.Aeson (ToJSON (toEncoding))
 import Data.Aeson.Encoding (encodingToLazyByteString)
 import Data.Aeson.TH (defaultOptions, deriveJSON)
+import qualified Data.ByteString as BS
 import Data.ByteString.Lazy (snoc, toStrict)
 import Data.Foldable (toList)
 import qualified Data.List as List
 import qualified Data.Text.Lazy as Text.Lazy
 import qualified Dataset (STLCExample (..))
 import GHC.Generics (Generic)
+import qualified Opts
 import Pipes ((>->))
 import qualified Pipes as P
-import qualified Pipes.ByteString as P hiding (map)
 import qualified Pipes.Prelude as P hiding (toHandle)
 import qualified System.IO as IO
 import qualified System.ProgressBar as PB
-import qualified Opts
 
 -- | Data type for monitoring the training and evaluation metrics.
 data Monitor
   = -- | monitor for configuration
     ConfigMonitor
-      { mcConfig :: !Opts.Config }
-    -- | monitor for training metrics
-  | TrainingMonitor
+      {mcConfig :: !Opts.Config}
+  | -- | monitor for training metrics
+    TrainingMonitor
       { mtLoss :: !Float,
         mtEpoch :: !Int
       }
@@ -55,7 +55,7 @@ monitor :: MonadIO m => Int -> IO.Handle -> P.Consumer Monitor m r
 monitor numEpochs h =
   P.tee showProgress
     >-> P.map (toStrict . flip snoc 0x0a . encodingToLazyByteString . toEncoding)
-    >-> P.toHandle h
+    >-> P.for P.cat (\bs -> liftIO $ BS.hPut h bs >> IO.hFlush h)
   where
     showProgress = do
       let maxRefreshRate = 10
