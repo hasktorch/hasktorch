@@ -4,12 +4,13 @@
 module Torch.GraduallyTyped.NN.Transformer.T5.Base where
 
 import Data.Singletons (SingI (sing))
-import Data.Singletons.TypeLits (SNat)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5ModelF, t5ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, STransformerStyle (ST5), TransformerHead, TransformerStyle (T5))
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Size (..))
 
@@ -49,13 +50,15 @@ type T5BaseVocabDim = 'Dim ('Name "*") ('Size 32128)
 type T5Base
   (transformerHead :: TransformerHead)
   (gradient :: Gradient RequiresGradient)
-  (device :: Device (DeviceType Nat)) =
-  T5ModelF 'T5 transformerHead T5BaseNumLayers T5BaseNumLayers gradient device T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5BaseVocabDim
+  (device :: Device (DeviceType Nat))
+  (hasDropout :: HasDropout) =
+  T5ModelF 'T5 transformerHead T5BaseNumLayers T5BaseNumLayers gradient device T5BaseHeadDim T5BaseHeadEmbedDim T5BaseEmbedDim T5BaseInputEmbedDim T5BaseFFNDim T5BaseVocabDim hasDropout
 
 -- | T5-Base model specification.
 t5BaseSpec ::
   STransformerHead transformerHead ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (T5Base transformerHead gradient device)
+  SHasDropout hasDropout ->
+  ModelSpec (T5Base transformerHead gradient device hasDropout)
 t5BaseSpec transformerHead = t5ModelSpec ST5 transformerHead t5BaseNumLayers t5BaseNumLayers

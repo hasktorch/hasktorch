@@ -2,7 +2,11 @@
 
 set -xe
 
+if ghc --version | grep 9.0.1 ; then
+curl https://www.stackage.org/nightly-2021-07-22/cabal.config > cabal.project.freeze
+else
 curl https://www.stackage.org/lts-17.2/cabal.config > cabal.project.freeze
+fi
 
 case "$(uname)" in
   "Darwin")
@@ -32,6 +36,7 @@ package libtorch-ffi
 package *
   extra-lib-dirs: $(pwd)/deps/mklml/lib
   extra-lib-dirs: $(pwd)/deps/libtorch/lib
+  extra-lib-dirs: $(pwd)/deps/tokenizers/lib
 
 package libtorch-ffi
     ghc-options: -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEM_GB} -RTS

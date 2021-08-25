@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
@@ -13,28 +15,53 @@ module Torch.GraduallyTyped.NN.Transformer.GStack where
 import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Functor.Indexed ((<<$>>))
 import Data.Kind (Type)
-import Data.Singletons.TypeLits (SNat (..))
-import qualified Data.Vector as V
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
+import qualified Data.Vector as V hiding (uncons)
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
-import GHC.TypeLits (type (+))
-import Torch.GraduallyTyped.DType (SDataType (..))
-import Torch.GraduallyTyped.Device (SDevice (..))
+import GHC.Generics (Generic)
+import GHC.TypeLits (Nat, Symbol, type (+))
+import Torch.GraduallyTyped.DType (DType, DataType, SDataType (..))
+import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice (..))
+import qualified Torch.GraduallyTyped.Internal.Vector as V
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, VectorSpec (..))
-import Torch.GraduallyTyped.NN.Transformer.GBlock (DecoderBlockCrossAttentionF, DecoderBlockFeedForwardNetworkF, DecoderBlockSelfAttentionF, EncoderBlockCrossAttentionF, EncoderBlockFeedForwardNetworkF, EncoderBlockSelfAttentionF, GTransformerBlock, decoderBlockSpec, encoderBlockSpec)
-import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle)
-import Torch.GraduallyTyped.RequiresGradient (SGradient (..))
-import Torch.GraduallyTyped.Shape.Type (SDim)
+import Torch.GraduallyTyped.NN.Transformer.GBlock (DecoderBlockF, EncoderBlockF, decoderBlockSpec, encoderBlockSpec)
+import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle, TransformerStyle)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
+import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient (..))
+import Torch.GraduallyTyped.Shape.Type (Dim, Name, SDim, Size)
 
 -- | Generic transformer stack.
 --
 -- - @stack@ is a stack of tranformer blocks.
 newtype GTransformerStack (stack :: Type) where
   GTransformerStack :: forall stack. stack -> GTransformerStack stack
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance
   ModelSpec (GTransformerStack stack) =
     GTransformerStack (ModelSpec stack)
+
+type family
+  EncoderStackF
+    (style :: TransformerStyle)
+    (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout)
+  where
+  EncoderStackF style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout =
+    GTransformerStack
+      ( VS.Vector
+          numLayers
+          (EncoderBlockF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout)
+      )
 
 -- | Specifies the parameters of a transformer stack in an encoder configuration.
 --
@@ -50,7 +77,7 @@ type instance
 -- - @dropoutP@: the dropout rate.
 -- - @eps@: the epsilon value for numerical stability of the layer normalization.
 encoderStackSpec ::
-  forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim.
+  forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout.
   STransformerStyle style ->
   SNat numLayers ->
   SGradient gradient ->
@@ -61,22 +88,35 @@ encoderStackSpec ::
   SDim embedDim ->
   SDim queryEmbedDim ->
   SDim ffnDim ->
+  SHasDropout hasDropout ->
   Double ->
   Double ->
-  ModelSpec
-    ( GTransformerStack
-        ( VS.Vector
-            numLayers
-            ( GTransformerBlock
-                (EncoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
-                EncoderBlockCrossAttentionF
-                (EncoderBlockFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim)
-            )
-        )
-    )
-encoderStackSpec style numLayers@SNat gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps =
-  let blockSpec = encoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps
+  ModelSpec (EncoderStackF style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout)
+encoderStackSpec style numLayers@SNat gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout dropoutP eps =
+  let blockSpec = encoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout dropoutP eps
    in GTransformerStack $ VectorSpec numLayers (VS.replicate' numLayers blockSpec)
+
+type family
+  DecoderStackF
+    (style :: TransformerStyle)
+    (numLayers :: Nat)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (headDim :: Dim (Name Symbol) (Size Nat))
+    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (embedDim :: Dim (Name Symbol) (Size Nat))
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout)
+  where
+  DecoderStackF style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout =
+    GTransformerStack
+      ( VS.Vector
+          numLayers
+          (DecoderBlockF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout)
+      )
 
 -- | Specifies the parameters of a transformer stack in a decoder configuration.
 --
@@ -93,7 +133,7 @@ encoderStackSpec style numLayers@SNat gradient device dataType headDim headEmbed
 -- - @dropoutP@: the dropout rate.
 -- - @eps@: the epsilon value for numerical stability of the layer normalization.
 decoderStackSpec ::
-  forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim.
+  forall style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout.
   STransformerStyle style ->
   SNat numLayers ->
   SGradient gradient ->
@@ -105,44 +145,27 @@ decoderStackSpec ::
   SDim queryEmbedDim ->
   SDim keyEmbedDim ->
   SDim ffnDim ->
+  SHasDropout hasDropout ->
   Double ->
   Double ->
-  ModelSpec
-    ( GTransformerStack
-        ( VS.Vector
-            numLayers
-            ( GTransformerBlock
-                (DecoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
-                (DecoderBlockCrossAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
-                (DecoderBlockFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim)
-            )
-        )
-    )
-decoderStackSpec style numLayers@SNat gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps =
-  let blockSpec = decoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps
+  ModelSpec (DecoderStackF style numLayers gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout)
+decoderStackSpec style numLayers@SNat gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout dropoutP eps =
+  let blockSpec = decoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout dropoutP eps
    in GTransformerStack $ VectorSpec numLayers (VS.replicate' numLayers blockSpec)
 
 instance
-  ( HasInitialize block generatorDevice block generatorDevice,
+  ( HasInitialize block generatorDevice block' generatorDevice,
     numLayers' ~ (numLayers + 1)
   ) =>
   HasInitialize
     (GTransformerStack (VS.Vector numLayers' block))
     generatorDevice
-    (GTransformerStack (VS.Vector numLayers' block))
+    (GTransformerStack (VS.Vector numLayers' block'))
     generatorDevice
-  where
-  initialize (GTransformerStack vSpec) =
-    let v = IxStateT . initialize $ vSpec
-     in runIxStateT (GTransformerStack <<$>> v)
 
 instance
   HasStateDict block =>
   HasStateDict (GTransformerStack (VS.Vector numLayers block))
-  where
-  fromStateDict (GTransformerStack vSpec) k =
-    GTransformerStack <$> fromStateDict vSpec k
-  toStateDict k (GTransformerStack v) = toStateDict k v
 
 instance
   HasForward

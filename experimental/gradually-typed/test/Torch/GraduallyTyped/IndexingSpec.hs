@@ -4,7 +4,7 @@
 module Torch.GraduallyTyped.IndexingSpec where
 
 import Data.Maybe (fromJust)
-import Data.Singletons.Prelude.List
+import Torch.GraduallyTyped.Prelude.List
 import qualified Data.Vector.Sized as SV
 import Test.Hspec
 import Torch.GraduallyTyped
@@ -27,7 +27,7 @@ tensor ::
            'Dim ('Name "*") ('Size 3)
          ]
     )
-tensor = fromJust $ reshape $ arangeNaturals @('Size 12)
+tensor = fromJust $ reshape =<< arangeNaturals @('Size 12)
 
 spec :: Spec
 spec = describe "Indexing" $ do
@@ -75,8 +75,8 @@ spec = describe "Indexing" $ do
           SV.singleton $ SV.singleton 9
         )
 
-  it "slices with SliceFromUpToWithStride" $ do
-    x <- tensor ! SIndices (SSliceAll :|: SSliceFrom (SIndex @1) :|: SSliceFromUpToWithStride (SIndex @0) (SIndex @1) (SIndex @2) :|: SNil)
+  it "slices with SliceFromUpToWithStep" $ do
+    x <- tensor ! SIndices (SSliceAll :|: SSliceFrom (SIndex @1) :|: SSliceFromUpToWithStep (SIndex @0) (SIndex @1) (SIndex @2) :|: SNil)
 
     dimSize <$> getDims x `shouldBe` [2, 1, 1]
     fromTensor @(SV.Vector _ (SV.Vector _ (SV.Vector _ Int))) x

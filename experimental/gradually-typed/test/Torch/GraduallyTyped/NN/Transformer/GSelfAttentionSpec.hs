@@ -21,8 +21,8 @@ testSA = do
       queryEmbedDim = SName @"*" :&: SSize @512
       dropoutP = 0
       eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "sa." $ selfAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps
+  g <- sMkGenerator device 0
+  let spec = NamedModel "sa." $ selfAttentionSpec SByT5 gradient device dataType headDim headEmbedDim embedDim queryEmbedDim SWithDropout dropoutP eps
   (sa, g') <- initialize spec g
   sa' <- flip evalStateT Map.empty $ do
     toStateDict mempty sa
@@ -30,7 +30,7 @@ testSA = do
   let batchDim = SName @"*" :&: SSize @1
       seqDim = SName @"*" :&: SSize @4
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
-      attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+  query <- sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
+  attentionBias <- sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
   (output, _) <- forward sa' (query, attentionBias) g'
   pure output

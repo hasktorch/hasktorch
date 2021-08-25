@@ -22,8 +22,8 @@ testCA = do
       keyEmbedDim = queryEmbedDim
       dropoutP = 0
       eps = 1e-6
-  let g = sMkGenerator device 0
-      spec = NamedModel "ca." $ crossAttentionSpec SPegasus gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps
+  g <- sMkGenerator device 0
+  let spec = NamedModel "ca." $ crossAttentionSpec SPegasus gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim SWithDropout dropoutP eps
   (ca, g') <- initialize spec g
   ca' <- flip evalStateT Map.empty $ do
     toStateDict mempty ca
@@ -31,8 +31,8 @@ testCA = do
   let batchDim = SName @"*" :&: SSize @3
       seqDim = SName @"*" :&: SSize @4
       sOnes' = (sOnes .) . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device
-      query = sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
-      key = sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
-      attentionBias = sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
+  query <- sOnes' dataType (SShape $ batchDim :|: seqDim :|: queryEmbedDim :|: SNil)
+  key <- sOnes' dataType (SShape $ batchDim :|: seqDim :|: keyEmbedDim :|: SNil)
+  attentionBias <- sOnes' dataType (SShape $ batchDim :|: SName @"*" :&: SSize @1 :|: seqDim :|: seqDim :|: SNil)
   (output, _) <- forward ca' (query, key, attentionBias) g'
   pure output

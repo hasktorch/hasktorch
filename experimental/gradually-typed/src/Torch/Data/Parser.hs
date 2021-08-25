@@ -44,7 +44,7 @@ type Parser
   (a :: Type) =
   FreeT ((->) i) b a
 
-instance (Applicative f, MonadLogic b) => MonadLogic (FreeT f b) where
+instance (Applicative f, MonadLogic b, MonadPlus b) => MonadLogic (FreeT f b) where
   -- msplit :: FreeT f b a -> FreeT f b (Maybe (a, FreeT f b a))
   msplit (FreeT b) = FreeT $ go b []
     where

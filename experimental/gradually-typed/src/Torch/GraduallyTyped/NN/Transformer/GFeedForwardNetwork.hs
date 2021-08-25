@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -14,9 +16,11 @@ module Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetwork where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
-import Data.Singletons.Prelude.List (SList (..))
+import Torch.GraduallyTyped.Prelude.List (SList (..))
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType, SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
@@ -24,11 +28,11 @@ import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Activation (Gelu (..), GeluNew (..), Relu (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
 import Torch.GraduallyTyped.NN.Dropout (Dropout (..))
-import Torch.GraduallyTyped.NN.Linear (GLinear (..), LinearBiasF, LinearWeightF, linearSpec)
+import Torch.GraduallyTyped.NN.Linear (GLinear (..), GLinearF, linearSpec)
 import Torch.GraduallyTyped.NN.Normalization (LayerNorm (..), LayerNormSpec (..))
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle (..))
-import Torch.GraduallyTyped.NN.Type (HasBias (..), SHasBias (..))
-import Torch.GraduallyTyped.Prelude (pattern (:|:))
+import Torch.GraduallyTyped.NN.Type (HasBias (..), HasDropout (..), SHasBias (..), SHasDropout (..))
+import Torch.GraduallyTyped.Prelude (Catch, pattern (:|:))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, SShape (..), Shape (..), Size (..))
@@ -57,45 +61,26 @@ data
       gateLayer1 :: layer1
     } ->
     GGate layer0 activation layer1
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance
   ModelSpec (GGate layer0 activation layer1) =
     GGate (ModelSpec layer0) (ModelSpec activation) (ModelSpec layer1)
 
 instance
-  ( HasInitialize layer0 generatorDevice layer0 generatorDevice,
-    HasInitialize activation generatorDevice activation generatorDevice,
-    HasInitialize layer1 generatorDevice layer1 generatorDevice
+  ( HasInitialize layer0 generatorDevice layer0' generatorDevice0,
+    HasInitialize activation generatorDevice0 activation' generatorDevice1,
+    HasInitialize layer1 generatorDevice1 layer1' generatorOutputDevice
   ) =>
   HasInitialize
     (GGate layer0 activation layer1)
     generatorDevice
-    (GGate layer0 activation layer1)
-    generatorDevice
-  where
-  initialize (GGate layer0Spec activationSpec layer1Spec) =
-    let layer0 = IxStateT . initialize $ layer0Spec
-        activation = IxStateT . initialize $ activationSpec
-        layer1 = IxStateT . initialize $ layer1Spec
-     in runIxStateT $ GGate <<$>> layer0 <<*>> activation <<*>> layer1
+    (GGate layer0' activation' layer1')
+    generatorOutputDevice
 
 instance
-  ( HasStateDict layer0,
-    HasStateDict activation,
-    HasStateDict layer1
-  ) =>
+  (HasStateDict layer0, HasStateDict activation, HasStateDict layer1) =>
   HasStateDict (GGate layer0 activation layer1)
-  where
-  fromStateDict (GGate layer0Spec activationSpec layer1Spec) k =
-    GGate
-      <$> fromStateDict layer0Spec k
-      <*> fromStateDict activationSpec k
-      <*> fromStateDict layer1Spec k
-  toStateDict k GGate {..} = do
-    () <- toStateDict k gateLayer0
-    () <- toStateDict k gateActivation
-    () <- toStateDict k gateLayer1
-    pure ()
 
 instance
   ( HasForward
@@ -171,10 +156,32 @@ data
       ffnOutputLayerNorm :: outputLayerNorm
     } ->
     GTransformerFeedForwardNetwork inputLayerNorm inputTransformation activation activationDropout outputProjection outputDropout outputLayerNorm
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance
   ModelSpec (GTransformerFeedForwardNetwork inputLayerNorm inputTransformation activation activationDropout outputProjection outputDropout outputLayerNorm) =
     GTransformerFeedForwardNetwork (ModelSpec inputLayerNorm) (ModelSpec inputTransformation) (ModelSpec activation) (ModelSpec activationDropout) (ModelSpec outputProjection) (ModelSpec outputDropout) (ModelSpec outputLayerNorm)
+
+type family
+  GTransformerFeedForwardNetworkF
+    (style :: TransformerStyle)
+    (gradient :: Gradient RequiresGradient)
+    (device :: Device (DeviceType Nat))
+    (dataType :: DataType DType)
+    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
+    Type
+  where
+  GTransformerFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim hasDropout =
+    GTransformerFeedForwardNetwork
+      (FFNInputLayerNormF style gradient device dataType queryEmbedDim)
+      (FFNInputTransformationF style gradient device dataType queryEmbedDim ffnDim)
+      (FFNActivationF style)
+      (FFNActivationDropoutF style)
+      (FFNOutputProjectionF style gradient device dataType queryEmbedDim ffnDim)
+      (FFNOutputDropoutF style hasDropout)
+      (FFNOutputLayerNormF style gradient device dataType queryEmbedDim)
 
 -- | Specifies the layer normalization for the input.
 type family
@@ -213,32 +220,14 @@ type family
     Type
   where
   FFNInputTransformationF 'T5 gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType queryEmbedDim ffnDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType ffnDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType queryEmbedDim ffnDim)
   FFNInputTransformationF 'ByT5 gradient device dataType queryEmbedDim ffnDim =
     GGate
-      ( NamedModel
-          ( GLinear
-              (NamedModel (LinearWeightF gradient device dataType queryEmbedDim ffnDim))
-              (NamedModel (LinearBiasF 'WithoutBias gradient device dataType ffnDim))
-          )
-      )
+      (NamedModel (GLinearF 'WithoutBias gradient device dataType queryEmbedDim ffnDim))
       GeluNew
-      ( NamedModel
-          ( GLinear
-              (NamedModel (LinearWeightF gradient device dataType queryEmbedDim ffnDim))
-              (NamedModel (LinearBiasF 'WithoutBias gradient device dataType ffnDim))
-          )
-      )
+      (NamedModel (GLinearF 'WithoutBias gradient device dataType queryEmbedDim ffnDim))
   FFNInputTransformationF _ gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType queryEmbedDim ffnDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType ffnDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType queryEmbedDim ffnDim)
 
 -- | Specifies the activation.
 type family
@@ -280,39 +269,29 @@ type family
     Type
   where
   FFNOutputProjectionF 'T5 gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType ffnDim queryEmbedDim))
-          (NamedModel (LinearBiasF 'WithoutBias gradient device dataType queryEmbedDim))
-      )
+    NamedModel (GLinearF 'WithoutBias gradient device dataType ffnDim queryEmbedDim)
   FFNOutputProjectionF 'ByT5 gradient device dataType queryEmbedDim ffnDim =
     FFNOutputProjectionF 'T5 gradient device dataType queryEmbedDim ffnDim
   FFNOutputProjectionF 'BART gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType ffnDim queryEmbedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType queryEmbedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType ffnDim queryEmbedDim)
   FFNOutputProjectionF 'MBART gradient device dataType queryEmbedDim ffnDim =
     FFNOutputProjectionF 'BART gradient device dataType queryEmbedDim ffnDim
   FFNOutputProjectionF 'Pegasus gradient device dataType queryEmbedDim ffnDim =
     FFNOutputProjectionF 'BART gradient device dataType queryEmbedDim ffnDim
   FFNOutputProjectionF 'BERT gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GLinear
-          (NamedModel (LinearWeightF gradient device dataType ffnDim queryEmbedDim))
-          (NamedModel (LinearBiasF 'WithBias gradient device dataType queryEmbedDim))
-      )
+    NamedModel (GLinearF 'WithBias gradient device dataType ffnDim queryEmbedDim)
   FFNOutputProjectionF 'RoBERTa gradient device dataType queryEmbedDim ffnDim =
     FFNOutputProjectionF 'BERT gradient device dataType queryEmbedDim ffnDim
 
 -- | Specifies the dropout for the output.
 type family
   FFNOutputDropoutF
-    (style :: TransformerStyle) ::
+    (style :: TransformerStyle)
+    (hasDropout :: HasDropout) ::
     Type
   where
-  FFNOutputDropoutF _ = Dropout
+  FFNOutputDropoutF _ 'WithDropout = Dropout
+  FFNOutputDropoutF _ 'WithoutDropout = ()
 
 -- | Specifies the layer normalization for the output.
 type family
@@ -350,26 +329,18 @@ type family
 -- - @dropoutP@: the dropout rate.
 -- - @eps@: the epsilon value for numerical stability of the layer normalization.
 transformerFeedForwardNetworkSpec ::
-  forall style gradient device dataType queryEmbedDim ffnDim.
+  forall style gradient device dataType queryEmbedDim ffnDim hasDropout.
   STransformerStyle style ->
   SGradient gradient ->
   SDevice device ->
   SDataType dataType ->
   SDim queryEmbedDim ->
   SDim ffnDim ->
+  SHasDropout hasDropout ->
   Double ->
   Double ->
-  ModelSpec
-    ( GTransformerFeedForwardNetwork
-        (FFNInputLayerNormF style gradient device dataType queryEmbedDim)
-        (FFNInputTransformationF style gradient device dataType queryEmbedDim ffnDim)
-        (FFNActivationF style)
-        (FFNActivationDropoutF style)
-        (FFNOutputProjectionF style gradient device dataType queryEmbedDim ffnDim)
-        (FFNOutputDropoutF style)
-        (FFNOutputLayerNormF style gradient device dataType queryEmbedDim)
-    )
-transformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim ffnDim dropoutP eps =
+  ModelSpec (GTransformerFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim hasDropout)
+transformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim ffnDim hasDropout dropoutP eps =
   let inputLayerNormSpec ST5 = NamedModel "layer_norm." layerNormWithoutBiasSpec
       inputLayerNormSpec SByT5 = NamedModel "layer_norm." layerNormWithoutBiasSpec
       inputLayerNormSpec SBART = ()
@@ -415,7 +386,8 @@ transformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim f
       outputProjectionSpec SBERT = NamedModel "output.dense." $ weightSpecWithBias ffnDim queryEmbedDim
       outputProjectionSpec SRoBERTa = NamedModel "output.dense." $ weightSpecWithBias ffnDim queryEmbedDim
       outputProjectionSpec SGPT2 = undefined
-      outputDropoutSpec _ = Dropout dropoutP
+      outputDropoutSpec _ SWithDropout = Dropout dropoutP
+      outputDropoutSpec _ SWithoutDropout = ()
       outputLayerNormSpec ST5 = ()
       outputLayerNormSpec SByT5 = ()
       outputLayerNormSpec SBART = NamedModel "final_layer_norm." layerNormWithBiasSpec
@@ -430,7 +402,7 @@ transformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim f
         (activationSpec style)
         (activationDropoutSpec style)
         (outputProjectionSpec style)
-        (outputDropoutSpec style)
+        (outputDropoutSpec style hasDropout)
         (outputLayerNormSpec style)
   where
     weightSpecWithoutBias ::
@@ -457,37 +429,19 @@ transformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim f
     layerNormWithBiasSpec = LayerNormSpec SWithBias gradient device dataType (SShape $ queryEmbedDim :|: SNil) eps
 
 instance
-  ( HasInitialize inputLayerNorm generatorDevice inputLayerNorm generatorDevice,
-    HasInitialize inputTransformation generatorDevice inputTransformation generatorDevice,
-    HasInitialize activation generatorDevice activation generatorDevice,
-    HasInitialize activationDropout generatorDevice activationDropout generatorDevice,
-    HasInitialize outputProjection generatorDevice outputProjection generatorDevice,
-    HasInitialize outputDropout generatorDevice outputDropout generatorDevice,
-    HasInitialize outputLayerNorm generatorDevice outputLayerNorm generatorDevice
+  ( HasInitialize inputLayerNorm generatorDevice inputLayerNorm' generatorDevice0,
+    HasInitialize inputTransformation generatorDevice0 inputTransformation' generatorDevice1,
+    HasInitialize activation generatorDevice1 activation' generatorDevice2,
+    HasInitialize activationDropout generatorDevice2 activationDropout' generatorDevice3,
+    HasInitialize outputProjection generatorDevice3 outputProjection' generatorDevice4,
+    HasInitialize outputDropout generatorDevice4 outputDropout' generatorDevice5,
+    HasInitialize outputLayerNorm generatorDevice5 outputLayerNorm' generatorOutputDevice
   ) =>
   HasInitialize
     (GTransformerFeedForwardNetwork inputLayerNorm inputTransformation activation activationDropout outputProjection outputDropout outputLayerNorm)
     generatorDevice
-    (GTransformerFeedForwardNetwork inputLayerNorm inputTransformation activation activationDropout outputProjection outputDropout outputLayerNorm)
-    generatorDevice
-  where
-  initialize (GTransformerFeedForwardNetwork inputLayerNormSpec inputTransformationSpec activationSpec activationDropoutSpec outputProjectionSpec outputDropoutSpec outputLayerNormSpec) =
-    let inputLayerNorm = IxStateT . initialize $ inputLayerNormSpec
-        inputTransformation = IxStateT . initialize $ inputTransformationSpec
-        activation = IxStateT . initialize $ activationSpec
-        activationDropout = IxStateT . initialize $ activationDropoutSpec
-        outputProjection = IxStateT . initialize $ outputProjectionSpec
-        outputDropout = IxStateT . initialize $ outputDropoutSpec
-        outputLayerNorm = IxStateT . initialize $ outputLayerNormSpec
-     in runIxStateT $
-          GTransformerFeedForwardNetwork
-            <<$>> inputLayerNorm
-            <<*>> inputTransformation
-            <<*>> activation
-            <<*>> activationDropout
-            <<*>> outputProjection
-            <<*>> outputDropout
-            <<*>> outputLayerNorm
+    (GTransformerFeedForwardNetwork inputLayerNorm' inputTransformation' activation' activationDropout' outputProjection' outputDropout' outputLayerNorm')
+    generatorOutputDevice
 
 instance
   ( HasStateDict inputLayerNorm,
@@ -499,25 +453,6 @@ instance
     HasStateDict outputLayerNorm
   ) =>
   HasStateDict (GTransformerFeedForwardNetwork inputLayerNorm inputTransformation activation activationDropout outputProjection outputDropout outputLayerNorm)
-  where
-  fromStateDict (GTransformerFeedForwardNetwork inputLayerNormSpec inputTransformationSpec activationSpec activationDropoutSpec outputProjectionSpec outputDropoutSpec outputLayerNormSpec) k =
-    GTransformerFeedForwardNetwork
-      <$> fromStateDict inputLayerNormSpec k
-      <*> fromStateDict inputTransformationSpec k
-      <*> fromStateDict activationSpec k
-      <*> fromStateDict activationDropoutSpec k
-      <*> fromStateDict outputProjectionSpec k
-      <*> fromStateDict outputDropoutSpec k
-      <*> fromStateDict outputLayerNormSpec k
-  toStateDict k GTransformerFeedForwardNetwork {..} = do
-    () <- toStateDict k ffnInputLayerNorm
-    () <- toStateDict k ffnInputTransformation
-    () <- toStateDict k ffnActivation
-    () <- toStateDict k ffnActivationDropout
-    () <- toStateDict k ffnOutputProjection
-    () <- toStateDict k ffnOutputDropout
-    () <- toStateDict k ffnOutputLayerNorm
-    pure ()
 
 -- | 'HasForward' instance for 'GTransformerFeedForwardNetwork'.
 --
@@ -592,7 +527,8 @@ instance
       (Tensor (queryGradient <|> queryGradient5) (queryLayout <+> queryLayout5) (queryDevice <+> queryDevice5) (queryDataType <+> queryDataType5) (BroadcastShapesF queryShape queryShape5))
       generatorDevice5
       output
-      generatorOutputDevice
+      generatorOutputDevice,
+    Catch (BroadcastShapesF queryShape queryShape5)
   ) =>
   HasForward
     (GTransformerFeedForwardNetwork inputLayerNorm inputTransformation activation activationDropout outputProjection outputDropout outputLayerNorm)
@@ -610,5 +546,5 @@ instance
         >>>= IxStateT . forward ffnActivationDropout
         >>>= IxStateT . forward ffnOutputProjection
         >>>= IxStateT . forward ffnOutputDropout
-        >>>= ireturn . (query `add`)
+        >>>= ilift . (query `add`)
         >>>= IxStateT . forward ffnOutputLayerNorm

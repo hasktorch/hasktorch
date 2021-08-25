@@ -10,6 +10,7 @@
 
 module Torch.GraduallyTyped.Unify where
 
+import Data.Type.Bool (type (&&))
 import GHC.TypeLits (Symbol, TypeError)
 import GHC.TypeNats (Nat)
 import Torch.GraduallyTyped.DType (DType, DataType (..))
@@ -23,7 +24,7 @@ type (<+>) :: forall k. k -> k -> k
 
 -- | @a <+> b@ unifies @a@ and @b@.
 -- Think of it as a kind-level monoid.
-type family (<+>) (a :: k) (b :: k) :: k where
+type family (<+>) a b where
   (<+>) (a :: k) (b :: k) = Unify k a b
 
 infixr 8 <+>
@@ -33,7 +34,7 @@ infixr 8 <+>
 -- TODO: add data type unification of scalar (Haskell) data types and those of kind @DataType@.
 -- Perhaps convert the scalar (Haskell) data type first to a @DataType@ so that the kinds are aligned.
 type Unify :: forall k -> k -> k -> k
-type family Unify k (a :: k) (b :: k) :: k where
+type family Unify k a b where
   Unify _ a a = a
   Unify (Gradient RequiresGradient) 'UncheckedGradient _ = 'UncheckedGradient
   Unify (Gradient RequiresGradient) _ 'UncheckedGradient = 'UncheckedGradient
@@ -61,6 +62,36 @@ type family Unify k (a :: k) (b :: k) :: k where
   Unify (Size Nat) 'UncheckedSize _ = 'UncheckedSize
   Unify (Size Nat) _ 'UncheckedSize = 'UncheckedSize
   Unify (Size Nat) ('Size size) ('Size size') = TypeError (UnifySizeErrorMessage size size')
+
+type UnifyCheck :: forall k -> k -> k -> Bool
+type family UnifyCheck k a b where
+  UnifyCheck _ a a = 'True
+  UnifyCheck (Gradient RequiresGradient) 'UncheckedGradient _ = 'True
+  UnifyCheck (Gradient RequiresGradient) _ 'UncheckedGradient = 'True
+  UnifyCheck (Gradient RequiresGradient) ('Gradient requiresGradient) ('Gradient requiresGradient') = 'False
+  UnifyCheck (Layout LayoutType) 'UncheckedLayout _ = 'True
+  UnifyCheck (Layout LayoutType) _ 'UncheckedLayout = 'True
+  UnifyCheck (Layout LayoutType) ('Layout layoutType) ('Layout layoutType') = 'False
+  UnifyCheck (Device (DeviceType Nat)) 'UncheckedDevice _ = 'True
+  UnifyCheck (Device (DeviceType Nat)) _ 'UncheckedDevice = 'True
+  UnifyCheck (Device (DeviceType Nat)) ('Device deviceType) ('Device deviceType') = 'False
+  UnifyCheck (DataType DType) 'UncheckedDataType _ = 'True
+  UnifyCheck (DataType DType) _ 'UncheckedDataType = 'True
+  UnifyCheck (DataType DType) ('DataType dType) ('DataType dType') = 'False
+  UnifyCheck (Shape [Dim (Name Symbol) (Size Nat)]) 'UncheckedShape _ = 'True
+  UnifyCheck (Shape [Dim (Name Symbol) (Size Nat)]) _ 'UncheckedShape = 'True
+  UnifyCheck (Shape [Dim (Name Symbol) (Size Nat)]) ('Shape dims) ('Shape dims') = 'False
+  UnifyCheck [Dim (Name Symbol) (Size Nat)] (dim ': dims) (dim' ': dims') = UnifyCheck (Dim (Name Symbol) (Size Nat)) dim dim' && UnifyCheck [Dim (Name Symbol) (Size Nat)] dims dims'
+  UnifyCheck [Dim (Name Symbol) (Size Nat)] dims dims' = 'False
+  UnifyCheck (Dim (Name Symbol) (Size Nat)) ('Dim name size) ('Dim name' size') = UnifyCheck (Name Symbol) name name' && UnifyCheck (Size Nat) size size'
+  UnifyCheck (Name Symbol) 'UncheckedName _ = 'True
+  UnifyCheck (Name Symbol) _ 'UncheckedName = 'True
+  UnifyCheck (Name Symbol) ('Name name) ('Name "*") = 'True
+  UnifyCheck (Name Symbol) ('Name "*") ('Name name) = 'True
+  UnifyCheck (Name Symbol) ('Name name) ('Name name') = 'False
+  UnifyCheck (Size Nat) 'UncheckedSize _ = 'True
+  UnifyCheck (Size Nat) _ 'UncheckedSize = 'True
+  UnifyCheck (Size Nat) ('Size size) ('Size size') = 'False
 
 type UnifyRequiresGradientMessage (requiresGradient :: RequiresGradient) (requiresGradient' :: RequiresGradient) =
   "The supplied tensors must all either require or disable gradient calculation,"
@@ -151,13 +182,14 @@ type UnifyIdempotenceL9 k a b c d e f g h i = Unify k a (Unify k b (Unify k c (U
 
 type UnifyIdempotenceL9C k a b c d e f g h i = Unify k a (Unify k b (Unify k c (Unify k d (Unify k e (Unify k f (Unify k g (Unify k h (Unify k i a)))))))) ~ Unify k a (Unify k b (Unify k c (Unify k d (Unify k e (Unify k f (Unify k g (Unify k h i)))))))
 
-type family (<|>) (a :: k) (b :: k) :: k where
+type (<|>) :: forall k. k -> k -> k
+type family (<|>) a b where
   (<|>) (a :: k) (b :: k) = Or k a b
 
 infixr 8 <|>
 
 type Or :: forall k -> k -> k -> k
-type family Or k (a :: k) (b :: k) :: k where
+type family Or k a b where
   Or _ a a = a
   Or (Gradient RequiresGradient) _ ('Gradient 'WithGradient) = 'Gradient 'WithGradient
   Or (Gradient RequiresGradient) 'UncheckedGradient ('Gradient 'WithoutGradient) = 'UncheckedGradient

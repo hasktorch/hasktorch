@@ -14,15 +14,16 @@ module Torch.GraduallyTyped.NN.Transformer.BERT.Common where
 import Control.Monad.Catch (MonadThrow)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
-import Data.Singletons.TypeLits (SNat)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice)
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (EOTEmbeddingF, EOTEncoderF, EOTHeadF, EOTTypeEmbeddingF, GEncoderOnlyTransformer, GSimplifiedEncoderOnlyTransformer (..), encoderOnlyTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderOnly (GEncoderOnlyTransformerF, GSimplifiedEncoderOnlyTransformer (..), encoderOnlyTransformerSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkAbsPos (..), MkTransformerAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead, STransformerStyle (SBERT), TransformerHead (..), TransformerStyle (BERT), mkTransformerInput)
-import Torch.GraduallyTyped.Prelude (Seq)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
+import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor)
@@ -86,18 +87,13 @@ type family
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
     (vocabDim :: Dim (Name Symbol) (Size Nat))
-    (typeVocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    (typeVocabDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
     Type
   where
-  BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim =
+  BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim hasDropout =
     GSimplifiedEncoderOnlyTransformer
-      ( GEncoderOnlyTransformer
-          inputEmbedDim
-          (EOTEncoderF 'BERT numLayers gradient device BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTPosEncDim)
-          (EOTEmbeddingF 'BERT gradient device BERTDataType inputEmbedDim vocabDim)
-          (EOTTypeEmbeddingF 'BERT gradient device BERTDataType inputEmbedDim typeVocabDim)
-          (EOTHeadF 'BERT transformerHead gradient device BERTDataType inputEmbedDim vocabDim)
-      )
+      (GEncoderOnlyTransformerF 'BERT transformerHead numLayers gradient device BERTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BERTPosEncDim vocabDim typeVocabDim hasDropout)
       MkAbsPos
       MkTransformerPaddingMask
       (MkTransformerAttentionMask BERTDataType)
@@ -109,7 +105,7 @@ type family
 -- - @gradient@: whether to compute the gradient of the BERT model.
 -- - @device@: the computational device on which the BERT model parameters are to be allocated.
 bertModelSpec ::
-  forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim.
+  forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim hasDropout.
   ( SingI headDim,
     SingI headEmbedDim,
     SingI embedDim,
@@ -122,8 +118,9 @@ bertModelSpec ::
   SNat numLayers ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim)
-bertModelSpec transformerHead numLayers gradient device =
+  SHasDropout hasDropout ->
+  ModelSpec (BERTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim typeVocabDim hasDropout)
+bertModelSpec transformerHead numLayers gradient device hasDropout =
   GSimplifiedEncoderOnlyTransformer
     ( encoderOnlyTransformerSpec
         SBERT
@@ -140,6 +137,7 @@ bertModelSpec transformerHead numLayers gradient device =
         bertPosEncDim
         (sing @vocabDim)
         (sing @typeVocabDim)
+        hasDropout
         bertDropoutP
         bertEps
     )
@@ -152,15 +150,13 @@ mkBERTInput ::
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
-    'Shape '[batchDim, seqDim]
-      ~ Seq
-          ( 'Shape
-              '[ 'Dim ('Name "*") 'UncheckedSize,
-                 'Dim ('Name "*") 'UncheckedSize
-               ]
-              <+> 'Shape '[batchDim, seqDim]
-          )
-          ('Shape '[batchDim, seqDim]),
+    Catch
+      ( 'Shape
+          '[ 'Dim ('Name "*") 'UncheckedSize,
+             'Dim ('Name "*") 'UncheckedSize
+           ]
+          <+> 'Shape '[batchDim, seqDim]
+      ),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)

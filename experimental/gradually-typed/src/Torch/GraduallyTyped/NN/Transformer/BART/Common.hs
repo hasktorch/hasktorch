@@ -10,15 +10,16 @@ module Torch.GraduallyTyped.NN.Transformer.BART.Common where
 import Control.Monad.Catch (MonadThrow)
 import Data.Kind (Type)
 import Data.Singletons (SingI (..))
-import Data.Singletons.TypeLits (SNat)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..))
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
-import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (EDTDecoderF, EDTEncoderF, EDTHeadF, EDTSharedEmbeddingF, GEncoderDecoderTransformer, GSimplifiedEncoderDecoderTransformer (..), encoderDecoderTransformerSpec)
+import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (GEncoderDecoderTransformerF, GSimplifiedEncoderDecoderTransformer (..), encoderDecoderTransformerSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (MkAbsPos (..), MkTransformerAttentionMask (..), MkTransformerCrossAttentionMask (..), MkTransformerDecoderAttentionMask (..), MkTransformerPaddingMask (..), STransformerHead, STransformerStyle (SBART), ShiftRight (..), TransformerHead (..), TransformerStyle (BART), mkTransformerInput)
-import Torch.GraduallyTyped.Prelude (Seq)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
+import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (SGetDim, Tensor)
@@ -90,18 +91,13 @@ type family
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (inputEmbedDim :: Dim (Name Symbol) (Size Nat))
     (ffnDim :: Dim (Name Symbol) (Size Nat))
-    (vocabDim :: Dim (Name Symbol) (Size Nat)) ::
+    (vocabDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout) ::
     Type
   where
-  BARTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim =
+  BARTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout =
     GSimplifiedEncoderDecoderTransformer
-      ( GEncoderDecoderTransformer
-          inputEmbedDim
-          (EDTEncoderF 'BART numLayers gradient device BARTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BARTPosEncDim)
-          (EDTDecoderF 'BART numLayers gradient device BARTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BARTPosEncDim)
-          (EDTSharedEmbeddingF 'BART gradient device BARTDataType inputEmbedDim vocabDim)
-          (EDTHeadF 'BART transformerHead gradient device BARTDataType inputEmbedDim vocabDim)
-      )
+      (GEncoderDecoderTransformerF 'BART transformerHead numLayers numLayers gradient device BARTDataType headDim headEmbedDim embedDim inputEmbedDim ffnDim BARTPosEncDim vocabDim hasDropout)
       MkAbsPos
       MkAbsPos
       MkTransformerPaddingMask
@@ -116,7 +112,7 @@ type family
 -- - @gradient@: whether to compute the gradient of the BART model.
 -- - @device@: the computational device on which the BART model parameters are to be allocated.
 bartModelSpec ::
-  forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim.
+  forall transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout.
   ( SingI headDim,
     SingI headEmbedDim,
     SingI embedDim,
@@ -128,8 +124,9 @@ bartModelSpec ::
   SNat numLayers ->
   SGradient gradient ->
   SDevice device ->
-  ModelSpec (BARTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim)
-bartModelSpec transformerHead numLayers gradient device =
+  SHasDropout hasDropout ->
+  ModelSpec (BARTModelF transformerHead numLayers gradient device headDim headEmbedDim embedDim inputEmbedDim ffnDim vocabDim hasDropout)
+bartModelSpec transformerHead numLayers gradient device hasDropout =
   GSimplifiedEncoderDecoderTransformer
     ( encoderDecoderTransformerSpec
         SBART
@@ -146,6 +143,7 @@ bartModelSpec transformerHead numLayers gradient device =
         (sing @ffnDim)
         bartPosEncDim
         (sing @vocabDim)
+        hasDropout
         bartDropoutP
         bartEps
     )
@@ -163,15 +161,13 @@ mkBARTInput ::
   ( MonadThrow m,
     SGetDim batchDim,
     SGetDim seqDim,
-    'Shape '[batchDim, seqDim]
-      ~ Seq
-          ( 'Shape
-              '[ 'Dim ('Name "*") 'UncheckedSize,
-                 'Dim ('Name "*") 'UncheckedSize
-               ]
-              <+> 'Shape '[batchDim, seqDim]
-          )
-          ('Shape '[batchDim, seqDim]),
+    Catch
+      ( 'Shape
+          '[ 'Dim ('Name "*") 'UncheckedSize,
+             'Dim ('Name "*") 'UncheckedSize
+           ]
+          <+> 'Shape '[batchDim, seqDim]
+      ),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)

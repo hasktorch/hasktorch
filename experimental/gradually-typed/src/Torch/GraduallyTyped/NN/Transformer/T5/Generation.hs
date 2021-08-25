@@ -49,6 +49,7 @@ import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor (..))
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
+import Torch.GraduallyTyped.NN.Type (SHasDropout(SWithDropout))
 
 data IsFinished = Finished | Unfinished
 
@@ -230,7 +231,8 @@ runBeamSearch maxSteps beamSize model input g =
           (SimplifiedEncoderDecoderTransformerOutput decoderOutput _ _, g') <- forward model (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput' inputPaddingMask) g
           pure (SimplifiedEncoderDecoderTransformerOutput decoderOutput encoderOutput inputPaddingMask, g')
       put (Just (encoderOutput, inputPaddingMask), g')
-      case logSoftmax (SSelectDim $ SByIndex @2) decoderOutput of
+      probs <- logSoftmax (SSelectDim $ SByIndex @2) decoderOutput
+      case probs of
         UnsafeTensor t -> pure . Torch.Tensor.asValue . Torch.Tensor.Unsafe $ t
     mkHypothesis :: Hypothesis 'Unfinished Int [Int] -> Int -> Float -> SomeHypothesis Int [Int]
     mkHypothesis previousHypothesis token logProb
@@ -253,9 +255,9 @@ testBeamSearch = do
       (SDevice SCPU)
       tokens
   stateDict <- stateDictFromFile "/tmp/t5-small-state-dict.pt"
-  let spec = t5SmallSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU)
+  let spec = t5SmallSpec SWithLMHead (SGradient SWithGradient) (SDevice SCPU) SWithDropout
   model <- flip evalStateT stateDict $ fromStateDict spec mempty
-  let g = sMkGenerator (SDevice SCPU) 0
+  g <- sMkGenerator (SDevice SCPU) 0
   Beams finished _ <- last <$> runBeamSearch 50 1 model input g
   print $ finalValue <$> finished
 
@@ -409,9 +411,8 @@ getIs n model input = do
           forward model (SimplifiedEncoderDecoderTransformerGenerationInput decoderInput encoderOutput inputPaddingMask) g
     put (Just (encoderOutput, inputPaddingMask), g')
     pure decoderOutput
-  case sort @('SelectDim ('ByIndex 2)) Descending
-    . logSoftmax (SSelectDim $ SByIndex @2)
-    $ decoderOutput of
+  probs <- logSoftmax (SSelectDim $ SByIndex @2) decoderOutput
+  case sort @('SelectDim ('ByIndex 2)) Descending probs of
     Sorted _ (UnsafeTensor indices) ->
       let indices' = take n . last . head . Torch.Tensor.asValue @[[[Int]]] . Torch.Tensor.Unsafe $ indices
        in lift . lift . asum $ pure <$> indices'

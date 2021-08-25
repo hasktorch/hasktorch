@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Torch.GraduallyTyped.Shape.Type where
 
@@ -20,7 +21,7 @@ import Data.Bifunctor (Bifunctor (..))
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..), withSomeSing)
-import Data.Singletons.Prelude.List (SList (..))
+import Torch.GraduallyTyped.Prelude.List (SList (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, SomeNat (..), SomeSymbol (..), Symbol, natVal, someNatVal, someSymbolVal, symbolVal)
 import System.IO.Unsafe (unsafePerformIO)
@@ -80,6 +81,9 @@ data SName (name :: Name Symbol) where
   SName :: forall name. KnownSymbol name => SName ('Name name)
 
 deriving stock instance Show (SName (name :: Name Symbol))
+
+pattern SNoName :: SName ('Name "*")
+pattern SNoName = SName
 
 type instance Sing = SName
 

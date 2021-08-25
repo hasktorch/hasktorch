@@ -135,4 +135,8 @@ instance CppTuple2 (ForeignPtr (StdTuple '(Tensor,Generator))) where
   type B (ForeignPtr (StdTuple '(Tensor,Generator))) = ForeignPtr Generator
   get0 v = cast1 (get0 :: Ptr (StdTuple '(Tensor,Generator)) -> IO (Ptr Tensor)) v
   get1 v = cast1 (get1 :: Ptr (StdTuple '(Tensor,Generator)) -> IO (Ptr Generator)) v
+  makeTuple2 (a,b) =
+    withForeignPtr a $ \a' -> do
+      withForeignPtr b $ \b' -> do
+        fromPtr =<< makeTuple2 (a',b')
 

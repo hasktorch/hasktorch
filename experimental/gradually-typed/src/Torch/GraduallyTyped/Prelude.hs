@@ -23,8 +23,8 @@ module Torch.GraduallyTyped.Prelude
     module Data.Proxy,
     module Data.Type.Bool,
     module GHC.TypeLits,
-    module Data.Singletons.Prelude.List,
-    module Data.Singletons.TypeLits,
+    module Torch.GraduallyTyped.Prelude.List,
+    module Torch.GraduallyTyped.Prelude.TypeLits,
     IsChecked (..),
     pattern IsChecked,
     pattern Demoted,
@@ -46,6 +46,7 @@ module Torch.GraduallyTyped.Prelude
     Contains,
     Extract,
     FromMaybe,
+    MaybeF,
     FstMaybe,
     SndMaybe,
     PrependMaybe,
@@ -75,9 +76,8 @@ import Control.Monad (MonadPlus, guard, unless, when)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (Demote, SingKind, fromSing)
-import Data.Singletons.Prelude (SList (..))
-import Data.Singletons.Prelude.List (SList (..))
-import Data.Singletons.TypeLits
+import Torch.GraduallyTyped.Prelude.List (SList (..))
+import Torch.GraduallyTyped.Prelude.TypeLits
 import Data.Type.Bool (If, type (||))
 import Data.Type.Equality (type (==))
 import GHC.Exts (Any)
@@ -221,6 +221,10 @@ type family Length (xs :: [a]) :: Nat where
 type family FromMaybe (d :: k) (x :: Maybe k) :: k where
   FromMaybe d 'Nothing = d
   FromMaybe _ ('Just v) = v
+
+type family MaybeF (d :: k') (f :: k -> k') (x :: Maybe k) :: k' where
+  MaybeF d _ 'Nothing = d
+  MaybeF _ f ('Just v) = f v
 
 type family FstMaybe (t :: Maybe (k, k')) :: Maybe k where
   FstMaybe 'Nothing = 'Nothing

@@ -378,11 +378,11 @@ instance
   , KnownDevice device
   ) => Apply' AnyAllSpec ((Proxy device, Proxy shape), IO ()) (IO ()) where
   apply' AnySpec (_, agg) = agg >> do
-    let t = ones @shape @ 'Bool @device
+    let t = ones @shape @'Bool @device
         t' = any t
     checkDynamicTensorAttributes t'
   apply' AllSpec (_, agg) = agg >> do
-    let t = ones @shape @ 'Bool @device
+    let t = ones @shape @'Bool @device
         t' = all t
     checkDynamicTensorAttributes t'
 
@@ -396,11 +396,11 @@ instance
   , shape' ~ ConditionalDropDimension shape dim keepOrDropDim
   ) => Apply' AnyPrimeAllPrimeSpec (((Proxy dim, Proxy keepOrDropDim), (Proxy device, Proxy shape)), IO ()) (IO ()) where
   apply' AnyPrimeSpec (_, agg) = agg >> do
-    let t = ones @shape @ 'Bool @device
+    let t = ones @shape @'Bool @device
         t' = anyDim @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
   apply' AllPrimeSpec (_, agg) = agg >> do
-    let t = ones @shape @ 'Bool @device
+    let t = ones @shape @'Bool @device
         t' = allDim @dim @keepOrDropDim t
     checkDynamicTensorAttributes t'
 

@@ -28,12 +28,15 @@ jobs:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
-      - run: cachix use iohk
+      - run: |
+          .github/workflows/setup-iohk-cache.sh
       - name: Cache .stack
         id: cache-stack
         uses: actions/cache@v2
         with:
-          path: ~/.stack
+          path: |
+            ~/.stack
+            .stack-work
           key: "\
             ${{ runner.os }}-stack\
             -${{ hashFiles('**/stack.yaml.lock') }}\

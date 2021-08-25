@@ -21,6 +21,7 @@ extra-include-dirs:
 extra-lib-dirs:
 - deps/libtorch/lib
 - deps/mklml/lib
+- deps/libtokenizers/lib
 
 extra-deps:
 - datasets-0.4.0@sha256:9bfd5b54c6c5e1e72384a890cf29bf85a02007e0a31c98753f7d225be3c7fa6a,4929
@@ -31,6 +32,10 @@ extra-deps:
 - require-0.4.10@sha256:41b096daaca0d6be49239add1149af9f34c84640d09a7ffa9b45c55f089b5dac,3759
 - git: https://github.com/mcwitt/tintin
   commit: cad1ab21e53a3c734e09143def4fe862ded9e67a
+- git: https://github.com/hasktorch/tokenizers
+  commit: e4208275b6e7d5e265d454819eec5ec626d4077b
+  subdirs:
+  - bindings/haskell/tokenizers-haskell
 
 allow-newer: true
 

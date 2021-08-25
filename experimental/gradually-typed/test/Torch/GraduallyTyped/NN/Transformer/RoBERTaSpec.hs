@@ -26,10 +26,10 @@ testForwardRoBERTaBase =
 
     let device = SDevice SCPU
 
-    let spec = robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) device
+    let spec = robertaBaseSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
     model <- flip evalStateT stateDict $ fromStateDict spec mempty
 
-    let g = sMkGenerator device 0
+    g <- sMkGenerator device 0
 
     ids <- withTokenizer $ \tokenizer -> do
       encoding <- Tokenizers.encode tokenizer "<s>The capital of France is [MASK].</s>"
@@ -38,18 +38,18 @@ testForwardRoBERTaBase =
         seqSize = SUncheckedSize . fromIntegral $ length ids
         seqDim = SName @"*" :&: seqSize
 
-    input <-
-      let inputType =
-            sZeros $
-              TensorSpec
-                (SGradient SWithoutGradient)
-                (SLayout SDense)
-                device
-                (SDataType SInt64)
-                (SShape $ batchDim :|: seqDim :|: SNil)
-       in SimplifiedEncoderOnlyTransformerInput
-            <$> mkRoBERTaInput batchDim seqDim device [ids]
-            <*> pure inputType
+    input <- do
+      inputType <-
+        sZeros $
+          TensorSpec
+            (SGradient SWithoutGradient)
+            (SLayout SDense)
+            device
+            (SDataType SInt64)
+            (SShape $ batchDim :|: seqDim :|: SNil)
+      SimplifiedEncoderOnlyTransformerInput
+        <$> mkRoBERTaInput batchDim seqDim device [ids]
+        <*> pure inputType
 
     (SimplifiedEncoderOnlyTransformerOutput {..}, _) <- forward model input g
 

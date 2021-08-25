@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -14,16 +16,17 @@ module Torch.GraduallyTyped.NN.Transformer.GBlock where
 
 import Control.Monad.Indexed (ireturn, (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
-import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType, SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec, NamedModel (..))
-import Torch.GraduallyTyped.NN.Transformer.GCrossAttention (CADropoutF, CAFinalLayerNormF, CAInitialLayerNormF, CAMultiheadAttentionF, GCrossAttention, crossAttentionSpec)
-import Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetwork (FFNActivationDropoutF, FFNActivationF, FFNInputLayerNormF, FFNInputTransformationF, FFNOutputDropoutF, FFNOutputLayerNormF, FFNOutputProjectionF, GTransformerFeedForwardNetwork, transformerFeedForwardNetworkSpec)
-import Torch.GraduallyTyped.NN.Transformer.GSelfAttention (GSelfAttention, SADropoutF, SAFinalLayerNormF, SAInitialLayerNormF, SAMultiheadAttentionF, selfAttentionSpec)
+import Torch.GraduallyTyped.NN.Transformer.GCrossAttention (GCrossAttentionF, crossAttentionSpec)
+import Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetwork (GTransformerFeedForwardNetworkF, transformerFeedForwardNetworkSpec)
+import Torch.GraduallyTyped.NN.Transformer.GSelfAttention (GSelfAttentionF, selfAttentionSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle (..), TransformerStyle)
+import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
 
@@ -52,13 +55,14 @@ data
       tbFeedForwardNetwork :: feedForwardNetwork
     } ->
     GTransformerBlock selfAttention crossAttention feedForwardNetwork
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance
   ModelSpec (GTransformerBlock selfAttention crossAttention feedForwardNetwork) =
     GTransformerBlock (ModelSpec selfAttention) (ModelSpec crossAttention) (ModelSpec feedForwardNetwork)
 
 type family
-  EncoderBlockSelfAttentionF
+  EncoderBlockF
     (style :: TransformerStyle)
     (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
@@ -66,45 +70,18 @@ type family
     (headDim :: Dim (Name Symbol) (Size Nat))
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  EncoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim =
-    NamedModel
-      ( GSelfAttention
-          (SAInitialLayerNormF style gradient device dataType queryEmbedDim)
-          (SAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
-          (SADropoutF style)
-          (SAFinalLayerNormF style gradient device dataType queryEmbedDim)
-      )
-
-type family EncoderBlockCrossAttentionF :: Type where
-  EncoderBlockCrossAttentionF = ()
-
-type family
-  EncoderBlockFeedForwardNetworkF
-    (style :: TransformerStyle)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout)
   where
-  EncoderBlockFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GTransformerFeedForwardNetwork
-          (FFNInputLayerNormF style gradient device dataType queryEmbedDim)
-          (FFNInputTransformationF style gradient device dataType queryEmbedDim ffnDim)
-          (FFNActivationF style)
-          (FFNActivationDropoutF style)
-          (FFNOutputProjectionF style gradient device dataType queryEmbedDim ffnDim)
-          (FFNOutputDropoutF style)
-          (FFNOutputLayerNormF style gradient device dataType queryEmbedDim)
-      )
+  EncoderBlockF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout =
+    GTransformerBlock
+      (NamedModel (GSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim hasDropout))
+      ()
+      (NamedModel (GTransformerFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim hasDropout))
 
 encoderBlockSpec ::
-  forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim.
+  forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout.
   STransformerStyle style ->
   SGradient gradient ->
   SDevice device ->
@@ -114,15 +91,11 @@ encoderBlockSpec ::
   SDim embedDim ->
   SDim queryEmbedDim ->
   SDim ffnDim ->
+  SHasDropout hasDropout ->
   Double ->
   Double ->
-  ModelSpec
-    ( GTransformerBlock
-        (EncoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
-        EncoderBlockCrossAttentionF
-        (EncoderBlockFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim)
-    )
-encoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim dropoutP eps =
+  ModelSpec (EncoderBlockF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout)
+encoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim ffnDim hasDropout dropoutP eps =
   let saSpec ST5 = NamedModel "layer.0." $ saSpec' ST5
       saSpec SByT5 = NamedModel "layer.0." $ saSpec' SByT5
       saSpec SBART = NamedModel mempty $ saSpec' SBART
@@ -143,33 +116,12 @@ encoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim qu
    in GTransformerBlock (saSpec style) (caSpec style) (ffnSpec style)
   where
     saSpec' :: _
-    saSpec' style' = selfAttentionSpec style' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps
+    saSpec' style' = selfAttentionSpec style' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim hasDropout dropoutP eps
     ffnSpec' :: _
-    ffnSpec' style' = transformerFeedForwardNetworkSpec style' gradient device dataType queryEmbedDim ffnDim dropoutP eps
+    ffnSpec' style' = transformerFeedForwardNetworkSpec style' gradient device dataType queryEmbedDim ffnDim hasDropout dropoutP eps
 
 type family
-  DecoderBlockSelfAttentionF
-    (style :: TransformerStyle)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (headDim :: Dim (Name Symbol) (Size Nat))
-    (headEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (embedDim :: Dim (Name Symbol) (Size Nat))
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  DecoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim =
-    NamedModel
-      ( GSelfAttention
-          (SAInitialLayerNormF style gradient device dataType queryEmbedDim)
-          (SAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
-          (SADropoutF style)
-          (SAFinalLayerNormF style gradient device dataType queryEmbedDim)
-      )
-
-type family
-  DecoderBlockCrossAttentionF
+  DecoderBlockF
     (style :: TransformerStyle)
     (gradient :: Gradient RequiresGradient)
     (device :: Device (DeviceType Nat))
@@ -178,42 +130,18 @@ type family
     (headEmbedDim :: Dim (Name Symbol) (Size Nat))
     (embedDim :: Dim (Name Symbol) (Size Nat))
     (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (keyEmbedDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
+    (keyEmbedDim :: Dim (Name Symbol) (Size Nat))
+    (ffnDim :: Dim (Name Symbol) (Size Nat))
+    (hasDropout :: HasDropout)
   where
-  DecoderBlockCrossAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim =
-    NamedModel
-      ( GCrossAttention
-          (CAInitialLayerNormF style gradient device dataType queryEmbedDim)
-          (CAMultiheadAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
-          (CADropoutF style)
-          (CAFinalLayerNormF style gradient device dataType queryEmbedDim)
-      )
-
-type family
-  DecoderBlockFeedForwardNetworkF
-    (style :: TransformerStyle)
-    (gradient :: Gradient RequiresGradient)
-    (device :: Device (DeviceType Nat))
-    (dataType :: DataType DType)
-    (queryEmbedDim :: Dim (Name Symbol) (Size Nat))
-    (ffnDim :: Dim (Name Symbol) (Size Nat)) ::
-    Type
-  where
-  DecoderBlockFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim =
-    NamedModel
-      ( GTransformerFeedForwardNetwork
-          (FFNInputLayerNormF style gradient device dataType queryEmbedDim)
-          (FFNInputTransformationF style gradient device dataType queryEmbedDim ffnDim)
-          (FFNActivationF style)
-          (FFNActivationDropoutF style)
-          (FFNOutputProjectionF style gradient device dataType queryEmbedDim ffnDim)
-          (FFNOutputDropoutF style)
-          (FFNOutputLayerNormF style gradient device dataType queryEmbedDim)
-      )
+  DecoderBlockF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout =
+    GTransformerBlock
+      (NamedModel (GSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim hasDropout))
+      (NamedModel (GCrossAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim hasDropout))
+      (NamedModel (GTransformerFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim hasDropout))
 
 decoderBlockSpec ::
-  forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim.
+  forall style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout.
   STransformerStyle style ->
   SGradient gradient ->
   SDevice device ->
@@ -224,15 +152,11 @@ decoderBlockSpec ::
   SDim queryEmbedDim ->
   SDim keyEmbedDim ->
   SDim ffnDim ->
+  SHasDropout hasDropout ->
   Double ->
   Double ->
-  ModelSpec
-    ( GTransformerBlock
-        (DecoderBlockSelfAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim)
-        (DecoderBlockCrossAttentionF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim)
-        (DecoderBlockFeedForwardNetworkF style gradient device dataType queryEmbedDim ffnDim)
-    )
-decoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim dropoutP eps =
+  ModelSpec (DecoderBlockF style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout)
+decoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim ffnDim hasDropout dropoutP eps =
   let saSpec ST5 = NamedModel "layer.0." $ saSpec' ST5
       saSpec SByT5 = NamedModel "layer.0." $ saSpec' SByT5
       saSpec SBART = NamedModel mempty $ saSpec' SBART
@@ -260,28 +184,22 @@ decoderBlockSpec style gradient device dataType headDim headEmbedDim embedDim qu
    in GTransformerBlock (saSpec style) (caSpec style) (ffnSpec style)
   where
     saSpec' :: _
-    saSpec' style' = selfAttentionSpec style' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim dropoutP eps
+    saSpec' style' = selfAttentionSpec style' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim hasDropout dropoutP eps
     caSpec' :: _
-    caSpec' style' = crossAttentionSpec style' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim dropoutP eps
+    caSpec' style' = crossAttentionSpec style' gradient device dataType headDim headEmbedDim embedDim queryEmbedDim keyEmbedDim hasDropout dropoutP eps
     ffnSpec' :: _
-    ffnSpec' style' = transformerFeedForwardNetworkSpec style' gradient device dataType queryEmbedDim ffnDim dropoutP eps
+    ffnSpec' style' = transformerFeedForwardNetworkSpec style' gradient device dataType queryEmbedDim ffnDim hasDropout dropoutP eps
 
 instance
-  ( HasInitialize selfAttention generatorDevice selfAttention generatorDevice,
-    HasInitialize crossAttention generatorDevice crossAttention generatorDevice,
-    HasInitialize feedForwardNetwork generatorDevice feedForwardNetwork generatorDevice
+  ( HasInitialize selfAttention generatorDevice selfAttention' generatorDevice0,
+    HasInitialize crossAttention generatorDevice0 crossAttention' generatorDevice1,
+    HasInitialize feedForwardNetwork generatorDevice1 feedForwardNetwork' generatorOutputDevice
   ) =>
   HasInitialize
     (GTransformerBlock selfAttention crossAttention feedForwardNetwork)
     generatorDevice
-    (GTransformerBlock selfAttention crossAttention feedForwardNetwork)
-    generatorDevice
-  where
-  initialize (GTransformerBlock saSpec caSpec ffnSpec) =
-    let selfAttention = IxStateT . initialize $ saSpec
-        crossAttention = IxStateT . initialize $ caSpec
-        feedForwardNetwork = IxStateT . initialize $ ffnSpec
-     in runIxStateT $ GTransformerBlock <<$>> selfAttention <<*>> crossAttention <<*>> feedForwardNetwork
+    (GTransformerBlock selfAttention' crossAttention' feedForwardNetwork')
+    generatorOutputDevice
 
 instance
   ( HasStateDict selfAttention,
@@ -289,17 +207,6 @@ instance
     HasStateDict feedForwardNetwork
   ) =>
   HasStateDict (GTransformerBlock selfAttention crossAttention feedForwardNetwork)
-  where
-  fromStateDict (GTransformerBlock saSpec caSpec ffnSpec) k =
-    GTransformerBlock
-      <$> fromStateDict saSpec k
-      <*> fromStateDict caSpec k
-      <*> fromStateDict ffnSpec k
-  toStateDict k GTransformerBlock {..} = do
-    () <- toStateDict k tbSelfAttention
-    () <- toStateDict k tbCrossAttention
-    () <- toStateDict k tbFeedForwardNetwork
-    pure ()
 
 -- | 'HasForward' instance for 'GTransformerBlock' in an encoder configuration.
 --

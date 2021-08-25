@@ -1,5 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -23,6 +25,7 @@
 
 module Torch.GraduallyTyped.NN.Normalization where
 
+import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..))
@@ -75,6 +78,7 @@ data
     SShape normalizedShape ->
     Double ->
     LayerNormSpec hasBias gradient device dataType normalizedShape
+  deriving stock (Show, Generic)
 
 type instance ModelSpec (LayerNorm hasBias gradient device dataType normalizedShape) = LayerNormSpec hasBias gradient device dataType normalizedShape
 
@@ -85,15 +89,15 @@ instance
     (LayerNorm hasBias gradient device dataType normalizedShape)
     generatorDevice
   where
-  initialize (LayerNormSpec SWithBias gradient device dataType normalizedShape eps) =
+  initialize (LayerNormSpec SWithBias gradient device dataType normalizedShape eps) g = do
     let tensorSpec = TensorSpec gradient (SLayout SDense) device dataType normalizedShape
-        weight = sOnes tensorSpec
-        bias = sZeros tensorSpec
-     in pure . (LayerNormWithBias weight bias eps,)
-  initialize (LayerNormSpec SWithoutBias gradient device dataType normalizedShape eps) =
+    weight <- sOnes tensorSpec
+    bias <- sZeros tensorSpec
+    pure (LayerNormWithBias weight bias eps, g)
+  initialize (LayerNormSpec SWithoutBias gradient device dataType normalizedShape eps) g = do
     let tensorSpec = TensorSpec gradient (SLayout SDense) device dataType normalizedShape
-        weight = sOnes tensorSpec
-     in pure . (LayerNormWithoutBias weight eps,)
+    weight <- sOnes tensorSpec
+    pure (LayerNormWithoutBias weight eps, g)
 
 instance
   HasStateDict

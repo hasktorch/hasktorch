@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -19,18 +20,20 @@ import GHC.Generics (Generic)
 import GHC.TypeLits (Nat, Symbol)
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.NN.Functional.Activation (gelu, geluNew, relu)
-import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, softmax)
+import Torch.GraduallyTyped.NN.Functional.NonLinearActivation (SoftmaxF, logSoftmax, softmax)
+import Torch.GraduallyTyped.Prelude (Catch)
 import Torch.GraduallyTyped.Shape (By, SSelectDim, SelectDim)
 import Torch.GraduallyTyped.Tensor.MathOperations.Pointwise (tanh)
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Prelude hiding (tanh)
 
+-- | 'Softmax' is a non-linear activation function.
 data Softmax (selectDim :: SelectDim (By Symbol Nat)) where
   Softmax ::
     forall selectDim.
     {softmaxSelectDim :: SSelectDim selectDim} ->
     Softmax selectDim
-  deriving (Generic)
+  deriving stock (Generic)
 
 type instance ModelSpec (Softmax selectDim) = Softmax selectDim
 
@@ -48,7 +51,10 @@ instance HasStateDict (Softmax selectDim) where
   toStateDict _ _ = pure ()
 
 instance
-  (output ~ Tensor requiresGradient layout device dataType (SoftmaxF selectDim shape)) =>
+  ( shape' ~ SoftmaxF selectDim shape,
+    Catch shape',
+    output ~ Tensor requiresGradient layout device dataType shape'
+  ) =>
   HasForward
     (Softmax selectDim)
     (Tensor requiresGradient layout device dataType shape)
@@ -56,9 +62,53 @@ instance
     output
     generator
   where
-  forward Softmax {..} input = pure . (softmax softmaxSelectDim input,)
+  forward Softmax {..} input g = do
+    r <- softmax softmaxSelectDim input
+    pure (r, g)
 
-data Relu where Relu :: Relu
+-- | 'LogSoftmax' is a non-linear activation function.
+data LogSoftmax (selectDim :: SelectDim (By Symbol Nat)) where
+  LogSoftmax ::
+    forall selectDim.
+    {logSoftmaxSelectDim :: SSelectDim selectDim} ->
+    LogSoftmax selectDim
+  deriving stock (Generic)
+
+type instance ModelSpec (LogSoftmax selectDim) = LogSoftmax selectDim
+
+instance
+  HasInitialize
+    (LogSoftmax selectDim)
+    generatorDevice
+    (LogSoftmax selectDim)
+    generatorDevice
+  where
+  initialize spec = pure . (spec,)
+
+instance HasStateDict (LogSoftmax selectDim) where
+  fromStateDict spec _ = pure spec
+  toStateDict _ _ = pure ()
+
+instance
+  ( shape' ~ SoftmaxF selectDim shape,
+    Catch shape',
+    output ~ Tensor requiresGradient layout device dataType shape'
+  ) =>
+  HasForward
+    (LogSoftmax selectDim)
+    (Tensor requiresGradient layout device dataType shape)
+    generator
+    output
+    generator
+  where
+  forward LogSoftmax {..} input g = do
+    r <- logSoftmax logSoftmaxSelectDim input
+    pure (r, g)
+
+-- | 'Relu' is a step-wise linear activation function.
+data Relu where
+  Relu :: Relu
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec Relu = Relu
 
@@ -85,7 +135,10 @@ instance
   where
   forward Relu input = pure . (relu input,)
 
-data Gelu where Gelu :: Gelu
+-- | 'Gelu' is a non-linear activation function.
+data Gelu where
+  Gelu :: Gelu
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec Gelu = Gelu
 
@@ -112,7 +165,11 @@ instance
   where
   forward Gelu input = pure . (gelu input,)
 
-data GeluNew where GeluNew :: GeluNew
+-- | 'GeluNew' is a non-linear activation function.
+-- It is a modified version of the 'Gelu' function.
+data GeluNew where
+  GeluNew :: GeluNew
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec GeluNew = GeluNew
 
@@ -139,7 +196,10 @@ instance
   where
   forward GeluNew input = pure . (geluNew input,)
 
-data Tanh where Tanh :: Tanh
+-- | 'Tanh' is a non-linear activation function.
+data Tanh where
+  Tanh :: Tanh
+  deriving stock (Eq, Ord, Show, Generic)
 
 type instance ModelSpec Tanh = Tanh
 

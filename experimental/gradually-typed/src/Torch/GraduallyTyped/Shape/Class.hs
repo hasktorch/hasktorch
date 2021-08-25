@@ -13,7 +13,7 @@ module Torch.GraduallyTyped.Shape.Class where
 import Control.Exception (Exception (..))
 import Control.Monad.Catch (MonadThrow (throwM))
 import Data.Singletons (Sing, SingKind (..))
-import Data.Singletons.Prelude.List (SList (..))
+import Torch.GraduallyTyped.Prelude.List (SList (..))
 import Data.Typeable (Typeable)
 import GHC.TypeLits (Symbol, TypeError, type (+), type (-))
 import GHC.TypeNats (Nat)
@@ -24,7 +24,7 @@ import Type.Errors.Pretty (type (%), type (<>))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- $setup
--- >>> import Data.Singletons.Prelude.List (SList (..))
+-- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
 -- >>> import Torch.GraduallyTyped
 
 type family AddSizeF (size :: Size Nat) (size' :: Size Nat) :: Size Nat where
