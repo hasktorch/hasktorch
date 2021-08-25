@@ -28,4 +28,3 @@ source-repository-package
 write-ghc-environment-files: always
 tests: true
 documentation: false
-profiling: true
