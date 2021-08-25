@@ -2,21 +2,24 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Opts where
 
 import Control.Applicative ((<**>))
+import Data.Aeson.TH (defaultOptions, deriveJSON)
+import Data.Functor ((<&>))
 import Data.Int (Int16)
 import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Word (Word64)
 import GHC.Generics (Generic)
 import qualified Options.Applicative as Opts
 import Torch.GraduallyTyped
-import qualified Data.Set as Set
-import Data.Functor ((<&>))
 
 data ModelArchitecture = T5Small | T5Base | T5Large | T5ThreeB | BARTBase | BARTLarge
-  deriving stock (Show, Generic)
+  deriving stock (Eq, Ord, Show, Generic)
 
 data Config = Config
   { configNumTrainingExamples :: Int,
@@ -38,7 +41,11 @@ data Config = Config
     configLearningRate :: Double,
     configOutputPath :: FilePath
   }
-  deriving stock (Show, Generic)
+  deriving stock (Eq, Ord, Show, Generic)
+
+$(deriveJSON defaultOptions ''ModelArchitecture)
+$(deriveJSON defaultOptions ''DeviceType)
+$(deriveJSON defaultOptions ''Config)
 
 config :: Opts.Parser Config
 config =

@@ -1,15 +1,11 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
@@ -47,7 +43,7 @@ import qualified Tokenizers
 import Torch.GraduallyTyped
 
 go :: _ => _
-go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
+go config@Opts.Config {..} device trainingModelSpec evaluationModelSpec =
   Tokenizers.withTokenizerFromConfigFile configTokenizerPath $ \tokenizer -> do
     -- create a Torch random generator from the seed
     g0 <- sMkGenerator device configSeed
@@ -222,10 +218,14 @@ go Opts.Config {..} device trainingModelSpec evaluationModelSpec =
 
     seedCache <- newTVarIO HashMap.empty
 
+    let outputStream = do
+          P.yield (Monitor.ConfigMonitor config)
+          P.foldM step init' done (P.each [1 .. configNumEpochs])
+
     P.runSafeT $
       P.withFile configOutputPath IO.WriteMode $ \h ->
         flip runReaderT seedCache . flip runContT pure . P.runEffect $
-          P.foldM step init' done (P.each [1 .. configNumEpochs]) >-> Monitor.monitor configNumEpochs h
+          outputStream >-> Monitor.monitor configNumEpochs h
 
 main :: IO ()
 main = do

@@ -24,11 +24,15 @@ import qualified Pipes.ByteString as P hiding (map)
 import qualified Pipes.Prelude as P hiding (toHandle)
 import qualified System.IO as IO
 import qualified System.ProgressBar as PB
+import qualified Opts
 
 -- | Data type for monitoring the training and evaluation metrics.
 data Monitor
-  = -- | monitor for training metrics
-    TrainingMonitor
+  = -- | monitor for configuration
+    ConfigMonitor
+      { mcConfig :: !Opts.Config }
+    -- | monitor for training metrics
+  | TrainingMonitor
       { mtLoss :: !Float,
         mtEpoch :: !Int
       }
@@ -81,6 +85,7 @@ monitor numEpochs h =
             maxRefreshRate
             (PB.Progress 0 numEpochs (Nothing, Nothing, Nothing))
       P.for P.cat $ \case
+        ConfigMonitor {} -> pure ()
         TrainingMonitor {..} ->
           P.lift . liftIO $
             PB.updateProgress
