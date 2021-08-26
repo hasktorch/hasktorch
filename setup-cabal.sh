@@ -36,7 +36,7 @@ package libtorch-ffi
 package *
   extra-lib-dirs: $(pwd)/deps/mklml/lib
   extra-lib-dirs: $(pwd)/deps/libtorch/lib
-  extra-lib-dirs: $(pwd)/deps/tokenizers/lib
+  extra-lib-dirs: $(pwd)/deps/libtokenizers/lib
 
 package libtorch-ffi
     ghc-options: -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEM_GB} -RTS
