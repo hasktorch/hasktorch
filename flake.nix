@@ -51,8 +51,6 @@
             cudaSupport = if prev.lib.hasAttr "cudaSupport" prev.config then prev.config.cudaSupport else false;
             cudaMajorVersion = "11";
             profiling = true;
-            gitrev = self.rev or "dirty";
-            commonLib = nixpkgs.lib // iohkNix.lib;
           };
         };
 
@@ -66,10 +64,6 @@
           if !prev.hasktorch-config.cudaSupport then libtorch-nix.overlays.cpu final prev else
           if prev.hasktorch-config.cudaMajorVersion == "10" then libtorch-nix.overlays.cudatoolkit_10_2 final prev else
           libtorch-nix.overlays.cudatoolkit_11_1 final prev;
-
-        commonLib = final: prev: {
-          inherit (prev.hasktorch-config) gitrev commonLib;
-        };
 
         hasktorchProject = final: prev: {
           hasktorchProject = import ./nix/haskell.nix ({
@@ -91,7 +85,6 @@
           hasktorch.overlays.buildType
           hasktorch.overlays.dev-tools
           hasktorch.overlays.libtorch-nix
-          hasktorch.overlays.commonLib
           hasktorch.overlays.hasktorchProject
         ];
 
@@ -99,10 +92,9 @@
 
         legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
 
-        inherit (pkgs.commonLib) eachEnv environments;
+        inherit (nixpkgs.lib // iohkNix.lib) eachEnv environments;
 
-        devShell =  import ./shell.nix {
-          inherit pkgs;
+        devShell =  pkgs.callPackage ./shell.nix {
           inherit (pkgs.hasktorch-config) cudaSupport cudaMajorVersion;
         };
 
