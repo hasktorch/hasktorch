@@ -33,15 +33,9 @@
       url = "github:tweag/jupyterWith/35eb565c6d00f3c61ef5e74e7e41870cfa3926f7";
       flake = false;
     };
-
-    naersk = { # should be moved into a tokenizers flake
-      url = "github:nix-community/naersk";
-      #flake = false;
-    };
-
     tokenizers = {
-      url = "github:hasktorch/tokenizers";
-      flake = false;
+      url = "github:hasktorch/tokenizers/flakes";
+      inputs.utils.follows = "haskell-nix/flake-utils";
     };
   };
 
@@ -79,13 +73,7 @@
             // iohkNix.lib;
         })
 
-        (final: prev: {
-          naersk = naersk.lib."${prev.system}";
-        })
-        (import "${tokenizers}/nix/pkgs.nix")
-        (final: prev: {
-          tokenizers_haskell = prev.tokenizersPackages.tokenizers-haskell;
-        })
+        tokenizers.overlay
 
         (final: prev: {
           hasktorchProject = import ./nix/haskell.nix (rec {

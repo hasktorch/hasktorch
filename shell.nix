@@ -39,7 +39,7 @@ let
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/run/opengl-driver/lib"
         '';
         tokenizersLibraryPath = ''
-          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${tokenizers_haskell}/lib"
+          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${tokenizers-haskell}/lib"
         '';
       in
         cpath + nproc + libraryPath + tokenizersLibraryPath;

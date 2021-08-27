@@ -74,7 +74,7 @@ let
       {
         packages.tokenizers = {
           configureFlags = [
-            "--extra-lib-dirs=${pkgs.tokenizers_haskell}/lib"
+            "--extra-lib-dirs=${pkgs.tokenizers-haskell}/lib"
           ];
         };
         packages.libtorch-ffi = {
