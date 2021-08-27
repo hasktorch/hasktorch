@@ -45,49 +45,47 @@
       inherit (lib);
       inherit (iohkNix.lib) collectExes;
 
-      supportedSystems = ["x86_64-darwin" "x86_64-linux"];
-
       gitrev = self.rev or "dirty";
 
       profiling = true;
       cudaSupport = false;
       cudaMajorVersion = "11";
 
-      overlays = [
-        haskell-nix.overlay
-        iohkNix.overlays.haskell-nix-extra
-
-        (final: prev: {
-          haskell-nix = prev.haskell-nix // {
-            custom-tools = prev.haskell-nix.custom-tools // (prev.callPackage ./nix/haskell-language-server {});
-          };
-        })
-
-        (if !cudaSupport then libtorch-nix.overlays.cpu
-         else if (cudaMajorVersion == "10") then libtorch-nix.overlays.cudatoolkit_10_2
-         else libtorch-nix.overlays.cudatoolkit_11_1)
-
-        (final: prev: {
-          inherit gitrev;
-          commonLib = lib
-            // iohkNix.lib;
-        })
-
-        tokenizers.overlay
-
-        (final: prev: {
-          hasktorchProject = import ./nix/haskell.nix (rec {
-            pkgs = prev;
-            compiler-nix-name = "ghc901";
-            inherit (prev) lib;
-            inherit profiling;
-            inherit cudaSupport;
-          });
-        })
-      ];
-
-    in eachSystem supportedSystems (system:
+    in eachSystem ["x86_64-darwin" "x86_64-linux"] (system:
       let
+        overlays = [
+          haskell-nix.overlay
+          iohkNix.overlays.haskell-nix-extra
+
+          (final: prev: {
+            haskell-nix = prev.haskell-nix // {
+              custom-tools = prev.haskell-nix.custom-tools // (prev.callPackage ./nix/haskell-language-server {});
+            };
+          })
+
+          (if !cudaSupport then libtorch-nix.overlays.cpu
+           else if (cudaMajorVersion == "10") then libtorch-nix.overlays.cudatoolkit_10_2
+           else libtorch-nix.overlays.cudatoolkit_11_1)
+
+          (final: prev: {
+            inherit gitrev;
+            commonLib = lib
+              // iohkNix.lib;
+          })
+
+          tokenizers.overlay
+
+          (final: prev: {
+            hasktorchProject = import ./nix/haskell.nix (rec {
+              pkgs = prev;
+              compiler-nix-name = "ghc901";
+              inherit (prev) lib;
+              inherit profiling;
+              inherit cudaSupport;
+            });
+          })
+        ];
+
         pkgs = import nixpkgs { inherit system overlays; };
 
         legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
