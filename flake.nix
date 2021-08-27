@@ -25,7 +25,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     libtorch-nix = {
-      url = "github:stites/libtorch-nix/flakeify";
+      url = "github:hasktorch/libtorch-nix";
       inputs.utils.follows = "haskell-nix/flake-utils";
       inputs.nixpkgs.follows = "nixpkgs";
     };

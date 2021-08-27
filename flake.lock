@@ -229,16 +229,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1628876036,
-        "narHash": "sha256-LR5vqTflPdw1wEbrVBeuJkQtpDLnA9eCG1J49vyOdaE=",
-        "owner": "stites",
+        "lastModified": 1629705476,
+        "narHash": "sha256-38exo0MJ3s95WkDu8TtsiJp/5LrC5AAjBwavGdSVU7M=",
+        "owner": "hasktorch",
         "repo": "libtorch-nix",
-        "rev": "1db68e8e2b8877b0a8dae7d01e9345964a3c924b",
+        "rev": "62d80e76a02e2dc5670d128eb4375454ad3db43a",
         "type": "github"
       },
       "original": {
-        "owner": "stites",
-        "ref": "flakeify",
+        "owner": "hasktorch",
         "repo": "libtorch-nix",
         "type": "github"
       }
