@@ -46,7 +46,7 @@
       inherit (iohkNix.lib) collectExes;
 
       hasktorch.overlays = {
-        buildType = final: prev: {
+        build-type = final: prev: {
           hasktorch-config = {
             cudaSupport = if prev.lib.hasAttr "cudaSupport" prev.config then prev.config.cudaSupport else false;
             cudaMajorVersion = "11";
@@ -65,7 +65,7 @@
           if prev.hasktorch-config.cudaMajorVersion == "10" then libtorch-nix.overlays.cudatoolkit_10_2 final prev else
           libtorch-nix.overlays.cudatoolkit_11_1 final prev;
 
-        hasktorchProject = final: prev: {
+        hasktorch-project = final: prev: {
           hasktorchProject = import ./nix/haskell.nix ({
             pkgs = prev;
             compiler-nix-name = "ghc901";
@@ -82,10 +82,10 @@
           iohkNix.overlays.haskell-nix-extra
           tokenizers.overlay
 
-          hasktorch.overlays.buildType
+          hasktorch.overlays.build-type
           hasktorch.overlays.dev-tools
           hasktorch.overlays.libtorch-nix
-          hasktorch.overlays.hasktorchProject
+          hasktorch.overlays.hasktorch-project
         ];
 
         pkgs = import nixpkgs { inherit system overlays; };
