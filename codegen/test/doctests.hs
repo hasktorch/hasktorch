@@ -5,7 +5,6 @@ import Test.DocTest
 main :: IO ()
 main = do
   doctest $
-    [
-      "-XOverloadedStrings",
+    [ "-XOverloadedStrings",
       "src/ParseFunctionSig.hs"
     ]

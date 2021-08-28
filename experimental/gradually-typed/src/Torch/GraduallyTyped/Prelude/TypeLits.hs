@@ -1,12 +1,15 @@
 {-# LANGUAGE CPP #-}
 
-module Torch.GraduallyTyped.Prelude.TypeLits (
+module Torch.GraduallyTyped.Prelude.TypeLits
+  (
+  )
+where
+
 #if MIN_VERSION_singletons(3,0,0)
     module GHC.TypeLits.Singletons
 #else
     module Data.Singletons.TypeLits
 #endif
-) where
 
 #if MIN_VERSION_singletons(3,0,0)
 import GHC.TypeLits.Singletons

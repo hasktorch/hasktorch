@@ -7,12 +7,12 @@
 module Torch.GraduallyTyped.NN.Training where
 
 import Control.Monad.IO.Class (MonadIO (..))
-import Torch.GraduallyTyped.Prelude.List (SList (..))
 import qualified Pipes as P
 import qualified Pipes.Prelude as P
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.Optim (Optimizer, stepWithGenerator)
 import Torch.GraduallyTyped.Prelude (Catch)
+import Torch.GraduallyTyped.Prelude.List (SList (..))
 import Torch.GraduallyTyped.Random (Generator, SGetGeneratorDevice)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Type (SShape (..), Shape (..))

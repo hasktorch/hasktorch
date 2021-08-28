@@ -1,5 +1,5 @@
 module Torch.Language
-  ( module Torch.Language.SpiderSQL
+  ( module Torch.Language.SpiderSQL,
   )
 where
 

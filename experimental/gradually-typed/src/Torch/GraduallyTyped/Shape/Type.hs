@@ -13,7 +13,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE PatternSynonyms #-}
 
 module Torch.GraduallyTyped.Shape.Type where
 
@@ -21,11 +20,11 @@ import Data.Bifunctor (Bifunctor (..))
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..), withSomeSing)
-import Torch.GraduallyTyped.Prelude.List (SList (..))
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, SomeNat (..), SomeSymbol (..), Symbol, natVal, someNatVal, someSymbolVal, symbolVal)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.Prelude (Concat, IsChecked (..), forgetIsChecked)
+import Torch.GraduallyTyped.Prelude.List (SList (..))
 import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Managed.Cast as ATen ()
 import qualified Torch.Internal.Managed.Type.Dimname as ATen (dimname_symbol, fromSymbol_s)

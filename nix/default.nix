@@ -131,8 +131,6 @@ pkgs // {
           enable = true;
           excludes = [
             "^Setup.hs$"
-            "^codegen/.*$"
-            "^experimental/.*$"
             "^libtorch-ffi/.*$"
           ];
         };

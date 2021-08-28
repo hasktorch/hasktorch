@@ -39,6 +39,7 @@ import Torch.GraduallyTyped.NN.Transformer.GEncoderDecoder (SimplifiedEncoderDec
 import Torch.GraduallyTyped.NN.Transformer.T5.Common (T5DataType, mkT5Input, t5EOSTokenId)
 import Torch.GraduallyTyped.NN.Transformer.T5.Small (t5SmallSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead (SWithLMHead))
+import Torch.GraduallyTyped.NN.Type (SHasDropout (SWithDropout))
 import Torch.GraduallyTyped.Random (Generator, sMkGenerator)
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (BroadcastShapesF)
@@ -49,7 +50,6 @@ import Torch.GraduallyTyped.Tensor.Type (SGetShape, Tensor (..))
 import Torch.Language.SpiderSQL (SpiderSQL, spiderSQL)
 import qualified Torch.Tensor
 import Prelude hiding (Word, words)
-import Torch.GraduallyTyped.NN.Type (SHasDropout(SWithDropout))
 
 data IsFinished = Finished | Unfinished
 
