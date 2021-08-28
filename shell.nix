@@ -1,11 +1,11 @@
 # This file is used by nix-shell.
 # It just takes the shell attribute from default.nix.
-{ config ? {}
-, sourcesOverride ? {}
-# If true, activates CUDA support
+{ config ? { }
+, sourcesOverride ? { }
+  # If true, activates CUDA support
 , cudaSupport ? false
-# If cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
-# nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
+  # If cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
+  # nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
 , cudaMajorVersion ? null
 , withHoogle ? false
 , pkgs ? import ./nix/default.nix {
@@ -34,8 +34,8 @@ let
     # These programs will be available inside the nix-shell.
     buildInputs =
       with haskellPackages; [ hlint weeder ghcid ]
-      # TODO: Add additional packages to the shell.
-      ++ [ ];
+        # TODO: Add additional packages to the shell.
+        ++ [ ];
 
     # Prevents cabal from choosing alternate plans, so that
     # *all* dependencies are provided by Nix.
@@ -64,7 +64,7 @@ let
           ${pkgs.pre-commit-check.shellHook}
         '';
       in
-        cpath + nproc + libraryPath + tokenizersLibraryPath + preCommitShellHook;
+      cpath + nproc + libraryPath + tokenizersLibraryPath + preCommitShellHook;
 
     inherit withHoogle;
   };
@@ -91,4 +91,4 @@ let
 
 in
 
-  shell // { inherit devops; }
+shell // { inherit devops; }

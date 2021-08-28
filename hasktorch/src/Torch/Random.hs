@@ -20,8 +20,8 @@ import Control.Concurrent
 import Control.Concurrent.STM
 import Control.Monad.IO.Class
 import Control.Monad.STM
-import Data.Word
 import Data.Int
+import Data.Word
 import Foreign.ForeignPtr
 import System.IO.Unsafe
 import Torch.Device
@@ -39,7 +39,8 @@ instance Show (TVar (Either (Word64, Device) (ForeignPtr ATen.Generator))) where
 
 newtype Generator = UnsafeGenerator
   { unGenerator :: TVar (Either (Word64, Device) (ForeignPtr ATen.Generator))
-  } deriving (Eq, Show)
+  }
+  deriving (Eq, Show)
 
 mkGenerator :: Device -> Word64 -> IO Generator
 mkGenerator device seed =
@@ -56,7 +57,6 @@ mkGenerator device seed =
 
 type RandomGenFunc = ForeignPtr ATen.IntArray -> ForeignPtr ATen.Generator -> ForeignPtr ATen.TensorOptions -> IO (ForeignPtr ATen.Tensor)
 
-
 generatorFactory :: RandomGenFunc -> [Int] -> TensorOptions -> Generator -> (Tensor, Generator)
 generatorFactory func size options (UnsafeGenerator generator) =
   unsafePerformIO $ do
@@ -65,10 +65,9 @@ generatorFactory func size options (UnsafeGenerator generator) =
       case v of
         Right v' -> do
           let device =
-                if generatorIsCuda v' then
-                  Device {deviceType = CUDA, deviceIndex = fromIntegral $ generatorDevice v'}
-                else
-                  Device {deviceType = CPU, deviceIndex = 0}
+                if generatorIsCuda v'
+                  then Device {deviceType = CUDA, deviceIndex = fromIntegral $ generatorDevice v'}
+                  else Device {deviceType = CPU, deviceIndex = 0}
               seed = generatorSeed v'
           writeTVar generator $ seed `seq` deviceType device `seq` deviceIndex device `seq` Left (seed, device)
           return $ Right v'
@@ -87,16 +86,15 @@ generatorFactory func size options (UnsafeGenerator generator) =
   where
     generatorIsCpu :: ForeignPtr ATen.Generator -> Bool
     generatorIsCpu gen = unsafePerformIO $ cast1 ATen.generator_is_cpu gen
-    
+
     generatorIsCuda :: ForeignPtr ATen.Generator -> Bool
     generatorIsCuda gen = unsafePerformIO $ cast1 ATen.generator_is_cuda gen
-    
+
     generatorDevice :: ForeignPtr ATen.Generator -> Int
     generatorDevice gen = unsafePerformIO $ cast1 ATen.generator_get_device gen
-    
+
     generatorSeed :: ForeignPtr ATen.Generator -> Word64
     generatorSeed gen = unsafePerformIO $ cast1 ATen.generator_current_seed gen
-    
 
 randn ::
   -- | size

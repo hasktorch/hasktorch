@@ -7,18 +7,18 @@
 
 { system ? builtins.currentSystem
 , crossSystem ? null
-# allows to customize ghc and profiling (see ./nix/haskell.nix):
-, config ? {}
-# allows to override dependencies of the hasktorch project without modifications
-, sourcesOverride ? {}
-# if true, activates CUDA support
+  # allows to customize ghc and profiling (see ./nix/haskell.nix):
+, config ? { }
+  # allows to override dependencies of the hasktorch project without modifications
+, sourcesOverride ? { }
+  # if true, activates CUDA support
 , cudaSupport ? false
-# if cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
-# nix-build --arg cudaSupport true --argstr cudaMajorVersion 10
+  # if cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
+  # nix-build --arg cudaSupport true --argstr cudaMajorVersion 10
 , cudaMajorVersion ? null
-# pinned version of nixpkgs augmented with various overlays.
+  # pinned version of nixpkgs augmented with various overlays.
 , pkgs ? import ./nix/default.nix { inherit system crossSystem config sourcesOverride cudaSupport cudaMajorVersion; }
-# git sha1 hash, to be passed when not building from a git work tree.
+  # git sha1 hash, to be passed when not building from a git work tree.
 , gitrev ? null
 }:
 
@@ -83,13 +83,15 @@ let
     # };
 
     # Build the documentation.
-    combined-haddock = let
-      haddock-combine = callPackage ./nix/haddock-combine.nix {
-        runCommand = runCommand;
-        lib = lib;
-        ghc = hasktorchHaskellPackages.ghcWithPackages (_: [ ]);
-      };
-      in haddock-combine {
+    combined-haddock =
+      let
+        haddock-combine = callPackage ./nix/haddock-combine.nix {
+          runCommand = runCommand;
+          lib = lib;
+          ghc = hasktorchHaskellPackages.ghcWithPackages (_: [ ]);
+        };
+      in
+      haddock-combine {
         hspkgs = builtins.attrValues libs;
         prologue = writeTextFile {
           name = "prologue";
@@ -100,4 +102,4 @@ let
 
 in
 
-  self
+self

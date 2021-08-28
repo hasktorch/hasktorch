@@ -40,9 +40,9 @@ in
 
 # This shell file is specifically to be used for Jupyter Lab.
 { config ? { allowUnfree = true; allowBroken = true; }
-# Lets you override niv dependencies of the project without modifications to the source.
-, sourcesOverride ? {}
-# Enable CUDA support
+  # Lets you override niv dependencies of the project without modifications to the source.
+, sourcesOverride ? { }
+  # Enable CUDA support
 , cudaSupport ? false
 , cudaMajorVersion ? null
 , pkgs ? import ./default.nix {
@@ -55,8 +55,8 @@ with pkgs;
 let
 
   customIHaskell = symlinkJoin {
-    name="ihaskell-hnix"; 
-    paths=[
+    name = "ihaskell-hnix";
+    paths = [
       hasktorchHaskellPackages.ihaskell.components.exes.ihaskell
       hasktorchHaskellPackages.ihaskell.components.library
     ];
@@ -86,4 +86,4 @@ let
 
 in
 
-  jupyterEnvironment.env
+jupyterEnvironment.env

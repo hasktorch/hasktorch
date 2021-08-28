@@ -6,10 +6,10 @@ import Control.Monad.State
 import System.Mem (performGC)
 import Torch.Autograd
 import Torch.Functional
+import Torch.Internal.GC (mallocTrim)
 import Torch.NN
 import Torch.Tensor
 import Torch.TensorFactories
-import Torch.Internal.GC (mallocTrim)
 import Prelude hiding (sqrt)
 
 type LearningRate = Tensor
@@ -99,14 +99,13 @@ instance Optimizer GDM where
 --
 
 -- | State representation for Adam Optimizer
-data Adam
-  = Adam
-      { beta1 :: Float, -- 1st moment forgetting factor
-        beta2 :: Float, -- 2nd moment forgetting factor
-        m1 :: [Tensor], -- 1st moment
-        m2 :: [Tensor], -- 2nd moment
-        iter :: Int -- iteration
-      }
+data Adam = Adam
+  { beta1 :: Float, -- 1st moment forgetting factor
+    beta2 :: Float, -- 2nd moment forgetting factor
+    m1 :: [Tensor], -- 1st moment
+    m2 :: [Tensor], -- 2nd moment
+    iter :: Int -- iteration
+  }
   deriving (Show)
 
 mkAdam ::
@@ -161,8 +160,7 @@ instance Optimizer Adam where
 --
 
 -- | State representation for Adagrad Optimizer
-data Adagrad
-  = Adagrad{ gsum :: [Tensor] } -- sum of squared gradients
+data Adagrad = Adagrad {gsum :: [Tensor]} -- sum of squared gradients
   deriving (Show)
 
 -- | Adagrad step

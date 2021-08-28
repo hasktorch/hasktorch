@@ -3,22 +3,21 @@
 
 module Torch.Distributions.CategoricalSpec (spec) where
 
-import Test.Hspec
 import GHC.Exts
-import qualified Torch.Device as D
-import qualified Torch.Tensor as D
+import Test.Hspec
 import qualified Torch.DType as D
-import qualified Torch.Functional as F
-import qualified Torch.Distributions.Constraints as Constraints
-import Torch.Typed.Tensor
-import Torch.Distributions.Distribution
+import qualified Torch.Device as D
 import Torch.Distributions.Categorical
+import qualified Torch.Distributions.Constraints as Constraints
+import Torch.Distributions.Distribution
+import qualified Torch.Functional as F
+import qualified Torch.Tensor as D
+import Torch.Typed.Tensor
 
 type Tnsr dtype shape = Tensor '( 'D.CPU, 0) dtype shape
 
 spec :: Spec
 spec = do
-
   let ps = [0.8, 0.2 :: Float]
   let p = D.asTensor ps
   let d = fromProbs p
@@ -37,12 +36,13 @@ spec = do
   it "expand" $ do
     -- putStrLn . show $ expand d [2]
     let t :: Tnsr 'D.Float '[2] = UnsafeMkTensor $ probs $ expand d [2]
-    toList (Just t) !! 0 `shouldBe` 0.8  -- ps
-
+    toList (Just t) !! 0 `shouldBe` 0.8 -- ps
   it "support" $ do
     -- putStrLn . show $ support d $ D.asTensor [0.0, 0.5, 1.0, 2.0 :: Float]
-    let t :: Tnsr 'D.Bool '[4] = UnsafeMkTensor .
-            support d $ D.asTensor [0.0, 0.5, 1.0, 2.0 :: Float]
+    let t :: Tnsr 'D.Bool '[4] =
+          UnsafeMkTensor
+            . support d
+            $ D.asTensor [0.0, 0.5, 1.0, 2.0 :: Float]
     toList (Just t) `shouldBe` [True, True, True, False]
 
   it "mean" $ do
@@ -63,10 +63,10 @@ spec = do
     toList (Just t') `shouldBe` [True, True]
 
   it "sample: multi-dimensional" $ do
-    let d = fromProbs . D.asTensor $ [ [0.3, 0.2], [0.4, 0.1 :: Float]]
+    let d = fromProbs . D.asTensor $ [[0.3, 0.2], [0.4, 0.1 :: Float]]
     t <- sample d [3]
     -- putStrLn . show $ t
-    D.shape t `shouldBe` [3,2]
+    D.shape t `shouldBe` [3, 2]
 
   it "logProb" $ do
     -- putStrLn . show $ logProb d $ D.asTensor [0.3, 0.5 :: Float]

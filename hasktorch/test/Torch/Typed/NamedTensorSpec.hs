@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -8,6 +9,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
@@ -19,16 +21,14 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE OverloadedLists #-}
-{-# LANGUAGE DeriveAnyClass #-}
 
 module Torch.Typed.NamedTensorSpec (spec) where
 
 import Data.Default.Class
 import Data.Kind
+import Data.Maybe (fromJust)
 import Data.Proxy
 import Data.Vector.Sized (Vector)
-import Data.Maybe (fromJust)
 import qualified Data.Vector.Sized as V
 import GHC.Exts
 import GHC.Generics
@@ -38,17 +38,19 @@ import Test.Hspec
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import qualified Torch.Functional as F
+import Torch.Lens
 import qualified Torch.Tensor as D
 import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Lens
 import Torch.Typed.NamedTensor
 import Torch.Typed.Tensor
-import Torch.Lens
 
-newtype Batch (n::Nat) a = Batch (Vector n a) deriving (Show, Eq, Generic)
-newtype Height (n::Nat) a = Height (Vector n a) deriving (Show, Eq, Generic)
-newtype Width (n::Nat) a = Width (Vector n a) deriving (Show, Eq, Generic)
+newtype Batch (n :: Nat) a = Batch (Vector n a) deriving (Show, Eq, Generic)
+
+newtype Height (n :: Nat) a = Height (Vector n a) deriving (Show, Eq, Generic)
+
+newtype Width (n :: Nat) a = Width (Vector n a) deriving (Show, Eq, Generic)
 
 data RGB a = RGB
   { r :: a,
@@ -66,7 +68,6 @@ data YCoCg a = YCoCg
 
 data RGBA a = RGBA a a a a deriving (Show, Eq, Generic, Default)
 
-
 testFieldLens :: HasField "r" shape => Lens' (NamedTensor '(D.CPU, 0) 'D.Float shape) (NamedTensor '(D.CPU, 0) 'D.Float (DropField "r" shape))
 testFieldLens = field @"r"
 
@@ -76,7 +77,7 @@ testFieldLens2 = field @"r"
 testNamedLens :: Traversal' (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n, RGB]) (NamedTensor '(D.CPU, 0) 'D.Float '[Vector n])
 testNamedLens = name @RGB
 
-testNamedLens2 :: Traversal' (NamedTensor '(D.CPU, 0) 'D.Float '[Vector 3, RGB, Vector 4]) (NamedTensor '(D.CPU, 0) 'D.Float '[Vector 3,Vector 4])
+testNamedLens2 :: Traversal' (NamedTensor '(D.CPU, 0) 'D.Float '[Vector 3, RGB, Vector 4]) (NamedTensor '(D.CPU, 0) 'D.Float '[Vector 3, Vector 4])
 testNamedLens2 = name @RGB
 
 testDropField :: Proxy (DropField "r" '[Vector 2, RGB]) -> Proxy '[Vector 2]
@@ -100,9 +101,9 @@ testCountField4 = id
 toYCoCG :: (KnownNat n, KnownDType dtype, KnownDevice device) => NamedTensor device dtype [Vector n, RGB] -> NamedTensor device dtype [Vector n, YCoCg]
 toYCoCG rgb =
   set (field @"y") ((r + g * 2 + b) / 4) $
-  set (field @"co") ((r - b) / 2) $
-  set (field @"cg") ((- r + g * 2 - b) / 4) $
-  def
+    set (field @"co") ((r - b) / 2) $
+      set (field @"cg") ((- r + g * 2 - b) / 4) $
+        def
   where
     r = rgb ^. field @"r"
     g = rgb ^. field @"g"
@@ -141,7 +142,7 @@ spec = do
       checkDynamicTensorAttributes' t
     it "create by NamedTensorLike" $ do
       let t :: NamedTensor '(D.CPU, 0) 'D.Float '[Batch 1, Height 1, Width 1, RGB]
-          t = asNamedTensor $ Batch (V.singleton (Height (V.singleton (Width (V.singleton (RGB { r = 0 :: Float, g = 1, b = 2 }))))))
+          t = asNamedTensor $ Batch (V.singleton (Height (V.singleton (Width (V.singleton (RGB {r = 0 :: Float, g = 1, b = 2}))))))
       checkDynamicTensorAttributes' t
     it "check a shape of lens" $ do
       let t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4, RGB]
@@ -173,11 +174,11 @@ spec = do
     it "shape and dtype" $ do
       let t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4, RGB]
           t = def
-      shape t `shouldBe` [2,3,4,3]
+      shape t `shouldBe` [2, 3, 4, 3]
       dtype t `shouldBe` D.Float
     it "named index" $ do
       let t :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2, Vector 3, Vector 4, RGB]
           t = def
           t2 = flattenValues (name @(Vector 3)) t
-      map shape t2 `shouldBe` [[2,4,3],[2,4,3],[2,4,3]]
-      map dtype t2 `shouldBe` [D.Float,D.Float,D.Float]
+      map shape t2 `shouldBe` [[2, 4, 3], [2, 4, 3], [2, 4, 3]]
+      map dtype t2 `shouldBe` [D.Float, D.Float, D.Float]

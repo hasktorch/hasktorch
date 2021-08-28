@@ -34,7 +34,7 @@ import Torch.DType (DType)
 import Torch.Device (DeviceType)
 import Torch.HList
 import qualified Torch.NN (Parameter, Randomizable (..), sample)
-import qualified Torch.Tensor (_toDevice, toType)
+import qualified Torch.Tensor (toType, _toDevice)
 import Torch.Typed.Aux
 import Torch.Typed.Factories
 import Torch.Typed.Functional
@@ -102,9 +102,7 @@ parameterToDType (UnsafeMkParameter t) =
     . Torch.Autograd.toDependent
     $ t
 
-class
-  Parameterized (f :: Type)
-  where
+class Parameterized (f :: Type) where
   type Parameters f :: [Type]
   type Parameters f = GParameters (Rep f)
   flattenParameters :: f -> HList (Parameters f)
@@ -121,9 +119,7 @@ class
     f
   replaceParameters f as = to (gReplaceParameters (from f) as)
 
-class
-  GParameterized (f :: Type -> Type)
-  where
+class GParameterized (f :: Type -> Type) where
   type GParameters f :: [Type]
   gFlattenParameters :: forall a. f a -> HList (GParameters f)
   gReplaceParameters :: forall a. f a -> HList (GParameters f) -> f a
@@ -169,9 +165,7 @@ instance Parameterized (Tensor device dtype shape) where
   flattenParameters _ = HNil
   replaceParameters = const
 
-instance
-  Parameterized (Parameter device dtype shape)
-  where
+instance Parameterized (Parameter device dtype shape) where
   type Parameters (Parameter device dtype shape) = '[Parameter device dtype shape]
   flattenParameters = (:. HNil)
   replaceParameters _ (parameter :. HNil) = parameter

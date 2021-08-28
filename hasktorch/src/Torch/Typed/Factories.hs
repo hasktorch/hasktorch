@@ -18,6 +18,7 @@
 module Torch.Typed.Factories where
 
 import Control.Arrow ((&&&))
+import Data.Default.Class
 import Data.Finite
 import Data.Kind (Constraint)
 import Data.Proxy
@@ -35,7 +36,6 @@ import qualified Torch.TensorOptions as D
 import Torch.Typed.Aux
 import Torch.Typed.Tensor
 import Prelude hiding (sin)
-import Data.Default.Class
 
 instance (TensorOptions shape dtype device) => Default (Tensor device dtype shape) where
   def = zeros

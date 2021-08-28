@@ -1,24 +1,22 @@
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 
 module Torch.Lens where
 
 import Control.Monad.Identity
-import GHC.Generics
 import Control.Monad.State.Strict
+import GHC.Generics
 
 -- | Type synonym for lens
-
 type Lens s t a b = forall f. Functor f => (a -> f b) -> s -> f t
 
 type Lens' s a = Lens s s a a
@@ -44,7 +42,7 @@ flattenValues func orgData = reverse . snd $ runState (func push orgData) []
     push :: a -> State [a] a
     push v = do
       d <- get
-      put $ v:d
+      put $ v : d
       return v
 
 replaceValues :: forall a s. Traversal' s a -> s -> [a] -> s
@@ -55,7 +53,7 @@ replaceValues func orgData newValues = fst $ runState (func pop orgData) newValu
       d <- get
       case d of
         [] -> error "Not enough values supplied to replaceValues"
-        x:xs -> do
+        x : xs -> do
           put xs
           return x
 
@@ -63,7 +61,7 @@ types :: forall a s. HasTypes s a => Traversal' s a
 types = types_ @s @a
 
 class GHasTypes s a where
-  gtypes :: forall b . Traversal' (s b) a
+  gtypes :: forall b. Traversal' (s b) a
 
 instance GHasTypes U1 a where
   gtypes _ = pure
@@ -80,20 +78,20 @@ instance (GHasTypes f a, GHasTypes g a) => GHasTypes (f :*: g) a where
 instance (HasTypes s a) => GHasTypes (K1 i s) a where
   gtypes func (K1 x) = K1 <$> types func x
   {-# INLINE gtypes #-}
-  
+
 instance GHasTypes s a => GHasTypes (M1 i t s) a where
   gtypes func (M1 x) = M1 <$> gtypes func x
   {-# INLINE gtypes #-}
 
 instance {-# OVERLAPS #-} (HasTypes s a) => HasTypes [s] a where
   types_ func [] = pure []
-  types_ func (x:xs) = (:) <$> types_ func x <*> types_ func xs
+  types_ func (x : xs) = (:) <$> types_ func x <*> types_ func xs
   {-# INLINE types_ #-}
 
-instance {-# OVERLAPS #-} (HasTypes s0 a, HasTypes s1 a) => HasTypes (s0,s1) a where
-  types_ func (s0,s1) = (,) <$> types_ func s0 <*> types_ func s1 
+instance {-# OVERLAPS #-} (HasTypes s0 a, HasTypes s1 a) => HasTypes (s0, s1) a where
+  types_ func (s0, s1) = (,) <$> types_ func s0 <*> types_ func s1
   {-# INLINE types_ #-}
 
-instance {-# OVERLAPS #-} (HasTypes s0 a, HasTypes s1 a, HasTypes s2 a) => HasTypes (s0,s1,s2) a where
-  types_ func (s0,s1,s2) = (,,) <$> types_ func s0 <*> types_ func s1  <*> types_ func s2
+instance {-# OVERLAPS #-} (HasTypes s0 a, HasTypes s1 a, HasTypes s2 a) => HasTypes (s0, s1, s2) a where
+  types_ func (s0, s1, s2) = (,,) <$> types_ func s0 <*> types_ func s1 <*> types_ func s2
   {-# INLINE types_ #-}
