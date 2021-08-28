@@ -109,4 +109,17 @@ let
     config = haskellNix.nixpkgsArgs.config // config;
   };
 
-in pkgs
+in pkgs // {
+  pre-commit-check =
+    let nix-pre-commit-hooks = import (builtins.fetchTarball "https://github.com/cachix/pre-commit-hooks.nix/tarball/master");
+    in
+    nix-pre-commit-hooks.run {
+      src = ./.;
+      # If your hooks are intrusive, avoid running on each commit with a default_states like this:
+      # default_stages = ["manual" "push"];
+      hooks = {
+        nixpkgs-fmt.enable = true;
+        ormolu.enable = true;
+      };
+    };
+}

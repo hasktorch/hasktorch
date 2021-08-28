@@ -60,8 +60,11 @@ let
         tokenizersLibraryPath = ''
           export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${tokenizers_haskell}/lib"
         '';
+        preCommitShellHook = ''
+          ${pkgs.pre-commit-check.shellHook}
+        '';
       in
-        cpath + nproc + libraryPath + tokenizersLibraryPath;
+        cpath + nproc + libraryPath + tokenizersLibraryPath + preCommitShellHook;
 
     inherit withHoogle;
   };
