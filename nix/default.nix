@@ -118,8 +118,21 @@ in pkgs // {
       # If your hooks are intrusive, avoid running on each commit with a default_states like this:
       # default_stages = ["manual" "push"];
       hooks = {
-        nixpkgs-fmt.enable = true;
-        ormolu.enable = true;
+        nixpkgs-fmt = {
+          enable = true;
+          excludes = [
+            "^nix/sources\.nix"
+          ];
+        };
+        ormolu = {
+          enable = true;
+          excludes = [
+            "^Setup.hs$"
+            "^codegen/.*$"
+            "^experimental/.*$"
+            "^libtorch-ffi/.*$"
+          ];
+        };
       };
     };
 }
