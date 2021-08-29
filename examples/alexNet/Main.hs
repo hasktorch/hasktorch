@@ -26,7 +26,7 @@ import qualified Torch.Vision as V
 data DataSet = DataSet
   { images :: [Tensor],
     labels :: [Tensor],
-    classes :: [String]
+      classes :: [String]
   }
   deriving (Show)
 
