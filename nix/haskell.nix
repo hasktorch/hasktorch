@@ -4,10 +4,7 @@
 , profiling
 , cudaSupport
 , extras ? (_: {})
-, src ? (pkgs.haskell-nix.haskellLib.cleanGit {
-      name = "hasktorch";
-      src = ../.;
-  })
+, src ? ../.
 , projectPackages ? lib.attrNames (pkgs.haskell-nix.haskellLib.selectProjectPackages
     (pkgs.haskell-nix.cabalProject' {
       inherit src compiler-nix-name;
@@ -74,7 +71,7 @@ let
       {
         packages.tokenizers = {
           configureFlags = [
-            "--extra-lib-dirs=${pkgs.tokenizers_haskell}/lib"
+            "--extra-lib-dirs=${pkgs.tokenizers-haskell}/lib"
           ];
         };
         packages.libtorch-ffi = {
