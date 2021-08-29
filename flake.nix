@@ -45,25 +45,21 @@
       inherit (lib);
       inherit (iohkNix.lib) collectExes;
 
+      build-config.dev     = import ./nix/dev-config.nix; # only used to generate devshell
+      build-config.cpu     = { profiling = true; cudaSupport = false; cudaMajorVersion = "invalid"; };
+      build-config.cuda-10 = { profiling = true; cudaSupport = true;  cudaMajorVersion = "10"; };
+      build-config.cuda-11 = { profiling = true; cudaSupport = true;  cudaMajorVersion = "11"; };
+
       hasktorch.overlays = {
-        build-type = final: prev: {
-          hasktorch-config = {
-            cudaSupport = if prev.lib.hasAttr "cudaSupport" prev.config then prev.config.cudaSupport else false;
-            cudaMajorVersion = "11";
-            profiling = true;
-          };
-        };
+        cpu-config     = final: prev: { hasktorch-config = build-config.cpu; }     // (libtorch-nix.overlays.cpu final prev);
+        cuda-10-config = final: prev: { hasktorch-config = build-config.cuda-10; } // (libtorch-nix.overlays.cudatoolkit_10_2 final prev);
+        cuda-11-config = final: prev: { hasktorch-config = build-config.cuda-11; } // (libtorch-nix.overlays.cudatoolkit_11_1 final prev);
 
         dev-tools = final: prev: {
           haskell-nix = prev.haskell-nix // {
             custom-tools = prev.haskell-nix.custom-tools // (prev.callPackage ./nix/haskell-language-server {});
           };
         };
-
-        libtorch-nix = final: prev:
-          if !prev.hasktorch-config.cudaSupport then libtorch-nix.overlays.cpu final prev else
-          if prev.hasktorch-config.cudaMajorVersion == "10" then libtorch-nix.overlays.cudatoolkit_10_2 final prev else
-          libtorch-nix.overlays.cudatoolkit_11_1 final prev;
 
         hasktorch-project = final: prev: {
           hasktorchProject = import ./nix/haskell.nix ({
@@ -75,41 +71,63 @@
         };
       };
 
-    in { inherit (hasktorch) overlays; } // (eachSystem ["x86_64-darwin" "x86_64-linux"] (system:
+      generic-pkgset = system: ty:
+        let
+          overlays = [
+            haskell-nix.overlay
+            iohkNix.overlays.haskell-nix-extra
+            tokenizers.overlay
+
+            hasktorch.overlays."${ty}-config"
+            hasktorch.overlays.dev-tools
+            hasktorch.overlays.hasktorch-project
+          ];
+        in
+          { pkgs = import nixpkgs { inherit system overlays; };
+            legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
+          };
+
+    in { inherit (hasktorch) overlays; } // (eachSystem ["x86_64-linux" ] (system:
       let
-        overlays = [
-          haskell-nix.overlay
-          iohkNix.overlays.haskell-nix-extra
-          tokenizers.overlay
+        mk-pkgset = generic-pkgset system;
 
-          hasktorch.overlays.build-type
-          hasktorch.overlays.dev-tools
-          hasktorch.overlays.libtorch-nix
-          hasktorch.overlays.hasktorch-project
-        ];
-
-        pkgs = import nixpkgs { inherit system overlays; };
-
-        legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
-
-        inherit (nixpkgs.lib // iohkNix.lib) eachEnv environments;
-
-        devShell =  pkgs.callPackage ./shell.nix {
-          inherit (pkgs.hasktorch-config) cudaSupport cudaMajorVersion;
+        pkgset = rec {
+          cpu     = mk-pkgset "cpu";
+          cuda-10 = mk-pkgset "cuda-10";
+          cuda-11 = mk-pkgset "cuda-11";
         };
 
-        flake = pkgs.hasktorchProject.flake {};
+        mapper = name-pred: name-map: with lib.attrsets; mapAttrs' (name: nameValuePair (if (name-pred name) then (name-map name) else name));
+        mapper2 = name-pred: name-map: with lib.attrsets;
+          mapAttrs' (p: v: nameValuePair p (mapper name-pred name-map v));
 
-        checks = pkgs.haskell-nix.haskellLib.collectChecks' flake.packages;
+        build-flake = ty: with lib.strings; with lib.lists;
+          let
+            inherit (pkgset.${ty}) pkgs;
+            pkg-flake = pkgs.hasktorchProject.flake {};
+          in
+            mapper2
+                      #(n: head (splitString ":" n) == "hasktorch")
+                      (n: hasInfix ":" n && head (splitString ":" n) != "codegen")
+                      (n: let parts = splitString ":" n; in concatStringsSep ":" (concatLists [["${head parts}-${ty}"] (tail parts)]))
+                      pkg-flake;
 
-        exes = pkgs.haskell-nix.haskellLib.extra.collectExes flake.packages;
+        builds = {
+          cpu     = build-flake "cpu";
+          cuda-10 = build-flake "cuda-10";
+          cuda-11 = build-flake "cuda-11";
+        };
 
-      in lib.recursiveUpdate flake {
-        inherit environments checks legacyPkgs;
-
-        defaultPackage = flake.packages."hasktorch:lib:hasktorch";
-
-        inherit devShell;
-      }
+      in with builds;
+        lib.recursiveUpdate cpu (lib.recursiveUpdate cuda-10 cuda-11) // (
+          let
+            dev = with pkgset;
+              if !build-config.dev.cudaSupport then cpu else
+              if build-config.dev.cudaMajorVersion == "10" then cuda-10 else cuda-11;
+          in {
+            devShell =  dev.pkgs.callPackage ./shell.nix {
+              inherit (build-config.dev) cudaSupport cudaMajorVersion;
+          };
+        } )
     ));
 }
