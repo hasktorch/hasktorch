@@ -11,4 +11,3 @@ uncons = V.uncons
 uncons :: V.Vector a -> Maybe (a, V.Vector a)
 uncons xs = flip (,) (V.unsafeTail xs) `fmap` (xs V.!? 0)
 #endif
-

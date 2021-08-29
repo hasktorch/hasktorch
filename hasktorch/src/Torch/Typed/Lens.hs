@@ -16,8 +16,8 @@
 
 module Torch.Typed.Lens where
 
-import Control.Monad.State.Strict
 import Control.Applicative (liftA2)
+import Control.Monad.State.Strict
 import Data.Kind
 import Data.Maybe (fromJust)
 import Data.Proxy
@@ -32,10 +32,10 @@ import qualified Torch.Device as D
 import qualified Torch.Functional as D hiding (select)
 import qualified Torch.Functional.Internal as I
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
-import qualified Torch.Tensor as T
-import Torch.Typed.Tensor
-import Torch.Typed.Aux hiding (If)
 import Torch.Lens (Lens, Lens', Traversal, Traversal')
+import qualified Torch.Tensor as T
+import Torch.Typed.Aux hiding (If)
+import Torch.Typed.Tensor
 
 class HasName (name :: Type -> Type) shape where
   name :: Traversal' (NamedTensor device dtype shape) (NamedTensor device dtype (DropName name shape))
@@ -47,7 +47,7 @@ class HasName (name :: Type -> Type) shape where
       func' = (\v -> (fromUnnamed . UnsafeMkTensor $ D.stack (D.Dim dimension) (map toDynamic v))) <$> swapA (map func a') (pure [])
       s' = toDynamic s
       swapA [] v = v
-      swapA (x:xs) v = swapA xs (liftA2 (\a b -> b ++ [a]) x v)
+      swapA (x : xs) v = swapA xs (liftA2 (\a b -> b ++ [a]) x v)
       a' :: [NamedTensor device dtype (DropName name shape)]
       a' = map (fromUnnamed . UnsafeMkTensor) $ I.unbind s' dimension
 
@@ -68,8 +68,8 @@ class HasField (field :: Symbol) shape where
 instance {-# OVERLAPS #-} FieldIdx field shape => HasField field shape
 
 type family GHasField (field :: Symbol) f :: Bool where
-  GHasField field (S1 ( 'MetaSel ( 'Just field) _ _ _) _) = 'True
-  GHasField field (S1 ( 'MetaSel _ _ _ _) _) = 'False
+  GHasField field (S1 ('MetaSel ('Just field) _ _ _) _) = 'True
+  GHasField field (S1 ('MetaSel _ _ _ _) _) = 'False
   GHasField field (D1 _ f) = GHasField field f
   GHasField field (C1 _ f) = GHasField field f
   GHasField field (l :*: r) = GHasField field l || GHasField field r
@@ -97,7 +97,7 @@ instance {-# OVERLAPS #-} T.TensorIndex [Maybe Int] where
     return $ idx ++ vec
 
 type family NamedIdx (name :: Type -> Type) (shape :: [Type -> Type]) :: Nat where
-  NamedIdx name '[] = TypeError ( Text "There is not the name in the shape." )
+  NamedIdx name '[] = TypeError (Text "There is not the name in the shape.")
   NamedIdx name (name ': xs) = 0
   NamedIdx name (x ': xs) = NamedIdx name xs + 1
 
@@ -133,7 +133,7 @@ instance (GFieldId field f) => GFieldId field (M1 D t f) where
 instance (GFieldId field f) => GFieldId field (M1 C t f) where
   gfieldId' _ = gfieldId' @field (Proxy :: Proxy f)
 
-instance (KnownSymbol field, KnownSymbol field_) => GFieldId field (S1 ( 'MetaSel ( 'Just field_) p f b) (Rec0 a)) where
+instance (KnownSymbol field, KnownSymbol field_) => GFieldId field (S1 ('MetaSel ('Just field_) p f b) (Rec0 a)) where
   gfieldId' _ =
     if symbolVal (Proxy :: Proxy field) == symbolVal (Proxy :: Proxy field_)
       then (Just 0, 1)
@@ -157,4 +157,3 @@ instance (GFieldId field f, GFieldId field g) => GFieldId field (f :+: g) where
     case (gfieldId' @field (Proxy :: Proxy f), gfieldId' @field (Proxy :: Proxy g)) of
       ((Nothing, _), a1) -> a1
       (a0@(Just _, _), _) -> a0
-

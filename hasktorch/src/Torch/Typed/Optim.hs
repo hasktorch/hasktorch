@@ -17,12 +17,13 @@ module Torch.Typed.Optim where
 
 import Control.Monad.State
 import Data.Kind
+import System.Mem (performGC)
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.HList
-import Torch.Internal.GC (mallocTrim)
 import qualified Torch.Internal.Cast as ATen
 import qualified Torch.Internal.Class as ATen
+import Torch.Internal.GC (mallocTrim)
 import qualified Torch.Tensor as D
 import Torch.Typed.Autograd
 import Torch.Typed.Aux
@@ -31,7 +32,6 @@ import Torch.Typed.Functional
 import Torch.Typed.Parameter
 import Torch.Typed.Tensor
 import Prelude hiding (div, sqrt)
-import System.Mem (performGC)
 
 type LearningRate device dtype = Tensor device dtype '[]
 

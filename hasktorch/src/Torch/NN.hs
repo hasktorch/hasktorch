@@ -7,10 +7,10 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Torch.NN where
 
@@ -258,13 +258,14 @@ instance Randomizable LinearSpec Linear where
           ( subScalar bound $ mulScalar (bound * 2.0) init
           )
     return $ Linear w b
+
 --
 -- Conv1d
 --
 data Conv1dSpec = Conv1dSpec
-  {  inputChannelSize1d :: Int,
-     outputChannelSize1d :: Int,
-     kernelSize :: Int
+  { inputChannelSize1d :: Int,
+    outputChannelSize1d :: Int,
+    kernelSize :: Int
   }
   deriving (Show, Eq)
 
@@ -274,7 +275,7 @@ data Conv1d = Conv1d
   }
   deriving (Show, Generic, Parameterized)
 
-conv1dForward :: 
+conv1dForward ::
   -- | layer
   Conv1d ->
   -- | stride
@@ -285,7 +286,6 @@ conv1dForward ::
   Tensor ->
   -- | output
   Tensor
-
 conv1dForward layer = Torch.Functional.conv1d' w b
   where
     w = toDependent (conv1dWeight layer)
@@ -462,7 +462,7 @@ instance Randomizable Conv3dSpec Conv3d where
           )
     return $ Conv3d w b
 
--- 
+--
 -- ConvTranspose1d
 --
 
@@ -481,16 +481,15 @@ data ConvTranspose1d = ConvTranspose1d
 
 convTranspose1dForward ::
   -- | layer
-  ConvTranspose1d -> 
+  ConvTranspose1d ->
   -- | stride
-  Int -> 
+  Int ->
   -- | padding
-  Int -> 
+  Int ->
   -- | input
-  Tensor -> 
+  Tensor ->
   -- | output
-  Tensor 
-
+  Tensor
 convTranspose1dForward layer = convTranspose1d' w b
   where
     w = toDependent (convTranspose1dWeight layer)
@@ -503,7 +502,7 @@ instance Randomizable ConvTranspose1dSpec ConvTranspose1d where
         =<< kaimingUniform
           FanIn
           (LeakyRelu $ Prelude.sqrt (5.0 :: Float))
-          [ trInputChannelSize1d, 
+          [ trInputChannelSize1d,
             trOutputChannelSize1d,
             trKernelSize
           ]
@@ -528,7 +527,7 @@ instance Randomizable ConvTranspose1dSpec ConvTranspose1d where
           )
     return $ ConvTranspose1d w b
 
--- 
+--
 -- ConvTranspose2d
 --
 
@@ -548,16 +547,15 @@ data ConvTranspose2d = ConvTranspose2d
 
 convTranspose2dForward ::
   -- | layer
-  ConvTranspose2d -> 
+  ConvTranspose2d ->
   -- | stride
-  (Int, Int) -> 
+  (Int, Int) ->
   -- | padding
-  (Int, Int) -> 
+  (Int, Int) ->
   -- | input
-  Tensor -> 
+  Tensor ->
   -- | output
-  Tensor 
-
+  Tensor
 convTranspose2dForward layer = convTranspose2d' w b
   where
     w = toDependent (convTranspose2dWeight layer)
@@ -570,7 +568,7 @@ instance Randomizable ConvTranspose2dSpec ConvTranspose2d where
         =<< kaimingUniform
           FanIn
           (LeakyRelu $ Prelude.sqrt (5.0 :: Float))
-          [ trInputChannelSize2d, 
+          [ trInputChannelSize2d,
             trOutputChannelSize2d,
             trKernelHeight2d,
             trKernelWidth2d
@@ -597,7 +595,7 @@ instance Randomizable ConvTranspose2dSpec ConvTranspose2d where
           )
     return $ ConvTranspose2d w b
 
--- 
+--
 -- ConvTranspose2d
 --
 
@@ -618,16 +616,15 @@ data ConvTranspose3d = ConvTranspose3d
 
 convTranspose3dForward ::
   -- | layer
-  ConvTranspose3d -> 
+  ConvTranspose3d ->
   -- | stride
-  (Int, Int, Int) -> 
+  (Int, Int, Int) ->
   -- | padding
-  (Int, Int, Int) -> 
+  (Int, Int, Int) ->
   -- | input
-  Tensor -> 
+  Tensor ->
   -- | output
-  Tensor 
-
+  Tensor
 convTranspose3dForward layer = convTranspose3d' w b
   where
     w = toDependent (convTranspose3dWeight layer)
@@ -640,7 +637,7 @@ instance Randomizable ConvTranspose3dSpec ConvTranspose3d where
         =<< kaimingUniform
           FanIn
           (LeakyRelu $ Prelude.sqrt (5.0 :: Float))
-          [ trInputChannelSize3d, 
+          [ trInputChannelSize3d,
             trOutputChannelSize3d,
             trKernelHeight3d,
             trKernelWidth3d,

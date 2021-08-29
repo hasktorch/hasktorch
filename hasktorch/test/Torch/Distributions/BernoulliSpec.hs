@@ -3,22 +3,21 @@
 
 module Torch.Distributions.BernoulliSpec (spec) where
 
-import Test.Hspec
 import GHC.Exts
-import qualified Torch.Device as D
-import qualified Torch.Tensor as D
+import Test.Hspec
 import qualified Torch.DType as D
-import qualified Torch.Functional as F
-import qualified Torch.Distributions.Constraints as Constraints
-import Torch.Typed.Tensor
-import Torch.Distributions.Distribution
+import qualified Torch.Device as D
 import Torch.Distributions.Bernoulli
+import qualified Torch.Distributions.Constraints as Constraints
+import Torch.Distributions.Distribution
+import qualified Torch.Functional as F
+import qualified Torch.Tensor as D
+import Torch.Typed.Tensor
 
 type Tnsr dtype shape = Tensor '( 'D.CPU, 0) dtype shape
 
 spec :: Spec
 spec = do
-
   let ps = [0.8, 0.2 :: Float]
   let p = D.asTensor ps
   let d = fromProbs p
@@ -41,8 +40,10 @@ spec = do
 
   it "support" $ do
     -- putStrLn . show $ support d $ D.asTensor [0.0, 0.5, 1.0, 2.0 :: Float]
-    let t :: Tnsr 'D.Bool '[4] = UnsafeMkTensor .
-            support d $ D.asTensor [0.0, 0.5, 1.0, 2.0 :: Float]
+    let t :: Tnsr 'D.Bool '[4] =
+          UnsafeMkTensor
+            . support d
+            $ D.asTensor [0.0, 0.5, 1.0, 2.0 :: Float]
     toList (Just t) `shouldBe` [True, False, True, False]
 
   it "mean" $ do
@@ -62,7 +63,7 @@ spec = do
 
   it "logProb" $ do
     -- putStrLn . show $ logProb d $ D.asTensor [[0.3, 0.5 :: Float]]
-    let t :: Tnsr 'D.Float '[1,2] = UnsafeMkTensor $ logProb d $ D.asTensor [[0.3, 0.5 :: Float]]
+    let t :: Tnsr 'D.Float '[1, 2] = UnsafeMkTensor $ logProb d $ D.asTensor [[0.3, 0.5 :: Float]]
     F.allclose (toDynamic t) (D.asTensor [[-0.6749387, -0.7530129 :: Float]]) 0.001 0.001 False `shouldBe` True
 
   it "entropy" $ do

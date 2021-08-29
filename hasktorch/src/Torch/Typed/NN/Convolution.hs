@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -13,7 +14,6 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.NN.Convolution where
@@ -46,13 +46,18 @@ data
     (outputChannelSize :: Nat)
     (kernelSize :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   Conv1d ::
     forall inputChannelSize outputChannelSize kernelSize dtype device.
     { conv1dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize],
       conv1dBias :: Parameter device dtype '[outputChannelSize]
     } ->
-    Conv1d inputChannelSize outputChannelSize kernelSize dtype
+    Conv1d
+      inputChannelSize
+      outputChannelSize
+      kernelSize
+      dtype
       device
   deriving (Show, Generic, Parameterized)
 
@@ -72,7 +77,8 @@ conv1dForward Conv1d {..} input =
     input
 
 instance
-  ( All KnownNat
+  ( All
+      KnownNat
       '[ stride,
          padding,
          inputChannelSize,
@@ -97,7 +103,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (Conv1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
+  Randomizable
+    (Conv1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
     (Conv1d inputChannelSize outputChannelSize kernelSize dtype device)
   where
   sample Conv1dSpec =
@@ -121,13 +128,19 @@ data
     (kernelSize0 :: Nat)
     (kernelSize1 :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   Conv2d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device.
     { conv2dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1],
       conv2dBias :: Parameter device dtype '[outputChannelSize]
     } ->
-    Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype
+    Conv2d
+      inputChannelSize
+      outputChannelSize
+      kernelSize0
+      kernelSize1
+      dtype
       device
   deriving (Show, Generic, Parameterized)
 
@@ -147,7 +160,8 @@ conv2dForward Conv2d {..} input =
     input
 
 instance
-  ( All KnownNat
+  ( All
+      KnownNat
       '[ Torch.Typed.Aux.Fst stride,
          Torch.Typed.Aux.Snd stride,
          Torch.Typed.Aux.Fst padding,
@@ -179,7 +193,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (Conv2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+  Randomizable
+    (Conv2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
     (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
   where
   sample Conv2dSpec =
@@ -205,13 +220,20 @@ data
     (kernelSize1 :: Nat)
     (kernelSize2 :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   Conv3d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device.
     { conv3dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2],
       conv3dBias :: Parameter device dtype '[outputChannelSize]
     } ->
-    Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype
+    Conv3d
+      inputChannelSize
+      outputChannelSize
+      kernelSize0
+      kernelSize1
+      kernelSize2
+      dtype
       device
   deriving (Show, Generic, Parameterized)
 
@@ -231,7 +253,8 @@ conv3dForward Conv3d {..} input =
     input
 
 instance
-  ( All KnownNat
+  ( All
+      KnownNat
       '[ Fst3 stride,
          Snd3 stride,
          Trd3 stride,
@@ -267,12 +290,12 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+  Randomizable
+    (Conv3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
     (Conv3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
   where
   sample Conv3dSpec =
     Conv3d <$> (makeIndependent =<< randn) <*> (makeIndependent =<< randn)
-
 
 data
   ConvTranspose1dSpec
@@ -290,13 +313,18 @@ data
     (outputChannelSize :: Nat)
     (kernelSize :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   ConvTranspose1d ::
     forall inputChannelSize outputChannelSize kernelSize dtype device.
     { convTranspose1dWeight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize],
       convTranspose1dBias :: Parameter device dtype '[outputChannelSize]
     } ->
-    ConvTranspose1d inputChannelSize outputChannelSize kernelSize dtype
+    ConvTranspose1d
+      inputChannelSize
+      outputChannelSize
+      kernelSize
+      dtype
       device
   deriving (Show, Generic, Parameterized)
 
@@ -316,7 +344,8 @@ convTranspose1dForward ConvTranspose1d {..} input =
     input
 
 instance
-  ( All KnownNat
+  ( All
+      KnownNat
       '[ stride,
          padding,
          inputChannelSize,
@@ -341,7 +370,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (ConvTranspose1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
+  Randomizable
+    (ConvTranspose1dSpec inputChannelSize outputChannelSize kernelSize dtype device)
     (ConvTranspose1d inputChannelSize outputChannelSize kernelSize dtype device)
   where
   sample ConvTranspose1dSpec =
@@ -365,13 +395,19 @@ data
     (kernelSize0 :: Nat)
     (kernelSize1 :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   ConvTranspose2d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device.
     { convTranspose2dWeight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize0, kernelSize1],
       convTranspose2dBias :: Parameter device dtype '[outputChannelSize]
     } ->
-    ConvTranspose2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype
+    ConvTranspose2d
+      inputChannelSize
+      outputChannelSize
+      kernelSize0
+      kernelSize1
+      dtype
       device
   deriving (Show, Generic, Parameterized)
 
@@ -391,7 +427,8 @@ convTranspose2dForward ConvTranspose2d {..} input =
     input
 
 instance
-  ( All KnownNat
+  ( All
+      KnownNat
       '[ Torch.Typed.Aux.Fst stride,
          Torch.Typed.Aux.Snd stride,
          Torch.Typed.Aux.Fst padding,
@@ -423,7 +460,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (ConvTranspose2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
+  Randomizable
+    (ConvTranspose2dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
     (ConvTranspose2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device)
   where
   sample ConvTranspose2dSpec =
@@ -449,13 +487,20 @@ data
     (kernelSize1 :: Nat)
     (kernelSize2 :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat)) where
+    (device :: (D.DeviceType, Nat))
+  where
   ConvTranspose3d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device.
     { convTranspose3dWeight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize0, kernelSize1, kernelSize2],
       convTranspose3dBias :: Parameter device dtype '[outputChannelSize]
     } ->
-    ConvTranspose3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype
+    ConvTranspose3d
+      inputChannelSize
+      outputChannelSize
+      kernelSize0
+      kernelSize1
+      kernelSize2
+      dtype
       device
   deriving (Show, Generic, Parameterized)
 
@@ -475,7 +520,8 @@ convTranspose3dForward ConvTranspose3d {..} input =
     input
 
 instance
-  ( All KnownNat
+  ( All
+      KnownNat
       '[ Fst3 stride,
          Snd3 stride,
          Trd3 stride,
@@ -511,7 +557,8 @@ instance
     KnownDevice device,
     RandDTypeIsValid device dtype
   ) =>
-  Randomizable (ConvTranspose3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
+  Randomizable
+    (ConvTranspose3dSpec inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
     (ConvTranspose3d inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device)
   where
   sample ConvTranspose3dSpec =

@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -14,7 +15,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# OPTIONS_GHC -fconstraint-solver-iterations=0 #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
@@ -54,17 +54,16 @@ data
     (inputDim :: Nat)
     (hiddenDim :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat))
-  = GRUCell
-      { -- | input-to-hidden weights
-        gruCell_w_ih :: Parameter device dtype '[3 * hiddenDim, inputDim],
-        -- | hidden-to-hidden weights
-        gruCell_w_hh :: Parameter device dtype '[3 * hiddenDim, hiddenDim],
-        -- | input-to-hidden bias
-        gruCell_b_ih :: Parameter device dtype '[3 * hiddenDim],
-        -- | hidden-to-hidden bias
-        gruCell_b_hh :: Parameter device dtype '[3 * hiddenDim]
-      }
+    (device :: (D.DeviceType, Nat)) = GRUCell
+  { -- | input-to-hidden weights
+    gruCell_w_ih :: Parameter device dtype '[3 * hiddenDim, inputDim],
+    -- | hidden-to-hidden weights
+    gruCell_w_hh :: Parameter device dtype '[3 * hiddenDim, hiddenDim],
+    -- | input-to-hidden bias
+    gruCell_b_ih :: Parameter device dtype '[3 * hiddenDim],
+    -- | hidden-to-hidden bias
+    gruCell_b_hh :: Parameter device dtype '[3 * hiddenDim]
+  }
   deriving (Show, Generic, Parameterized)
 
 instance

@@ -1,12 +1,13 @@
-{ runCommand, lib, ghc, pkgs}:
+{ runCommand, lib, ghc, pkgs }:
 { hspkgs # Haskell packages to make documentation for. Only those with a "doc" output will be used.
   # Note: we do not provide arbitrary additional Haddock options, as these would not be 
   # applied consistently, since we're reusing the already built Haddock for the packages.
 , prologue ? null # Optionally, a file to be used for the Haddock "--prologue" option.
-}: 
-let 
-  hsdocs = builtins.map (x: x.doc) (builtins.filter (x: x ? doc) hspkgs); 
-in runCommand "haddock-join" { buildInputs = [ hsdocs pkgs.jq ]; } ''
+}:
+let
+  hsdocs = builtins.map (x: x.doc) (builtins.filter (x: x ? doc) hspkgs);
+in
+runCommand "haddock-join" { buildInputs = [ hsdocs pkgs.jq ]; } ''
   # Merge all the docs from the packages. We don't use symlinkJoin because:
   # - We are going to want to redistribute this, so we don't want any symlinks.
   # - We want to be selective about what we copy (we don't need the hydra 

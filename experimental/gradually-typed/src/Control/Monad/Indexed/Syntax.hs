@@ -1,6 +1,5 @@
-{-|
-For https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/qualified_do.html.
--}
+-- |
+-- For https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/qualified_do.html.
 module Control.Monad.Indexed.Syntax where
 
 import Control.Monad.Indexed (IxApplicative (..), IxFunctor (..), IxMonad (..))

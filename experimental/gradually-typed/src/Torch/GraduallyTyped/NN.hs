@@ -14,15 +14,15 @@ module Torch.GraduallyTyped.NN
   )
 where
 
+import Torch.GraduallyTyped.NN.Activation
 import Torch.GraduallyTyped.NN.Class
 import Torch.GraduallyTyped.NN.Dropout
+import Torch.GraduallyTyped.NN.Functional
 import Torch.GraduallyTyped.NN.Initialization
 import Torch.GraduallyTyped.NN.Linear
-import Torch.GraduallyTyped.NN.Transformer
-import Torch.GraduallyTyped.NN.Activation
-import Torch.GraduallyTyped.NN.Functional
+import Torch.GraduallyTyped.NN.Loss
 import Torch.GraduallyTyped.NN.Normalization
 import Torch.GraduallyTyped.NN.Sparse
-import Torch.GraduallyTyped.NN.Type
-import Torch.GraduallyTyped.NN.Loss
 import Torch.GraduallyTyped.NN.Training
+import Torch.GraduallyTyped.NN.Transformer
+import Torch.GraduallyTyped.NN.Type

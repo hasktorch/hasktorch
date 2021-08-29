@@ -4,5 +4,5 @@ module Torch.GraduallyTyped.Index
   )
 where
 
-import Torch.GraduallyTyped.Index.Type
 import Torch.GraduallyTyped.Index.Class
+import Torch.GraduallyTyped.Index.Type

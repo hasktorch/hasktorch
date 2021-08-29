@@ -8,8 +8,8 @@ module Torch.Typed.NN.Recurrent
   )
 where
 
+import Torch.Typed.NN.Recurrent.Aux
 import Torch.Typed.NN.Recurrent.Cell.GRU
 import Torch.Typed.NN.Recurrent.Cell.LSTM
 import Torch.Typed.NN.Recurrent.GRU
 import Torch.Typed.NN.Recurrent.LSTM
-import Torch.Typed.NN.Recurrent.Aux

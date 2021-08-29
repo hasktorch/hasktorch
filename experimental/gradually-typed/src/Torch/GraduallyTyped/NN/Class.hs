@@ -32,7 +32,6 @@ import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Constraint, Type)
 import qualified Data.Map.Strict as Map
 import Data.Proxy (Proxy (..))
-import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Typeable (Typeable)
@@ -44,6 +43,7 @@ import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), (:*:) (..))
 import GHC.TypeLits (Nat, natVal, type (+))
 import Torch.GraduallyTyped.Device (Device, DeviceType)
 import qualified Torch.GraduallyTyped.Internal.Vector as V
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape.Type (SDim)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedLayout, sCheckedShape, sSetDevice, sSetGradient)

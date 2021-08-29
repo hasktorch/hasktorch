@@ -14,11 +14,11 @@
 module Torch.GraduallyTyped.Index.Type where
 
 import Data.Kind (Type)
+import Data.Maybe (fromJust)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (Sing, SingI (..), SingKind (..), SomeSing (..))
 import GHC.TypeLits (KnownNat, Nat, SomeNat (..), natVal, someNatVal)
 import Torch.GraduallyTyped.Prelude (IsChecked (..))
-import Data.Maybe (fromJust)
 
 data Index (index :: Type) where
   UncheckedIndex :: forall index. Index index

@@ -6,9 +6,9 @@
 
 module Torch.GraduallyTyped.NN.Transformer.GLMHeadSpec where
 
-import Torch.GraduallyTyped
-import qualified Data.Map as Map
 import Control.Monad.State (evalStateT)
+import qualified Data.Map as Map
+import Torch.GraduallyTyped
 
 testLMHead :: IO _
 testLMHead = do

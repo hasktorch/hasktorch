@@ -83,7 +83,6 @@ instance Ord a => Ord (Exp a) where compare = compare1
 
 instance Show a => Show (Exp a) where showsPrec = showsPrec1
 
-
 -- | Smart constructor for lambda terms
 lam :: forall a. Eq a => Ty -> a -> Exp a -> Exp a
 lam ty' uname bind = Lam ty' (abstract1 uname bind)

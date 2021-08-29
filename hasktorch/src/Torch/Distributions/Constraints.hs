@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 
-module Torch.Distributions.Constraints (
-    Constraint,
+module Torch.Distributions.Constraints
+  ( Constraint,
     dependent,
     boolean,
     integerInterval,
@@ -21,13 +21,14 @@ module Torch.Distributions.Constraints (
     positiveInteger,
     positive,
     unitInterval,
-) where
+  )
+where
 
+import qualified Torch.Functional as F
 import qualified Torch.Functional.Internal as I
+import Torch.Scalar
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
-import qualified Torch.Functional as F
-import Torch.Scalar
 
 type Constraint = D.Tensor -> D.Tensor
 
@@ -75,8 +76,8 @@ halfOpenInterval lower_bound upper_bound tensor = (tensor `F.ge` fullLike' lower
 
 simplex :: Constraint
 simplex tensor = F.allDim (F.Dim $ -1) False (greaterThanEq 0.0 tensor) `I.logical_and` (lessThan 1e-6 $ F.abs $ summed `F.sub` D.onesLike summed)
-        where
-            summed = F.sumDim (F.Dim $ -1) F.RemoveDim (D.dtype tensor) tensor
+  where
+    summed = F.sumDim (F.Dim $ -1) F.RemoveDim (D.dtype tensor) tensor
 
 -- TODO: lowerTriangular
 -- TODO: lowerCholesky
@@ -87,12 +88,15 @@ simplex tensor = F.allDim (F.Dim $ -1) False (greaterThanEq 0.0 tensor) `I.logic
 
 nonNegativeInteger :: Constraint
 nonNegativeInteger = integerGreaterThanEq 0
-positiveInteger    :: Constraint
-positiveInteger    = integerGreaterThanEq 1
-positive           :: Constraint
-positive           = greaterThan 0.0
-unitInterval       :: Constraint
-unitInterval       = interval 0.0 1.0
+
+positiveInteger :: Constraint
+positiveInteger = integerGreaterThanEq 1
+
+positive :: Constraint
+positive = greaterThan 0.0
+
+unitInterval :: Constraint
+unitInterval = interval 0.0 1.0
 
 fullLike' :: (Scalar a) => a -> D.Tensor -> D.Tensor
 fullLike' i t = F.mulScalar i $ D.onesLike t

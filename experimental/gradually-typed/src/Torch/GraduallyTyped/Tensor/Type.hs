@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -25,7 +26,6 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE ViewPatterns #-}
 
-{-# LANGUAGE DeriveGeneric #-}
 module Torch.GraduallyTyped.Tensor.Type where
 
 import Control.Applicative (empty)
@@ -42,21 +42,22 @@ import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty, unzip)
 import Data.Maybe (maybeToList)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (SingI (sing), fromSing)
-import Torch.GraduallyTyped.Prelude.List (SList (..))
 import Data.Typeable (Typeable)
 import qualified Data.Vector as V hiding (uncons)
-import qualified Torch.GraduallyTyped.Internal.Vector as V
 import qualified Data.Vector.Generic.Sized.Internal as SVI
 import qualified Data.Vector.Sized as SV
 import Foreign (Ptr, Word8, castPtr, fromBool, peekElemOff, pokeElemOff, withForeignPtr)
 import Foreign.ForeignPtr (ForeignPtr)
+import GHC.Generics (Generic)
 import GHC.TypeLits (KnownNat, KnownSymbol, Nat, Symbol, natVal, symbolVal)
 import System.IO.Unsafe (unsafePerformIO)
 import Torch.GraduallyTyped.DType (DType (..), DataType (..), SDataType (..))
 import Torch.GraduallyTyped.Device (Device (..), DeviceType (..), SDevice (..), SDeviceType (..))
 import Torch.GraduallyTyped.Internal.TensorOptions (tensorOptions)
+import qualified Torch.GraduallyTyped.Internal.Vector as V
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, ifM, pattern (:|:))
+import Torch.GraduallyTyped.Prelude.List (SList (..))
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Shape.Class (InsertDimF, ReplaceDimF)
 import Torch.GraduallyTyped.Shape.Type (By (ByIndex), Dim (..), Name (..), SDim (..), SName (..), SShape (..), SSize (..), SelectDim (..), Shape (..), Size (..))
@@ -74,7 +75,6 @@ import qualified Torch.Internal.Type as ATen (Tensor, TensorList, TensorOptions)
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import qualified Torch.Tensor (Tensor (Unsafe))
 import Prelude hiding (unzip, unzip3)
-import GHC.Generics (Generic)
 
 -- $setup
 -- >>> import Torch.GraduallyTyped.Prelude.List (SList (..))
