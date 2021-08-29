@@ -100,9 +100,9 @@
 
         flake = pkgs.hasktorchProject.flake {};
 
-        checks = collectChecks flake.packages;
+        checks = pkgs.haskell-nix.haskellLib.collectChecks' flake.packages;
 
-        exes = collectExes flake.packages;
+        exes = pkgs.haskell-nix.haskellLib.extra.collectExes flake.packages;
 
       in lib.recursiveUpdate flake {
         inherit environments checks legacyPkgs;

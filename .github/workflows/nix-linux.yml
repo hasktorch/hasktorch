@@ -56,7 +56,60 @@ jobs:
       - run: |
           ps -aux
           free
-          nix-build -j 1 -A haskellPackages.libtorch-ffi.checks.spec
           export NIX_BUILD_CORES=1
-          nix-build -j 1 -A haskellPackages.hasktorch.checks.spec
-          nix-build -j 1 -A haskellPackages.examples
+
+          nix build '.#checks.x86_64-linux.libtorch-ffi:test:spec'
+
+          nix build '.#checks.x86_64-linux.hasktorch:test:spec'
+          # nix build '.#checks.x86_64-linux.hasktorch:test:doctests'
+
+          nix build '.#checks.x86_64-linux.hasktorch-gradually-typed:test:spec'
+          # nix build '.#checks.x86_64-linux.hasktorch-gradually-typed:test:doctests'
+
+          nix build '.#checks.x86_64-linux.codegen:test:spec'
+          # nix build '.#checks.x86_64-linux.codegen:test:doctests'
+
+      - run: |
+          ps -aux
+          free
+          export NIX_BUILD_CORES=1
+
+          nix build '.#apps.x86_64-linux.bounding-box:exe:bounding-box'
+          nix build '.#apps.x86_64-linux.codegen:exe:codegen-exe'
+          nix build '.#apps.x86_64-linux.codegen:test:doctests'
+          nix build '.#apps.x86_64-linux.codegen:test:spec'
+          nix build '.#apps.x86_64-linux.dataloader-cifar10:exe:dataloader-cifar10'
+          nix build '.#apps.x86_64-linux.examples:exe:alexNet'
+          nix build '.#apps.x86_64-linux.examples:exe:autograd'
+          nix build '.#apps.x86_64-linux.examples:exe:distill'
+          nix build '.#apps.x86_64-linux.examples:exe:gaussian-process'
+          nix build '.#apps.x86_64-linux.examples:exe:gd-field'
+          nix build '.#apps.x86_64-linux.examples:exe:image-processing'
+          nix build '.#apps.x86_64-linux.examples:exe:iris-classification'
+          nix build '.#apps.x86_64-linux.examples:exe:load-torchscript'
+          nix build '.#apps.x86_64-linux.examples:exe:matrix-factorization'
+          nix build '.#apps.x86_64-linux.examples:exe:minimal-text-example'
+          nix build '.#apps.x86_64-linux.examples:exe:mnist-mixed-precision'
+          nix build '.#apps.x86_64-linux.examples:exe:mnist-mlp'
+          nix build '.#apps.x86_64-linux.examples:exe:optimizers'
+          nix build '.#apps.x86_64-linux.examples:exe:optimizers-cpp'
+          nix build '.#apps.x86_64-linux.examples:exe:optimizers-cpp-typed'
+          nix build '.#apps.x86_64-linux.examples:exe:regression'
+          nix build '.#apps.x86_64-linux.examples:exe:regularization'
+          nix build '.#apps.x86_64-linux.examples:exe:rnn'
+          nix build '.#apps.x86_64-linux.examples:exe:serialization'
+          nix build '.#apps.x86_64-linux.examples:exe:static-mnist-cnn'
+          nix build '.#apps.x86_64-linux.examples:exe:static-mnist-mlp'
+          nix build '.#apps.x86_64-linux.examples:exe:static-xor-mlp'
+          nix build '.#apps.x86_64-linux.examples:exe:typed-transformer'
+          nix build '.#apps.x86_64-linux.examples:exe:vae'
+          nix build '.#apps.x86_64-linux.examples:exe:xor-mlp'
+          nix build '.#apps.x86_64-linux.hasktorch-gradually-typed:exe:linear-regression'
+          nix build '.#apps.x86_64-linux.hasktorch-gradually-typed:exe:neural-interpreter'
+          nix build '.#apps.x86_64-linux.hasktorch-gradually-typed:exe:two-layer-network'
+          nix build '.#apps.x86_64-linux.hasktorch-gradually-typed:test:doctests'
+          nix build '.#apps.x86_64-linux.hasktorch-gradually-typed:test:spec'
+          nix build '.#apps.x86_64-linux.hasktorch:test:doctests'
+          nix build '.#apps.x86_64-linux.hasktorch:test:spec'
+          nix build '.#apps.x86_64-linux.libtorch-ffi:test:spec'
+          nix build '.#apps.x86_64-linux.untyped-nlp:exe:untyped-nlp'
