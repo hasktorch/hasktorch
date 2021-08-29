@@ -459,11 +459,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1630087638,
-        "narHash": "sha256-4VRmp5t1SNkT/xXgo52foysv7t4qlREgq0tlPDz5of0=",
+        "lastModified": 1630175276,
+        "narHash": "sha256-cTZd9yHt9BdVHaobdkzSACbLyBfXvhqGQpqa+qwLlJ8=",
         "owner": "hasktorch",
         "repo": "tokenizers",
-        "rev": "d723c76ab12eab8522b68675b08b8bed8b25fb75",
+        "rev": "ea1de2ec7230d6d315fb1028e8d58b09a7a7c2ac",
         "type": "github"
       },
       "original": {
