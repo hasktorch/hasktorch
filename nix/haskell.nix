@@ -4,10 +4,7 @@
 , profiling
 , cudaSupport
 , extras ? (_: {})
-, src ? (pkgs.haskell-nix.haskellLib.cleanGit {
-      name = "hasktorch";
-      src = ../.;
-  })
+, src ? ../.
 , projectPackages ? lib.attrNames (pkgs.haskell-nix.haskellLib.selectProjectPackages
     (pkgs.haskell-nix.cabalProject' {
       inherit src compiler-nix-name;
