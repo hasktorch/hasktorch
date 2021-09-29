@@ -87,8 +87,7 @@
             legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
           };
 
-#    in { inherit (hasktorch) overlays; } // (eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
-    in { inherit (hasktorch) overlays; } // (eachSystem [ "x86_64-linux" ] (system:
+    in { inherit (hasktorch) overlays; } // (eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
       let
         mk-pkgset = generic-pkgset system;
 
