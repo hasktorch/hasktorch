@@ -119,8 +119,23 @@
           cuda-11 = build-flake "cuda-11";
         };
 
+        extra-packages = {
+          packages = {
+            haddocks-join = (pkgset.cpu.pkgs.callPackage ./nix/haddock-combine.nix {}) {
+              hsdocs = [
+                builds.cpu.packages."libtorch-ffi-cpu:lib:libtorch-ffi".doc
+                builds.cpu.packages."libtorch-ffi-helper-cpu:lib:libtorch-ffi-helper".doc
+                builds.cpu.packages."hasktorch-cpu:lib:hasktorch".doc
+                builds.cpu.packages."hasktorch-gradually-typed-cpu:lib:hasktorch-gradually-typed".doc
+              ];
+            };
+          };
+        };
+        packages = with builds;
+          builtins.foldl' (sum: v: lib.recursiveUpdate sum v) {} [cpu cuda-10 cuda-11 extra-packages];
+
       in with builds;
-        lib.recursiveUpdate cpu (lib.recursiveUpdate cuda-10 cuda-11) // (
+         packages // (
           let
             dev = with pkgset;
               if !build-config.dev.cudaSupport then cpu else
@@ -128,7 +143,7 @@
           in {
             devShell =  dev.pkgs.callPackage ./shell.nix {
               inherit (build-config.dev) cudaSupport cudaMajorVersion;
-          };
-        } )
+            };
+          } )
     ));
 }

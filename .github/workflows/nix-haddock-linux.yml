@@ -31,7 +31,7 @@ jobs:
         .github/workflows/setup-iohk-cache.sh
     - run: cachix use hasktorch
     - run: |
-        nix-build -A combined-haddock
+        nix build .#haddocks-join
         pwd
         find result/ |head
         mkdir public
