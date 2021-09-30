@@ -32,6 +32,8 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
           .github/workflows/setup-iohk-cache.sh
+          sed -i -e 's/"x86_64-darwin"//g' flake.nix
+          nix flake show
       - run: |
           nix build '.#codegen-cpu:test:doctests' -L
           nix build '.#codegen-cpu:test:spec' -L
