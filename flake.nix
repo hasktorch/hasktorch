@@ -133,8 +133,8 @@
         packages = with builds;
           builtins.foldl' (sum: v: lib.recursiveUpdate sum v) {} (
             if system == "x86_64-darwin"
-            then  [cpu extra-packages];
-            else  [cpu cuda-10 cuda-11 extra-packages];
+            then  [cpu extra-packages]
+            else  [cpu cuda-10 cuda-11 extra-packages]
           );
           
 

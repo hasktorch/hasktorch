@@ -53,6 +53,8 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
           .github/workflows/setup-iohk-cache.sh
+          sed -i -e 's/"x86_64-linux "x86_64-darwin"/"x86_64-linux/g' flake.nix
+          nix flake show
       - run: |
           ps -aux
           free
@@ -61,7 +63,7 @@ jobs:
           nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
           nix build '.#hasktorch-cpu:test:spec' -L -j 1
           nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L -j 1
-          nix build '.#codegen-cpu:test:spec' -L -j 1
+          nix build '.#codegen:test:spec' -L -j 1
 
       - run: |
           ps -aux
@@ -69,9 +71,9 @@ jobs:
           export NIX_BUILD_CORES=1
 
           nix build '.#bounding-box-cpu:exe:bounding-box' -L -j 1
-          nix build '.#codegen-cpu:exe:codegen-exe' -L -j 1
-          nix build '.#codegen-cpu:test:doctests' -L -j 1
-          nix build '.#codegen-cpu:test:spec' -L -j 1
+          nix build '.#codegen:exe:codegen-exe' -L -j 1
+          nix build '.#codegen:test:doctests' -L -j 1
+          nix build '.#codegen:test:spec' -L -j 1
           nix build '.#dataloader-cifar10-cpu:exe:dataloader-cifar10' -L -j 1
           nix build '.#examples-cpu:exe:alexNet' -L -j 1
           nix build '.#examples-cpu:exe:autograd' -L -j 1

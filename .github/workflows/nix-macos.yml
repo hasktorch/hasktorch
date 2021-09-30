@@ -32,11 +32,11 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
           .github/workflows/setup-iohk-cache.sh
-          sed -i -e 's/"x86_64-darwin"//g' flake.nix
+          sed -i -e 's/"x86_64-linux"//g' flake.nix
           nix flake show
       - run: |
-          nix build '.#codegen-cpu:test:doctests' -L
-          nix build '.#codegen-cpu:test:spec' -L
+          nix build '.#codegen:test:doctests' -L
+          nix build '.#codegen:test:spec' -L
           nix build '.#libtorch-ffi-cpu:test:spec' -L
           nix build '.#hasktorch-cpu:test:doctests' -L
           nix build '.#hasktorch-cpu:test:spec' -L
@@ -44,7 +44,7 @@ jobs:
           nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L
 
           nix build '.#bounding-box-cpu:exe:bounding-box' -L
-          nix build '.#codegen-cpu:exe:codegen-exe' -L
+          nix build '.#codegen:exe:codegen-exe' -L
           nix build '.#dataloader-cifar10-cpu:exe:dataloader-cifar10' -L
           nix build '.#examples-cpu:exe:alexNet' -L
           nix build '.#examples-cpu:exe:autograd' -L
