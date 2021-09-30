@@ -58,10 +58,10 @@ jobs:
           free
           export NIX_BUILD_CORES=1
 
-          nix build '.#libtorch-ffi-cpu:test:spec' -L
-          nix build '.#hasktorch-cpu:test:spec' -L
-          nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L
-          nix build '.#codegen-cpu:test:spec' -L
+          nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
+          nix build '.#hasktorch-cpu:test:spec' -L -j 1
+          nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L -j 1
+          nix build '.#codegen-cpu:test:spec' -L -j 1
 
       - run: |
           ps -aux
