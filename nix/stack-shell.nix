@@ -14,6 +14,7 @@
 , withHoogle ? false
 }:
 let
+  system = builtins.currentSystem;
   pkgs = (
     import (
       fetchTarball {
@@ -22,8 +23,8 @@ let
       }) {
         src =  ./..;
       }
-  ).defaultNix;
-  ghc = pkgs.outputs.lib.(builtins.currentSystem).cpu.pkgs.hasktorchProject.ghcWithPackages (_: []);
+  ).defaultNix.outputs.lib."${system}".cpu.pkgs;
+  ghc = pkgs.hasktorchProject.ghcWithPackages (_: []);
 
   buildInputs = [
     pkgs.git # needed so that stack can get extra-deps from github
@@ -37,7 +38,7 @@ let
     name = "hasktorch-stack-dev-shell";
 
     extraArgs = [
-      "--extra-include-dirs=${torch}/include/torch/csrc/api/include"
+      "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
     ];
 
     inherit buildInputs;
