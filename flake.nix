@@ -145,6 +145,7 @@
               if !build-config.dev.cudaSupport then cpu else
               if build-config.dev.cudaMajorVersion == "10" then cuda-10 else cuda-11;
           in {
+            lib = pkgset;
             devShell =  dev.pkgs.callPackage ./shell.nix {
               inherit (build-config.dev) cudaSupport cudaMajorVersion;
             };
