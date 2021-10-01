@@ -60,10 +60,13 @@ jobs:
           free
           export NIX_BUILD_CORES=1
 
-          nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
-          nix build '.#hasktorch-cpu:test:spec' -L -j 1
-          nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L -j 1
+          nix build '.#codegen:test:doctests' -L -j 1
           nix build '.#codegen:test:spec' -L -j 1
+          #nix build '.#hasktorch-cpu:test:doctests' -L -j 1
+          nix build '.#hasktorch-cpu:test:spec' -L -j 1
+          #nix build '.#hasktorch-gradually-typed-cpu:test:doctests' -L -j 1
+          nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L -j 1
+          nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
 
       - run: |
           ps -aux
@@ -72,8 +75,6 @@ jobs:
 
           nix build '.#bounding-box-cpu:exe:bounding-box' -L -j 1
           nix build '.#codegen:exe:codegen-exe' -L -j 1
-          nix build '.#codegen:test:doctests' -L -j 1
-          nix build '.#codegen:test:spec' -L -j 1
           nix build '.#dataloader-cifar10-cpu:exe:dataloader-cifar10' -L -j 1
           nix build '.#examples-cpu:exe:alexNet' -L -j 1
           nix build '.#examples-cpu:exe:autograd' -L -j 1
@@ -103,9 +104,4 @@ jobs:
           nix build '.#hasktorch-gradually-typed-cpu:exe:linear-regression' -L -j 1
           nix build '.#hasktorch-gradually-typed-cpu:exe:neural-interpreter' -L -j 1
           nix build '.#hasktorch-gradually-typed-cpu:exe:two-layer-network' -L -j 1
-          nix build '.#hasktorch-gradually-typed-cpu:test:doctests' -L -j 1
-          nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L -j 1
-          nix build '.#hasktorch-cpu:test:doctests' -L -j 1
-          nix build '.#hasktorch-cpu:test:spec' -L -j 1
-          nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
           nix build '.#untyped-nlp-cpu:exe:untyped-nlp' -L -j 1

@@ -38,9 +38,9 @@ jobs:
           nix build '.#codegen:test:doctests' -L
           nix build '.#codegen:test:spec' -L
           nix build '.#libtorch-ffi-cpu:test:spec' -L
-          nix build '.#hasktorch-cpu:test:doctests' -L
+          #nix build '.#hasktorch-cpu:test:doctests' -L
           nix build '.#hasktorch-cpu:test:spec' -L
-          nix build '.#hasktorch-gradually-typed-cpu:test:doctests' -L
+          #nix build '.#hasktorch-gradually-typed-cpu:test:doctests' -L
           nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L
 
           nix build '.#bounding-box-cpu:exe:bounding-box' -L
