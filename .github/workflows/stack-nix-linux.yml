@@ -46,6 +46,8 @@ jobs:
             ${{ runner.os }}-nix-stack-
       - name: Build
         run: |
+          sed -i -e 's/"x86_64-linux" "x86_64-darwin"/"x86_64-linux"/g' flake.nix
+          nix flake show
           stack --nix build \
             libtorch-ffi \
             libtorch-ffi-helper \
