@@ -69,6 +69,9 @@ let
 
       # Add non-Haskell dependencies
       {
+        packages.codegen = {
+          preConfigure = setupNumCores "codegen";
+        };
         packages.tokenizers = {
           configureFlags = [
             "--extra-lib-dirs=${pkgs.tokenizers-haskell}/lib"
