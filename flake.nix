@@ -16,7 +16,7 @@
   inputs = {
     nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
     haskell-nix = {
-      url = "github:input-output-hk/haskell.nix?rev=a88542003caddbfeff37ef2bd7fc51b4a9e43d1f";
+      url = "github:input-output-hk/haskell.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     utils.follows = "haskell-nix/flake-utils";
