@@ -35,20 +35,20 @@ jobs:
       - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
       - run: |
           .github/workflows/setup-iohk-cache.sh
-#      - name: Cache .stack
-#        id: cache-stack
-#        uses: actions/cache@v2
-#        with:
-#          path: |
-#            ~/.stack
-#            .stack-work
-#          key: "\
-#            ${{ runner.os }}-stack\
-#            -${{ hashFiles('**/stack.yaml.lock') }}\
-#            -${{ hashFiles('**/package.yaml') }}\
-#          "
-#          restore-keys: |
-#            ${{ runner.os }}-nix-stack-
+      - name: Cache .stack
+        id: cache-stack
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.stack
+            .stack-work
+          key: "\
+            ${{ runner.os }}-stack\
+            -${{ hashFiles('**/stack.yaml.lock') }}\
+            -${{ hashFiles('**/package.yaml') }}\
+          "
+          restore-keys: |
+            ${{ runner.os }}-nix-stack-
       - name: Build
         run: |
           sed -i -e 's/"x86_64-linux" "x86_64-darwin"/"x86_64-linux"/g' flake.nix
