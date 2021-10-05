@@ -52,7 +52,7 @@ jobs:
       - name: Build
         run: |
           sed -i -e 's/"x86_64-linux" "x86_64-darwin"/"x86_64-linux"/g' flake.nix
-          stack --nix build --system-ghc \
+          nix-shell nix/stack-shell.nix --command "stack --nix build --system-ghc \
             libtorch-ffi \
             libtorch-ffi-helper \
             hasktorch \
@@ -60,11 +60,12 @@ jobs:
             examples \
             bounding-box \
             dataloader-cifar10 \
-            untyped-nlp
+            untyped-nlp"
       - name: Test
         run: |
-          stack --system-ghc --nix test codegen
-          stack --system-ghc --nix test libtorch-ffi
-          stack --system-ghc --nix test hasktorch
-          stack --system-ghc --nix exec codegen-exe
-          stack --system-ghc --nix exec xor-mlp
+          nix-shell nix/stack-shell.nix --command "\
+          stack --system-ghc --nix test codegen;\
+          stack --system-ghc --nix test libtorch-ffi;\
+          stack --system-ghc --nix test hasktorch;\
+          stack --system-ghc --nix exec codegen-exe;\
+          stack --system-ghc --nix exec xor-mlp"
