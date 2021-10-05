@@ -49,10 +49,12 @@ jobs:
           "
           restore-keys: |
             ${{ runner.os }}-nix-stack-
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - name: Build
         run: |
           sed -i -e 's/"x86_64-linux" "x86_64-darwin"/"x86_64-linux"/g' flake.nix
-          nix-shell nix/stack-shell.nix --command "stack --nix build --system-ghc \
+          nix-shell nix/stack-shell.nix --command "stack --nix --system-ghc build \
             libtorch-ffi \
             libtorch-ffi-helper \
             hasktorch \
