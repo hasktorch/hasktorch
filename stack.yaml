@@ -35,7 +35,7 @@ extra-deps:
 - term-rewriting-0.4.0.2@sha256:5412f6aa29c5756634ee30e8df923c83ab9f012a4b8797c460af3d7078466764,2740
 - type-errors-pretty-0.0.1.2@sha256:9042b64d1ac2f69aa55690576504a2397ebea8a6a55332242c88f54027c7eb57,2781
 - git: https://github.com/hasktorch/tintin
-  commit: 3941d822cf2f54d2dd3514dc645bced680dac1a2
+  commit: 92e25c5259eee3fbad8555623fb01355bc621bbb
 - git: https://github.com/hasktorch/tokenizers
   commit: 9d25f0ba303193e97f8b22b9c93cbc84725886c3
   subdirs:
