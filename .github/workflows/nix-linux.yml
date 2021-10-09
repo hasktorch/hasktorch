@@ -59,12 +59,13 @@ jobs:
           export NIX_BUILD_CORES=1
 
           nix build '.#codegen:test:doctests' -L -j 1
-          nix build '.#codegen:test:spec' -L -j 1
-          #nix build '.#hasktorch-cpu:test:doctests' -L -j 1
-          nix build '.#hasktorch-cpu:test:spec' -L -j 1
-          #nix build '.#hasktorch-gradually-typed-cpu:test:doctests' -L -j 1
-          nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L -j 1
+          nix build '.#checks.x86_64-linux.codegen:test:spec' -L -j 1
+          nix build '.#hasktorch-cpu:test:doctests' -L -j 1
+          nix build '.#checks.x86_64-linux.hasktorch-cpu:test:spec' -L -j 1
+          nix build '.#hasktorch-gradually-typed-cpu:test:doctests' -L -j 1
+          nix build '.#checks.x86_64-linux.hasktorch-gradually-typed-cpu:test:spec' -L -j 1
           nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
+          nix build '.#checks.x86_64-linux.libtorch-ffi-cpu:test:spec' -L -j 1
 
       - run: |
           ps -aux

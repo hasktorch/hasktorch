@@ -35,13 +35,14 @@ jobs:
           sed -i -e 's/"x86_64-linux"//g' flake.nix
           nix flake show
       - run: |
-          nix build '.#codegen:test:doctests' -L
-          nix build '.#codegen:test:spec' -L
-          nix build '.#libtorch-ffi-cpu:test:spec' -L
-          #nix build '.#hasktorch-cpu:test:doctests' -L
-          nix build '.#hasktorch-cpu:test:spec' -L
-          #nix build '.#hasktorch-gradually-typed-cpu:test:doctests' -L
-          nix build '.#hasktorch-gradually-typed-cpu:test:spec' -L
+          nix build '.#codegen:test:doctests' -L -j 1
+          nix build '.#checks.x86_64-darwin.codegen:test:spec' -L -j 1
+          nix build '.#hasktorch-cpu:test:doctests' -L -j 1
+          nix build '.#checks.x86_64-darwin.hasktorch-cpu:test:spec' -L -j 1
+          nix build '.#hasktorch-gradually-typed-cpu:test:doctests' -L -j 1
+          nix build '.#checks.x86_64-darwin.hasktorch-gradually-typed-cpu:test:spec' -L -j 1
+          nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
+          nix build '.#checks.x86_64-darwin.libtorch-ffi-cpu:test:spec' -L -j 1
 
           nix build '.#bounding-box-cpu:exe:bounding-box' -L
           nix build '.#codegen:exe:codegen-exe' -L
