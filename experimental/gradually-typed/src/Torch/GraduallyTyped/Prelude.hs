@@ -76,13 +76,13 @@ import Control.Monad (MonadPlus, guard, unless, when)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
 import Data.Singletons (Demote, SingKind, fromSing)
-import Torch.GraduallyTyped.Prelude.List (SList (..))
-import Torch.GraduallyTyped.Prelude.TypeLits
 import Data.Type.Bool (If, type (||))
 import Data.Type.Equality (type (==))
 import GHC.Exts (Any)
 import GHC.Generics (Generic)
 import GHC.TypeLits (CmpNat, ErrorMessage (..), Nat, TypeError, type (*), type (+))
+import Torch.GraduallyTyped.Prelude.List (SList (..))
+import Torch.GraduallyTyped.Prelude.TypeLits
 
 data IsChecked a = Checked a | Unchecked a
   deriving stock (Eq, Ord, Show, Generic, Functor)

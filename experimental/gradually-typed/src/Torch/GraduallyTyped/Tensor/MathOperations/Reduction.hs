@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
@@ -12,7 +13,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -Wall #-}
 
-{-# LANGUAGE ConstraintKinds #-}
 module Torch.GraduallyTyped.Tensor.MathOperations.Reduction where
 
 import Control.Monad.Catch (MonadThrow)

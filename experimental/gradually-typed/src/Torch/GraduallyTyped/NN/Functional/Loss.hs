@@ -11,8 +11,8 @@ import Torch.GraduallyTyped.Shape.Type (Shape (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor)
 import Torch.GraduallyTyped.Unify (type (<+>), type (<|>))
 import qualified Torch.Internal.Cast as ATen
-import qualified Torch.Internal.Managed.Native as ATen
 import Torch.Internal.GC (unsafeThrowableIO)
+import qualified Torch.Internal.Managed.Native as ATen
 
 -- | Compute the mean squared error between two tensors.
 mseLoss ::

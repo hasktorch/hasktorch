@@ -265,18 +265,18 @@ drawLine x0 y0 x1 y1 (r, g, b) input = do
 
 drawRect :: Int -> Int -> Int -> Int -> (Int, Int, Int) -> I.Image I.PixelRGB8 -> IO ()
 drawRect x0 y0 x1 y1 (r, g, b) input = do
-  drawLine x0 y0 (x1+1) y0 (r, g, b) input
-  drawLine x0 y0 x0 (y1+1) (r, g, b) input
-  drawLine x0 y1 (x1+1) y1 (r, g, b) input
-  drawLine x1 y0 x1 (y1+1) (r, g, b) input
+  drawLine x0 y0 (x1 + 1) y0 (r, g, b) input
+  drawLine x0 y0 x0 (y1 + 1) (r, g, b) input
+  drawLine x0 y1 (x1 + 1) y1 (r, g, b) input
+  drawLine x1 y0 x1 (y1 + 1) (r, g, b) input
 
 drawString :: String -> Int -> Int -> (Int, Int, Int) -> (Int, Int, Int) -> I.Image I.PixelRGB8 -> IO ()
-drawString text x0 y0 (r,g,b) (br,bg,bb) input = do
-  forM_ (zip [0..] text) $ \(i,ch) -> do
-    drawChar (fromEnum ch) (x0 + i * 8) y0 (r,g,b) (br,bg,bb) input
+drawString text x0 y0 (r, g, b) (br, bg, bb) input = do
+  forM_ (zip [0 ..] text) $ \(i, ch) -> do
+    drawChar (fromEnum ch) (x0 + i * 8) y0 (r, g, b) (br, bg, bb) input
 
 drawChar :: Int -> Int -> Int -> (Int, Int, Int) -> (Int, Int, Int) -> I.Image I.PixelRGB8 -> IO ()
-drawChar ascii_code x0 y0 (r,g,b) (br,bg,bb) input = do
+drawChar ascii_code x0 y0 (r, g, b) (br, bg, bb) input = do
   let img@(I.Image w h vec) = input
       (fptr, len) = V.unsafeToForeignPtr0 vec
   F.withForeignPtr fptr $ \ptr2 -> do
@@ -428,7 +428,7 @@ drawChar ascii_code x0 y0 (r,g,b) (br,bg,bb) input = do
           }
         }
     } |]
-    
+
 resizeRGB8 :: Int -> Int -> Bool -> I.Image I.PixelRGB8 -> I.Image I.PixelRGB8
 resizeRGB8 width height keepAspectRatio input = unsafePerformIO $ do
   let channel = 3 :: Int

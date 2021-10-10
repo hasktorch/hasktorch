@@ -27,7 +27,6 @@ import System.IO.Unsafe
 import Torch.Autograd
 import Torch.DType
 import Torch.Device
-import Torch.Tensor (toDevice)
 import Torch.Internal.Cast
 import Torch.Internal.Class (Castable (..), CppObject (..), CppTuple2 (..), CppTuple3 (..), CppTuple4 (..))
 import qualified Torch.Internal.Const as ATen
@@ -46,7 +45,7 @@ import Torch.Internal.Unmanaged.Type.C10Dict
 import Torch.Internal.Unmanaged.Type.IValue (IValueLike (..))
 import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
 import Torch.NN
-import Torch.Tensor (Tensor (..))
+import Torch.Tensor (Tensor (..), toDevice)
 import Torch.TensorOptions
 
 newtype ScriptModule = UnsafeScriptModule (ForeignPtr ATen.Module)
@@ -209,20 +208,20 @@ getNamedParameters ::
   -- | module
   ScriptModule ->
   -- | output
-  [(String,Tensor)]
+  [(String, Tensor)]
 getNamedParameters (UnsafeScriptModule m) = unsafePerformIO $ do
   dat <- LibTorch.getNamedParameters m
-  forM dat $ \(key,value) ->
+  forM dat $ \(key, value) ->
     (,) <$> uncast key return <*> uncast value return
 
 getNamedBuffers ::
   -- | module
   ScriptModule ->
   -- | output
-  [(String,Tensor)]
+  [(String, Tensor)]
 getNamedBuffers (UnsafeScriptModule m) = unsafePerformIO $ do
   dat <- LibTorch.getNamedBuffers m
-  forM dat $ \(key,value) ->
+  forM dat $ \(key, value) ->
     (,) <$> uncast key return <*> uncast value return
 
 -- | Load all attributes including training flags
@@ -232,30 +231,30 @@ getNamedAttributes ::
   -- | module
   ScriptModule ->
   -- | output
-  [(String,IValue)]
+  [(String, IValue)]
 getNamedAttributes (UnsafeScriptModule m) = unsafePerformIO $ do
   dat <- LibTorch.getNamedAttributes m
-  forM dat $ \(key,value) ->
+  forM dat $ \(key, value) ->
     (,) <$> uncast key return <*> uncast value return
 
 getNamedModules ::
   -- | module
   ScriptModule ->
   -- | output
-  [(String,ScriptModule)]
+  [(String, ScriptModule)]
 getNamedModules (UnsafeScriptModule m) = unsafePerformIO $ do
   dat <- LibTorch.getNamedModules m
-  forM dat $ \(key,value) ->
+  forM dat $ \(key, value) ->
     (,) <$> uncast key return <*> uncast value return
 
 getNamedChildren ::
   -- | module
   ScriptModule ->
   -- | output
-  [(String,ScriptModule)]
+  [(String, ScriptModule)]
 getNamedChildren (UnsafeScriptModule m) = unsafePerformIO $ do
   dat <- LibTorch.getNamedChildren m
-  forM dat $ \(key,value) ->
+  forM dat $ \(key, value) ->
     (,) <$> uncast key return <*> uncast value return
 
 toScriptModule :: RawModule -> IO ScriptModule

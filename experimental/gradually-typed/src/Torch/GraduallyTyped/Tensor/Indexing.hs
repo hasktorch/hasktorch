@@ -36,20 +36,20 @@ import Data.Coerce (coerce)
 import Data.Foldable (asum)
 import Data.Kind (Type)
 import Data.Singletons (Demote, SingI, SingKind, SomeSing (..), fromSing, sing, toSing, withSomeSing)
-import Torch.GraduallyTyped.Prelude.List (Reverse, SList (..), Sing)
-import Torch.GraduallyTyped.Prelude.Bool (SBool (..))
 import Data.Singletons.TH (genSingletons)
 import Data.Type.Equality (type (==))
 import Data.Void (Void)
 import Foreign (fromBool)
 import GHC.TypeLits (Div, ErrorMessage (..), Nat, Symbol, type (+), type (-), type (<=?))
-import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import qualified Language.Haskell.TH as TH
+import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import Text.Megaparsec as M
 import qualified Text.Megaparsec.Char as M
 import qualified Text.Megaparsec.Char.Lexer as L
 import Torch.GraduallyTyped.Index.Type (DemotedIndex (..), Index (..), SIndex (..))
 import Torch.GraduallyTyped.Prelude (If, IsChecked (..), forgetIsChecked, type (<?))
+import Torch.GraduallyTyped.Prelude.Bool (SBool (..))
+import Torch.GraduallyTyped.Prelude.List (Reverse, SList (..), Sing)
 import Torch.GraduallyTyped.Shape.Class (PrependDimF)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), Shape (..), Size (..))
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..))

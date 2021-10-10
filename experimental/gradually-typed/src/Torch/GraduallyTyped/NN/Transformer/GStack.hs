@@ -15,7 +15,6 @@ module Torch.GraduallyTyped.NN.Transformer.GStack where
 import Control.Monad.Indexed.State (IxStateT (..))
 import Data.Functor.Indexed ((<<$>>))
 import Data.Kind (Type)
-import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
 import qualified Data.Vector as V hiding (uncons)
 import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
@@ -28,6 +27,7 @@ import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasSt
 import Torch.GraduallyTyped.NN.Transformer.GBlock (DecoderBlockF, EncoderBlockF, decoderBlockSpec, encoderBlockSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerStyle, TransformerStyle)
 import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient (..))
 import Torch.GraduallyTyped.Shape.Type (Dim, Name, SDim, Size)
 

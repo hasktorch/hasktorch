@@ -1,4 +1,3 @@
-
 # This shell file is specifically to be used with Stack.
 #
 # This file allows using Stack's built-in Nix integration. This means that you
@@ -7,8 +6,8 @@
 # and libtorch), and then build Haskell libraries like normal.
 #
 # This approach allows for more reproducibility than using Stack without Nix.
-{ config ? {}
-, sourcesOverride ? {}
+{ config ? { }
+, sourcesOverride ? { }
 , cudaSupport ? false
 , cudaMajorVersion ? null
 , withHoogle ? false
@@ -52,4 +51,4 @@ let
 
 in
 
-  stack-shell
+stack-shell

@@ -28,6 +28,8 @@ import Data.Kind
 import Data.Maybe
 import Data.Proxy
 import Data.Reflection
+import Data.Vector.Sized (Vector)
+import qualified Data.Vector.Sized as V
 import Foreign.ForeignPtr
 import GHC.Generics (Generic)
 import GHC.Natural (Natural)
@@ -84,9 +86,6 @@ import Prelude hiding
     tan,
     tanh,
   )
-
-import qualified Data.Vector.Sized as V
-import Data.Vector.Sized (Vector)
 
 -- $setup
 --
@@ -436,7 +435,7 @@ medianDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.median_tl input (nat
 -- See https://pytorch.org/docs/stable/torch.html#torch.median for more information.
 --
 -- >>> t = fromJust [[5, 1], [3, 2], [4, 1], [2, 7]] :: CPUTensor 'D.Float '[4, 2]
--- 
+--
 -- -- libtorch 1.7.0
 -- -- (Tensor Float [1,2] [[ 3.0000   ,  1.0000   ]],Tensor Int64 [1,2] [[ 1,  0]])
 -- -- libtorch 1.8.0
@@ -676,8 +675,9 @@ pow exponent input = unsafePerformIO $ ATen.cast2 ATen.Managed.pow_tt input expo
 -- (Float,[3,2])
 relu ::
   forall shape dtype device t.
-  (StandardFloatingPointDTypeValidation device dtype,
-   IsUnnamed t device dtype shape) =>
+  ( StandardFloatingPointDTypeValidation device dtype,
+    IsUnnamed t device dtype shape
+  ) =>
   -- | input
   t ->
   -- | output
@@ -731,8 +731,9 @@ sigmoid input = unsafePerformIO $ ATen.cast1 ATen.Managed.sigmoid_t input
 -- (Float,[3,2])
 sin ::
   forall shape dtype device t.
-  (StandardFloatingPointDTypeValidation device dtype,
-   IsUnnamed t device dtype shape) =>
+  ( StandardFloatingPointDTypeValidation device dtype,
+    IsUnnamed t device dtype shape
+  ) =>
   -- | input
   t ->
   -- | output
@@ -745,8 +746,9 @@ sin input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.sin_t (Wrap input
 -- (Float,[3,2])
 sinh ::
   forall shape dtype device t.
-  (StandardFloatingPointDTypeValidation device dtype,
-   IsUnnamed t device dtype shape) =>
+  ( StandardFloatingPointDTypeValidation device dtype,
+    IsUnnamed t device dtype shape
+  ) =>
   -- | input
   t ->
   -- | output
@@ -759,8 +761,9 @@ sinh input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.sinh_t (Wrap inp
 -- (Float,[3,2])
 cos ::
   forall shape dtype device t.
-  (StandardFloatingPointDTypeValidation device dtype,
-   IsUnnamed t device dtype shape) =>
+  ( StandardFloatingPointDTypeValidation device dtype,
+    IsUnnamed t device dtype shape
+  ) =>
   -- | input
   t ->
   -- | output
@@ -770,8 +773,9 @@ cos input = unWrap $ unsafePerformIO $ ATen.cast1 ATen.Managed.cos_t (Wrap input
 -- | sqrt
 sqrt ::
   forall shape dtype device t.
-  (StandardFloatingPointDTypeValidation device dtype,
-   IsUnnamed t device dtype shape) =>
+  ( StandardFloatingPointDTypeValidation device dtype,
+    IsUnnamed t device dtype shape
+  ) =>
   -- | input
   t ->
   -- | output
@@ -990,7 +994,7 @@ type family SymeigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType
 -- L, V = torch.symeig(A, eigenvectors=True)
 -- should be replaced with
 -- L, V = torch.linalg.eigh(A, UPLO='U' if upper else 'L') (function operator())
--- 
+--
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[3,2,2])
 -- >>> (eigenVals,eigenVecs) = symeig Upper t
 -- >>> dtype &&& shape $ eigenVals -- Skip warning
@@ -1225,7 +1229,7 @@ type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
 -- TODO: cholesky can throw if the input is not positive-definite.
 -- Computes the Cholesky decomposition of a symmetric positive-definite matrix.
 -- The operation supports batching.
--- 
+--
 -- Warning:
 -- torch.cholesky is deprecated in favor of torch.linalg.cholesky and will be removed in a future PyTorch release.
 -- L = torch.cholesky(A)
@@ -2646,9 +2650,8 @@ convTBC ::
 convTBC weight bias input =
   unsafePerformIO $ ATen.cast4 ATen.Managed.conv_tbc_tttl input weight bias (natValI @padding)
 
-
 -- | convTranspose1d
---TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 --
 -- >>> t = convTranspose1d @1 @0 (ones :: CPUTensor 'D.Float '[3, 10, 1]) (ones :: CPUTensor 'D.Float '[10]) (ones :: CPUTensor 'D.Float '[1, 3, 4])
 -- >>> :type t
@@ -2701,7 +2704,7 @@ convTranspose1d weight bias input =
       (1 :: Int)
 
 -- | convTranspose2d
---TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 --
 -- >>> t = convTranspose2d @'(1, 1) @'(0, 0) (ones :: CPUTensor 'D.Float '[3, 10, 1, 1]) (ones :: CPUTensor 'D.Float '[10]) (ones :: CPUTensor 'D.Float '[1, 3, 4, 5])
 -- >>> :type t
@@ -2763,7 +2766,7 @@ convTranspose2d weight bias input =
       (1 :: Int)
 
 -- | convTranspose3d
---TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
+-- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 --
 -- >>> t = convTranspose3d @'(1, 1, 1) @'(0, 0, 0) (ones :: CPUTensor 'D.Float '[3, 10, 1, 1, 1]) (ones :: CPUTensor 'D.Float '[10]) (ones :: CPUTensor 'D.Float '[1, 3, 4, 5, 6])
 -- >>> :type t
@@ -3064,15 +3067,15 @@ type family PaddingIdxCheck (idx :: Maybe Nat) (numEmbeds :: Nat) :: Constraint 
 -- >>> t = embedding @('Just 1) False False weights indices
 -- >>> :type t
 -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[4, 1, 2]
--- 
+--
 -- -- libtorch 1.7
 -- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
 -- -- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
--- -- 
+-- --
 -- -- libtorch 1.8
 -- -- The behavior of libtorch 1.8 changes. See https://github.com/pytorch/pytorch/issues/53368
 -- -- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[0.0,0.0]]]))
--- -- 
+-- --
 -- -- libtorch 1.8.1
 -- -- The behavior of libtorch 1.8.1 is reverted.
 -- -- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
@@ -4320,7 +4323,7 @@ stack tensors = unsafePerformIO $ ATen.cast2 ATen.Managed.stack_ll tensors (natV
 
 vecStack ::
   forall dim n shape dtype device.
-  ( KnownNat dim, KnownNat n ) =>
+  (KnownNat dim, KnownNat n) =>
   -- | Input list of tensors
   Vector n (Tensor device dtype shape) ->
   -- | Output list of tensors
@@ -5263,9 +5266,9 @@ maxDim ::
 maxDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.max_tl input (natValI @d)
 
 type family HasDim (dim :: Nat) (shape :: [Nat]) :: Constraint where
-  HasDim _ '[] = TypeError ( Text "The dimension of the argument is incorrect." )
+  HasDim _ '[] = TypeError (Text "The dimension of the argument is incorrect.")
   HasDim 0 (_ ': _) = ()
-  HasDim n (_ ': xs) = HasDim (n-1) xs
+  HasDim n (_ ': xs) = HasDim (n -1) xs
 
 -- | sortDim
 --
@@ -5285,8 +5288,8 @@ sortDim ::
     Tensor device D.Int64 shape
   )
 sortDim _descending _input =
-  let (a,b) = func (toDynamic _input)
-  in (UnsafeMkTensor a, UnsafeMkTensor b)
+  let (a, b) = func (toDynamic _input)
+   in (UnsafeMkTensor a, UnsafeMkTensor b)
   where
     func :: D.Tensor -> (D.Tensor, D.Tensor)
     func _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.sort_tlb) _input _dim _descending
@@ -5311,8 +5314,8 @@ sortNamedDim ::
     NamedTensor device D.Int64 shape
   )
 sortNamedDim _descending _input =
-  let (a,b) = func (toDynamic _input)
-  in (FromTensor $ UnsafeMkTensor a, FromTensor $ UnsafeMkTensor b)
+  let (a, b) = func (toDynamic _input)
+   in (FromTensor $ UnsafeMkTensor a, FromTensor $ UnsafeMkTensor b)
   where
     func :: D.Tensor -> (D.Tensor, D.Tensor)
     func _input = unsafePerformIO $ (ATen.cast3 ATen.Managed.sort_tlb) _input _dim _descending

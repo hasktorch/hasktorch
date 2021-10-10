@@ -1,6 +1,5 @@
-
-
 {-# LANGUAGE OverloadedStrings #-}
+
 import Torch
 import Torch.Script as S
 

@@ -14,7 +14,7 @@ module Torch
     module Torch.TensorFactories,
     module Torch.TensorOptions,
     module Torch.Script,
-    module Torch.Index
+    module Torch.Index,
   )
 where
 
@@ -23,13 +23,13 @@ import Torch.DType
 import Torch.Data
 import Torch.Device
 import Torch.Functional
+import Torch.Index
 import Torch.NN
 import Torch.Optim
 import Torch.Random
 import Torch.Scalar
+import Torch.Script
 import Torch.Serialize
 import Torch.Tensor
 import Torch.TensorFactories
 import Torch.TensorOptions
-import Torch.Script
-import Torch.Index

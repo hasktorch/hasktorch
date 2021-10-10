@@ -1,18 +1,17 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
-module LensSpec(spec) where
+module LensSpec (spec) where
 
-import Test.Hspec
-
-import Torch.Lens
+import Control.Exception.Safe (catch, throwIO)
 import GHC.Generics
-import Control.Exception.Safe (catch,throwIO)
-import Language.C.Inline.Cpp.Exceptions (CppException(..))
+import Language.C.Inline.Cpp.Exceptions (CppException (..))
+import Test.Hspec
+import Torch.Lens
 
 data WTree a w
   = Leaf a
@@ -31,4 +30,3 @@ spec = describe "lens" $ do
     over (types @String) (++ "!") ["hello"] `shouldBe` ["hello!"]
   it "over for tree" $ do
     over (types @String) (++ "!") myTree `shouldBe` WithWeight (Fork (Leaf (Just "hello!")) (Leaf Nothing)) "world!"
-     

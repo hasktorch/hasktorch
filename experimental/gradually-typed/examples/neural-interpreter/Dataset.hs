@@ -12,6 +12,7 @@ import qualified Data.List as List
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
+import Data.Word (Word64)
 import GHC.Generics (Generic)
 import qualified Gen
 import qualified Hedgehog.Internal.Gen as Gen
@@ -20,7 +21,6 @@ import qualified Hedgehog.Internal.Seed as Seed
 import qualified STLC
 import qualified Tokenizers
 import Torch.GraduallyTyped
-import Data.Word (Word64)
 
 data STLCData = STLCData
   { name :: Text,

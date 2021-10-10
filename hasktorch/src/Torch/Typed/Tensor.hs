@@ -126,7 +126,7 @@ type Size = Type -> Type
 type Shape = [Type -> Type]
 
 type family ToNat (shape :: Size) :: Nat where
-  ToNat (S1 ( 'MetaSel _ _ _ _) f) = ToNat f
+  ToNat (S1 ('MetaSel _ _ _ _) f) = ToNat f
   ToNat (D1 _ f) = ToNat f
   ToNat (C1 _ f) = ToNat f
   ToNat (l :*: r) = ToNat l + ToNat r
@@ -705,7 +705,7 @@ type family ToShape a :: Shape where
   ToShape Bool = '[]
   ToShape Int = '[]
   ToShape Float = '[]
-  ToShape Double = '[] 
+  ToShape Double = '[]
   ToShape (f a) = f ': ToShape a
 
 type family FindDim (a :: Size) (shape :: Shape) :: Nat where
@@ -748,4 +748,3 @@ type family ReplaceDevice'' (tensor :: t) (device :: (D.DeviceType, Nat)) :: t w
 type family ReplaceDType'' (tensor :: t) (dtype :: D.DType) :: t where
   ReplaceDType'' (Tensor device dtype0 shape) dtype1 = Tensor device dtype1 shape
   ReplaceDType'' (NamedTensor device dtype0 shape) dtype1 = NamedTensor device dtype1 shape
-

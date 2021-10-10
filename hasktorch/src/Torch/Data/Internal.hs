@@ -1,21 +1,23 @@
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+
 module Torch.Data.Internal where
 
-import Control.Monad.Base (MonadBase(..))
-import Control.Monad.Trans.Control 
+import Control.Concurrent.Async.Lifted (concurrently)
+import qualified Control.Concurrent.STM as STM
+import Control.Exception.Safe (bracket, finally)
+import Control.Monad (when)
+import Control.Monad.Base (MonadBase (..))
+import Control.Monad.Cont (ContT (ContT))
+import Control.Monad.Trans.Control
 import Pipes
 import Pipes.Concurrent hiding (atomically)
-import Control.Exception.Safe (finally, bracket)
-import Control.Concurrent.Async.Lifted (concurrently)
-import Control.Monad (when)
 import qualified Pipes.Prelude as P
-import Control.Monad.Cont (ContT(ContT))
-import qualified Control.Concurrent.STM as STM
 
-runWithBuffer :: forall a m b .
+runWithBuffer ::
+  forall a m b.
   (MonadBaseControl IO m) =>
   Int ->
   (Output a -> m ()) ->
@@ -82,7 +84,6 @@ atomically = liftIO . STM.atomically
 
 instance (MonadBase IO m) => MonadBase IO (Proxy a' a b' b m) where
   liftBase = lift . liftBase
-
 
 ---- make a runData function which just does runContT but zips that
 ---- the listT with the iteration! This is much better

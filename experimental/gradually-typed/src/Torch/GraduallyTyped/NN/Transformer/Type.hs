@@ -22,7 +22,6 @@
 module Torch.GraduallyTyped.NN.Transformer.Type where
 
 import Control.Monad.Catch (MonadThrow)
-import Torch.GraduallyTyped.Prelude.List (SList (SNil))
 import Data.Singletons.TH (SingKind (fromSing), genSingletons)
 import GHC.Float (double2Int)
 import GHC.Generics (Generic)
@@ -32,6 +31,7 @@ import Torch.GraduallyTyped.Device (SDevice (..))
 import Torch.GraduallyTyped.Layout (Layout (..), LayoutType (..), SLayout (..), SLayoutType (..))
 import Torch.GraduallyTyped.NN.Class (HasForward (..), HasInitialize (..), HasStateDict (..), ModelSpec)
 import Torch.GraduallyTyped.Prelude (Catch, forgetIsChecked, pattern (:|:))
+import Torch.GraduallyTyped.Prelude.List (SList (SNil))
 import Torch.GraduallyTyped.RequiresGradient (Gradient (..), RequiresGradient (..), SGradient (..), SRequiresGradient (..))
 import Torch.GraduallyTyped.Scalar (Scalar)
 import Torch.GraduallyTyped.Shape.Class (AddDimF, BroadcastShapesF, ReplaceDimF, sGetDimFromShape, type (!))

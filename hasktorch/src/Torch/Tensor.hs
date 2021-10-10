@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -11,7 +12,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE RankNTypes #-}
 
 module Torch.Tensor where
 
@@ -46,8 +46,8 @@ import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
-import Torch.TensorOptions
 import Torch.Lens
+import Torch.TensorOptions
 
 type ATenTensor = ForeignPtr ATen.Tensor
 

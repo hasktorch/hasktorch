@@ -24,17 +24,20 @@ import Data.Foldable (Foldable (toList))
 import Data.Functor (($>))
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
-import Text.Read (readMaybe)
-import Text.Parser.Char (CharParsing (notChar, char, satisfy, string), spaces)
-import Text.Parser.Combinators (between,
+import Text.Parser.Char (CharParsing (char, notChar, satisfy, string), spaces)
+import Text.Parser.Combinators
+  ( Parsing ((<?>)),
+    between,
     choice,
     many,
     optional,
     sepBy,
     sepBy1,
-    some, Parsing ((<?>)))
-import Torch.Data.Parser (combine, eitherP, doubleP, intP, parseString, isToken)
-import Text.Parser.Token (TokenParsing(someSpace))
+    some,
+  )
+import Text.Parser.Token (TokenParsing (someSpace))
+import Text.Read (readMaybe)
+import Torch.Data.Parser (combine, doubleP, eitherP, intP, isToken, parseString)
 
 data SpiderSQL = SpiderSQL
   { spiderSQLSelect :: Select,
