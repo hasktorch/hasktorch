@@ -37,9 +37,19 @@
       url = "github:hasktorch/tokenizers/flakes";
       inputs.utils.follows = "haskell-nix/flake-utils";
     };
+    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
   };
 
-  outputs = { self, nixpkgs, haskell-nix, libtorch-nix, utils, iohkNix, naersk, tokenizers, ... }: with utils.lib;
+  outputs = { self
+            , nixpkgs
+            , haskell-nix
+            , libtorch-nix
+            , utils
+            , iohkNix
+            , naersk
+            , tokenizers
+            , pre-commit-hooks
+            , ... }: with utils.lib;
     let
       inherit (nixpkgs) lib;
       inherit (lib);
@@ -129,6 +139,26 @@
               ];
             };
           };
+          checks = {
+            pre-commit-check = pre-commit-hooks.lib.${system}.run {
+              src = ./.;
+              hooks = {
+                nixpkgs-fmt = {
+                  enable = true;
+                  excludes = [
+                    "^nix/sources\.nix"
+                  ];
+                };
+                ormolu = {
+                  enable = true;
+                  excludes = [
+                    "^Setup.hs$"
+                    "^libtorch-ffi/.*$"
+                  ];
+                };
+              };
+            };
+          };
         };
         packages = with builds;
           builtins.foldl' (sum: v: lib.recursiveUpdate sum v) {} (
@@ -147,6 +177,7 @@
           in {
             lib = pkgset;
             devShell =  dev.pkgs.callPackage ./shell.nix {
+              preCommitShellHook = self.checks.${system}.pre-commit-check.shellHook;
               inherit (build-config.dev) cudaSupport cudaMajorVersion;
             };
           } )
