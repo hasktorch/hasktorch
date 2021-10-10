@@ -37,9 +37,7 @@ jobs:
       - run: |
           nix build '.#codegen:test:doctests' -L -j 1
           nix build '.#checks.x86_64-darwin.codegen:test:spec' -L -j 1
-          nix build '.#hasktorch-cpu:test:doctests' -L -j 1
           nix build '.#checks.x86_64-darwin.hasktorch-cpu:test:spec' -L -j 1
-          nix build '.#hasktorch-gradually-typed-cpu:test:doctests' -L -j 1
           nix build '.#checks.x86_64-darwin.hasktorch-gradually-typed-cpu:test:spec' -L -j 1
           nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
           nix build '.#checks.x86_64-darwin.libtorch-ffi-cpu:test:spec' -L -j 1
