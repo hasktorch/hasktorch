@@ -24,9 +24,9 @@ jobs:
   #     - run: cachix use hasktorch
   #     - run: cachix use iohk
   #     - run: |
-  #         nix-build -j 2 --arg cudaSupport true --argstr cudaMajorVersion 9 -A haskellPackages.libtorch-ffi.checks.spec
-  #         nix-build -j 2 --arg cudaSupport true --argstr cudaMajorVersion 9 -A haskellPackages.hasktorch.checks.spec
-  #         nix-build -j 2 --arg cudaSupport true --argstr cudaMajorVersion 9 -A haskellPackages.examples.checks.spec
+  #         nix-build -j 2 -A haskellPackages.libtorch-ffi.checks.spec
+  #         nix-build -j 2 -A haskellPackages.hasktorch.checks.spec
+  #         nix-build -j 2 -A haskellPackages.examples.checks.spec
   build-cache:
     if: github.repository == 'hasktorch/hasktorch'
     runs-on: ubuntu-latest
@@ -34,21 +34,76 @@ jobs:
       - uses: actions/checkout@v2
       - name: free disk space
         run: |
-          sudo swapoff -a
-          sudo rm -f /swapfile
           sudo apt -y purge ghc* cabal-install* php* || true
           sudo apt autoremove -y || true
           sudo apt autoclean -y || true
           docker rmi $(docker image ls -aq)
           df -h
-      - uses: cachix/install-nix-action@v12
+          cat /proc/cpuinfo
+          cat /proc/meminfo
+      - uses: cachix/install-nix-action@v13
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/i6laym9jw3wg9mw6ncyrk6gjx4l34vvx/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+          nix_path: nixpkgs=channel:nixos-unstable
       - uses: cachix/cachix-action@v8
         with:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
           .github/workflows/setup-iohk-cache.sh
+          sed -i -e 's/"x86_64-linux" "x86_64-darwin"/"x86_64-linux"/g' flake.nix
+          nix flake show
       - run: |
-          nix-build -j 2 --arg cudaSupport true --argstr cudaMajorVersion 11 -A haskellPackages.libtorch-ffi.checks.spec
-          nix-build -j 1 --arg cudaSupport true --argstr cudaMajorVersion 11 -A haskellPackages.hasktorch.checks.spec
-          nix-build -j 1 --arg cudaSupport true --argstr cudaMajorVersion 11 -A haskellPackages.examples
+          ps -aux
+          free
+          export NIX_BUILD_CORES=1
+
+          nix build '.#codegen:test:doctests' -L -j 1
+          nix build '.#checks.x86_64-linux.codegen:test:spec' -L -j 1
+          nix build '.#hasktorch-cuda-11:test:doctests' -L -j 1
+          nix build '.#checks.x86_64-linux.hasktorch-cuda-11:test:spec' -L -j 1
+          nix build '.#hasktorch-gradually-typed-cuda-11:test:doctests' -L -j 1
+          nix build '.#checks.x86_64-linux.hasktorch-gradually-typed-cuda-11:test:spec' -L -j 1
+          nix build '.#libtorch-ffi-cuda-11:test:spec' -L -j 1
+          nix build '.#checks.x86_64-linux.libtorch-ffi-cuda-11:test:spec' -L -j 1
+
+      - run: |
+          ps -aux
+          free
+          export NIX_BUILD_CORES=1
+
+          nix build '.#bounding-box-cuda-11:exe:bounding-box' -L -j 1
+          nix build '.#codegen:exe:codegen-exe' -L -j 1
+          nix build '.#dataloader-cifar10-cuda-11:exe:dataloader-cifar10' -L -j 1
+          nix build '.#examples-cuda-11:exe:alexNet' -L -j 1
+          nix build '.#examples-cuda-11:exe:autograd' -L -j 1
+          nix build '.#examples-cuda-11:exe:distill' -L -j 1
+          nix build '.#examples-cuda-11:exe:gaussian-process' -L -j 1
+          nix build '.#examples-cuda-11:exe:gd-field' -L -j 1
+          nix build '.#examples-cuda-11:exe:image-processing' -L -j 1
+          nix build '.#examples-cuda-11:exe:iris-classification' -L -j 1
+          nix build '.#examples-cuda-11:exe:load-torchscript' -L -j 1
+          nix build '.#examples-cuda-11:exe:matrix-factorization' -L -j 1
+          nix build '.#examples-cuda-11:exe:minimal-text-example' -L -j 1
+          nix build '.#examples-cuda-11:exe:mnist-mixed-precision' -L -j 1
+          nix build '.#examples-cuda-11:exe:mnist-mlp' -L -j 1
+          nix build '.#examples-cuda-11:exe:optimizers' -L -j 1
+          nix build '.#examples-cuda-11:exe:optimizers-cpp' -L -j 1
+          nix build '.#examples-cuda-11:exe:optimizers-cpp-typed' -L -j 1
+          nix build '.#examples-cuda-11:exe:regression' -L -j 1
+          nix build '.#examples-cuda-11:exe:regularization' -L -j 1
+          nix build '.#examples-cuda-11:exe:rnn' -L -j 1
+          nix build '.#examples-cuda-11:exe:serialization' -L -j 1
+          nix build '.#examples-cuda-11:exe:static-mnist-cnn' -L -j 1
+          nix build '.#examples-cuda-11:exe:static-mnist-mlp' -L -j 1
+          nix build '.#examples-cuda-11:exe:static-xor-mlp' -L -j 1
+          nix build '.#examples-cuda-11:exe:typed-transformer' -L -j 1
+          nix build '.#examples-cuda-11:exe:vae' -L -j 1
+          nix build '.#examples-cuda-11:exe:xor-mlp' -L -j 1
+          nix build '.#hasktorch-gradually-typed-cuda-11:exe:linear-regression' -L -j 1
+          nix build '.#hasktorch-gradually-typed-cuda-11:exe:neural-interpreter' -L -j 1
+          nix build '.#hasktorch-gradually-typed-cuda-11:exe:two-layer-network' -L -j 1
+          nix build '.#untyped-nlp-cuda-11:exe:untyped-nlp' -L -j 1

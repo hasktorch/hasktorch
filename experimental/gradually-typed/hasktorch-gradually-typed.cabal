@@ -267,8 +267,6 @@ test-suite spec
   else
     build-depends:     singletons < 3
 
-  build-tool-depends: hspec-discover:hspec-discover
-
 test-suite doctests
   if os(darwin) || flag(disable-doctest)
     Buildable: False

@@ -11,34 +11,40 @@
 , cudaSupport ? false
 , cudaMajorVersion ? null
 , withHoogle ? false
-, pkgs ? import ./default.nix {
-    inherit config sourcesOverride cudaSupport cudaMajorVersion;
-  }
 }:
-with pkgs;
 let
-  ghc = hasktorchHaskellPackages.ghcWithPackages (_: [ ]);
+  system = builtins.currentSystem;
+  pkgs = (
+    import (
+      fetchTarball {
+        url = "https://github.com/edolstra/flake-compat/archive/99f1c2157fba4bfe6211a321fd0ee43199025dbf.tar.gz";
+        sha256 = "0x2jn3vrawwv9xp15674wjz9pixwjyj3j771izayl962zziivbx2";
+      }) {
+        src =  ./..;
+      }
+  ).defaultNix.outputs.lib."${system}".cpu.pkgs;
+  ghc = pkgs.hasktorchProject.ghcWithPackages (_: []);
 
   buildInputs = [
-    git # needed so that stack can get extra-deps from github
-    torch
-    zlib
+    pkgs.git # needed so that stack can get extra-deps from github
+    pkgs.torch
+    pkgs.zlib
   ];
 
-  stack-shell = haskell.lib.buildStackProject {
+  stack-shell = pkgs.haskell.lib.buildStackProject {
     inherit ghc;
 
     name = "hasktorch-stack-dev-shell";
 
     extraArgs = [
-      "--extra-include-dirs=${torch}/include/torch/csrc/api/include"
+      "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
     ];
 
     inherit buildInputs;
 
-    phases = [ "nobuildPhase" ];
-    nobuildPhase = "echo '${lib.concatStringsSep "\n" ([ghc] ++ buildInputs)}' > $out";
-    meta.platforms = lib.platforms.unix;
+    phases = ["nobuildPhase"];
+    nobuildPhase = "echo '${pkgs.lib.concatStringsSep "\n" ([ghc] ++ buildInputs)}' > $out";
+    meta.platforms = pkgs.lib.platforms.unix;
 
     inherit withHoogle;
   };

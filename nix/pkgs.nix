@@ -1,15 +1,14 @@
+{ compiler-nix-name
+, lib
+, haskell-nix
+}:
 pkgs: _: with pkgs; {
-  hasktorchHaskellPackages = import ./haskell.nix {
+  hasktorchProject = import ./haskell.nix {
     inherit
       lib
-      stdenv
       pkgs
       haskell-nix
-      buildPackages
-      config
-      gitrev
-      cudaSupport
-      extras
+      compiler-nix-name
       ;
   };
 }

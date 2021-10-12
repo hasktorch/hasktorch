@@ -1,94 +1,45 @@
-# This file is used by nix-shell.
-# It just takes the shell attribute from default.nix.
-{ config ? { }
-, sourcesOverride ? { }
-  # If true, activates CUDA support
-, cudaSupport ? false
-  # If cudaSupport is true, this needs to be set to a valid CUDA major version number, e.g. 10:
-  # nix-shell --arg cudaSupport true --argstr cudaMajorVersion 10
-, cudaMajorVersion ? null
-, withHoogle ? false
-, pkgs ? import ./nix/default.nix {
-    inherit config sourcesOverride cudaSupport cudaMajorVersion;
-  }
+{ cudaSupport
+, cudaMajorVersion
+, hasktorchProject
+, torch
+, utillinux
+, lib
+, tokenizers-haskell
+#, preCommitShellHook
 }:
 
-with pkgs;
+hasktorchProject.shellFor {
+  name = "hasktorch-dev-shell";
+  exactDeps = true;
+  withHoogle = true;
 
-let
-
-  # This provides a development environment that can be used with nix-shell or
-  # lorri. See https://input-output-hk.github.io/haskell.nix/user-guide/development/
-  shell = hasktorchHaskellPackages.shellFor {
-    name = "hasktorch-dev-shell";
-
-    # If shellFor local packages selection is wrong,
-    # then list all local packages then include source-repository-package that cabal complains about:
-    #packages = ps: with ps; [ ];
-
-    tools = {
-      cabal = "3.2.0.0";
-      haskell-language-server = "latest";
-    };
-
-    # These programs will be available inside the nix-shell.
-    buildInputs =
-      with haskellPackages; [ hlint weeder ghcid ]
-        # TODO: Add additional packages to the shell.
-        ++ [ ];
-
-    # Prevents cabal from choosing alternate plans, so that
-    # *all* dependencies are provided by Nix.
-    # TODO: Set to true as soon as haskell.nix issue #231 is resolved.
-    exactDeps = false;
-
-    shellHook =
-      let
-        cpath = ''
-          export CPATH=${torch}/include/torch/csrc/api/include
-        '';
-        nproc = ''
-          case "$(uname)" in
-            "Linux")
-                ${utillinux}/bin/taskset -pc 0-1000 $$
-            ;;
-          esac
-        '';
-        libraryPath = stdenv.lib.optionalString cudaSupport ''
-          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/run/opengl-driver/lib"
-        '';
-        tokenizersLibraryPath = ''
-          export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${tokenizers_haskell}/lib"
-        '';
-        preCommitShellHook = ''
-          ${pkgs.pre-commit-check.shellHook}
-        '';
-      in
-      cpath + nproc + libraryPath + tokenizersLibraryPath + preCommitShellHook;
-
-    inherit withHoogle;
+  tools = {
+    cabal = "latest";
+    haskell-language-server = "1.3.0";
   };
 
-  # Use to get a shell with niv to update the sources. Launch with
-  # nix-shell -A devops ./shell.nix
-  devops = stdenv.mkDerivation {
-    name = "devops-shell";
-    buildInputs = [
-      niv
-    ];
-    shellHook = ''
-      echo "DevOps Tools" \
-      | ${figlet}/bin/figlet -f banner -c \
-      | ${lolcat}/bin/lolcat
+  # packages = ps: with ps; [ ];
+  # buildInputs = with haskellPackages; [ ];
 
-      echo "NOTE: you may need to export GITHUB_TOKEN if you hit rate limits with niv"
-      echo "Commands:
-        * niv update <package> - update package
+  shellHook = lib.strings.concatStringsSep "\n" [
+    # make sure correct libtorch is in cpath for cabal
+    "export CPATH=${torch}/include/torch/csrc/api/include"
 
-      "
-    '';
-  };
+    # set dynamic libraries for cuda support
+    (lib.optionalString cudaSupport "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:/run/opengl-driver/lib\"")
 
-in
+    # put tokenizers on path
+    "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:${tokenizers-haskell}/lib\""
 
-shell // { inherit devops; }
+    # make sure number of processes is set
+    ''
+    case "$(uname)" in
+      "Linux")
+          ${utillinux}/bin/taskset -pc 0-1000 $$
+      ;;
+    esac
+    ''
+    
+#    preCommitShellHook
+  ];
+}

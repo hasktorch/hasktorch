@@ -23,4 +23,5 @@ examples/mnist
 examples/data
 deps/pytorch
 spec/Declarations.yaml
+.direnv
 /.pre-commit-config.yaml
