@@ -140,24 +140,24 @@
             };
           };
           checks = {
-            pre-commit-check = pre-commit-hooks.lib.${system}.run {
-              src = ./.;
-              hooks = {
-                nixpkgs-fmt = {
-                  enable = true;
-                  excludes = [
-                    "^nix/sources\.nix"
-                  ];
-                };
-                ormolu = {
-                  enable = true;
-                  excludes = [
-                    "^Setup.hs$"
-                    "^libtorch-ffi/.*$"
-                  ];
-                };
-              };
-            };
+            # pre-commit-check = pre-commit-hooks.lib.${system}.run {
+            #   src = ./.;
+            #   hooks = {
+            #     nixpkgs-fmt = {
+            #       enable = true;
+            #       excludes = [
+            #         "^nix/sources\.nix"
+            #       ];
+            #     };
+            #     ormolu = {
+            #       enable = true;
+            #       excludes = [
+            #         "^Setup.hs$"
+            #         "^libtorch-ffi/.*$"
+            #       ];
+            #     };
+            #   };
+            # };
           };
         };
         packages = with builds;
@@ -177,7 +177,7 @@
           in {
             lib = pkgset;
             devShell =  dev.pkgs.callPackage ./shell.nix {
-              preCommitShellHook = self.checks.${system}.pre-commit-check.shellHook;
+#              preCommitShellHook = self.checks.${system}.pre-commit-check.shellHook;
               inherit (build-config.dev) cudaSupport cudaMajorVersion;
             };
           } )

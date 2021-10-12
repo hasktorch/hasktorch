@@ -5,7 +5,7 @@
 , utillinux
 , lib
 , tokenizers-haskell
-, preCommitShellHook
+#, preCommitShellHook
 }:
 
 hasktorchProject.shellFor {
@@ -40,6 +40,6 @@ hasktorchProject.shellFor {
     esac
     ''
     
-    preCommitShellHook
+#    preCommitShellHook
   ];
 }
