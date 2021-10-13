@@ -7,6 +7,7 @@ runCommand "haddock-join" { buildInputs = [ hsdocs pkgs.jq ]; } ''
   # - We are going to want to redistribute this, so we don't want any symlinks.
   # - We want to be selective about what we copy (we don't need the hydra 
   #   tarballs from the other packages, for example.
+  ${ghc}/bin/ghc --version
   mkdir -p "$out/share/doc"
   for pkg in ${lib.concatStringsSep " " hsdocs}; do
     cp -R $pkg/share/doc/* "$out/share/doc"

@@ -128,9 +128,13 @@
           cuda-11 = build-flake "cuda-11";
         };
 
+        ghc = pkgset.cpu.pkgs.hasktorchProject.ghcWithPackages (_: []);
+
         extra-packages = {
           packages = {
-            haddocks-join = (pkgset.cpu.pkgs.callPackage ./nix/haddock-combine.nix {}) {
+            haddocks-join = (pkgset.cpu.pkgs.callPackage ./nix/haddock-combine.nix {
+              inherit ghc;
+            }) {
               hsdocs = [
                 builds.cpu.packages."libtorch-ffi-cpu:lib:libtorch-ffi".doc
                 builds.cpu.packages."libtorch-ffi-helper-cpu:lib:libtorch-ffi-helper".doc
