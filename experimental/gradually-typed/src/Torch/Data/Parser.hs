@@ -233,7 +233,6 @@ string = many token
 -- string1 :: MonadPlus b => Parser b i [i]
 -- string1 = many1 token
 
-
 -- alphas1 :: MonadPlus b => Parser b Char String
 -- alphas1 = many1 (satisfy isAlpha)
 

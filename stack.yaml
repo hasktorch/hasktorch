@@ -1,6 +1,6 @@
-resolver: lts-17.4
+resolver: nightly-2021-07-22
 
-compiler: ghc-8.10.4
+#compiler: ghc-9.0.1
 
 packages:
 - codegen
@@ -25,17 +25,25 @@ extra-lib-dirs:
 
 extra-deps:
 - datasets-0.4.0@sha256:9bfd5b54c6c5e1e72384a890cf29bf85a02007e0a31c98753f7d225be3c7fa6a,4929
-- pipes-text-0.0.2.5@sha256:16cfd1927817a1c757b15c37ad95c67e819c28b1c4a6ce9757ab15276ec36ac7,3326
 - streaming-cassava-0.1.0.1@sha256:2d1dfeb09af62009e88311fe92f44d06dafb5cdd38879b437ea6adb3bc40acfe,1739
 - streaming-bytestring-0.1.7@sha256:5b53960c1c5f8352d46a4f1a604d04340a08dcf7ff27ca3ed31253e02c01fd03,2968
 - stm-2.5.0.0@sha256:c238075f9f0711cd6a78eab6001b3e218cdaa745d6377bf83cc21e58ceec2ea1,2100
 - require-0.4.10@sha256:41b096daaca0d6be49239add1149af9f34c84640d09a7ffa9b45c55f089b5dac,3759
-- git: https://github.com/mcwitt/tintin
-  commit: cad1ab21e53a3c734e09143def4fe862ded9e67a
+- generic-lens-2.2.0.0@sha256:4008a39f464e377130346e46062e2ac1211f9d2e256bbb1857216e889c7196be,3867
+- indexed-extras-0.2@sha256:e7e498023e33016fe45467dfee3c1379862e7e6654a806a965958fa1adc00304,1349
+- normaldistribution-1.1.0.3@sha256:2615b784c4112cbf6ffa0e2b55b76790290a9b9dff18a05d8c89aa374b213477,2160
+- term-rewriting-0.4.0.2@sha256:5412f6aa29c5756634ee30e8df923c83ab9f012a4b8797c460af3d7078466764,2740
+- type-errors-pretty-0.0.1.2@sha256:9042b64d1ac2f69aa55690576504a2397ebea8a6a55332242c88f54027c7eb57,2781
+- git: https://github.com/hasktorch/tintin
+  commit: 3bbe6a3797e43c92e61a2a4bdc26d5732cd5e7fd
 - git: https://github.com/hasktorch/tokenizers
-  commit: e4208275b6e7d5e265d454819eec5ec626d4077b
+  commit: 9d25f0ba303193e97f8b22b9c93cbc84725886c3
   subdirs:
   - bindings/haskell/tokenizers-haskell
+- git: https://github.com/hasktorch/typelevel-rewrite-rules
+  commit: 1262d69e7e16705c1a85832125ce0b5b82a41278
+- git: https://github.com/hasktorch/pipes-text
+  commit: d4805e84327e266daa730d23982db3172f226cac
 
 allow-newer: true
 

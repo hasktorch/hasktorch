@@ -4,10 +4,10 @@
 module Torch.GraduallyTyped.IndexingSpec where
 
 import Data.Maybe (fromJust)
-import Torch.GraduallyTyped.Prelude.List
 import qualified Data.Vector.Sized as SV
 import Test.Hspec
 import Torch.GraduallyTyped
+import Torch.GraduallyTyped.Prelude.List
 
 -- | 2x2x3 tensor for testing.
 -- >>> tensor

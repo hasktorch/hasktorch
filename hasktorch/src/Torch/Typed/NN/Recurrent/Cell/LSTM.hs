@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -14,7 +15,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoStarIsType #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# OPTIONS_GHC -fconstraint-solver-iterations=0 #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.Extra.Solver #-}
 {-# OPTIONS_GHC -fplugin GHC.TypeLits.KnownNat.Solver #-}
@@ -54,17 +54,16 @@ data
     (inputDim :: Nat)
     (hiddenDim :: Nat)
     (dtype :: D.DType)
-    (device :: (D.DeviceType, Nat))
-  = LSTMCell
-      { -- | input-to-hidden weights
-        lstmCell_w_ih :: Parameter device dtype '[4 * hiddenDim, inputDim],
-        -- | hidden-to-hidden weights
-        lstmCell_w_hh :: Parameter device dtype '[4 * hiddenDim, hiddenDim],
-        -- | input-to-hidden bias
-        lstmCell_b_ih :: Parameter device dtype '[4 * hiddenDim],
-        -- | hidden-to-hidden bias
-        lstmCell_b_hh :: Parameter device dtype '[4 * hiddenDim]
-      }
+    (device :: (D.DeviceType, Nat)) = LSTMCell
+  { -- | input-to-hidden weights
+    lstmCell_w_ih :: Parameter device dtype '[4 * hiddenDim, inputDim],
+    -- | hidden-to-hidden weights
+    lstmCell_w_hh :: Parameter device dtype '[4 * hiddenDim, hiddenDim],
+    -- | input-to-hidden bias
+    lstmCell_b_ih :: Parameter device dtype '[4 * hiddenDim],
+    -- | hidden-to-hidden bias
+    lstmCell_b_hh :: Parameter device dtype '[4 * hiddenDim]
+  }
   deriving (Show, Generic, Parameterized)
 
 instance

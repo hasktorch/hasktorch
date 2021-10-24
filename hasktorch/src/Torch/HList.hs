@@ -159,7 +159,8 @@ class
   Applicative f =>
   HSequence f (xs :: [k]) (ys :: [k])
     | xs -> ys,
-      ys f -> xs where
+      ys f -> xs
+  where
   hsequence :: HList xs -> f (HList ys)
 
 instance Applicative f => HSequence f '[] '[] where
@@ -281,7 +282,8 @@ class
     (n :: Nat)
     (e :: Type)
     (es :: [Type])
-    | n e -> es where
+    | n e -> es
+  where
   hreplicateFD :: e -> HList es
 
 instance {-# OVERLAPS #-} HReplicateFD 0 e '[] where
@@ -444,7 +446,8 @@ class
     (cs :: [k])
     (ds :: [k])
     | as bs cs -> ds,
-      ds -> as bs cs where
+      ds -> as bs cs
+  where
   hzip3 :: HList as -> HList bs -> HList cs -> HList ds
   hunzip3 :: HList ds -> (HList as, HList bs, HList cs)
 
@@ -469,7 +472,8 @@ class
     (bs :: [k])
     (cs :: [k])
     (ds :: [k])
-    | f as bs cs -> ds where
+    | f as bs cs -> ds
+  where
   hzipWith3 :: f -> HList as -> HList bs -> HList cs -> HList ds
 
 instance HZipWith3 f '[] '[] '[] '[] where

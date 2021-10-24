@@ -17,8 +17,8 @@ import Torch.Functional
 import Torch.Internal.Cast
 import qualified Torch.Internal.Managed.Serialize as S
 import Torch.NN
+import Torch.Script hiding (clone, load, save)
 import Torch.Tensor
-import Torch.Script hiding(save,load,clone)
 
 save ::
   -- | inputs

@@ -4,13 +4,13 @@
 module Torch.GraduallyTyped.NN.Transformer.RoBERTa.Base where
 
 import Data.Singletons (SingI (sing))
-import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import GHC.TypeLits (Nat)
 import Torch.GraduallyTyped.Device (Device, DeviceType, SDevice)
 import Torch.GraduallyTyped.NN.Class (ModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.RoBERTa.Common (RoBERTaModelF, robertaModelSpec)
 import Torch.GraduallyTyped.NN.Transformer.Type (STransformerHead, TransformerHead)
 import Torch.GraduallyTyped.NN.Type (HasDropout, SHasDropout)
+import Torch.GraduallyTyped.Prelude.TypeLits (SNat)
 import Torch.GraduallyTyped.RequiresGradient (Gradient, RequiresGradient, SGradient)
 import Torch.GraduallyTyped.Shape.Type (Dim (..), Name (..), SDim, Size (..))
 

@@ -1,0 +1,27 @@
+name: linting-checks
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    if: github.repository == 'hasktorch/hasktorch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v13
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/i6laym9jw3wg9mw6ncyrk6gjx4l34vvx/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+          nix_path: nixpkgs=channel:nixos-unstable
+      - uses: cachix/cachix-action@v10
+        with:
+          name: hasktorch
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - run: |
+          .github/workflows/setup-iohk-cache.sh
+      - run: |
+          cachix use pre-commit-hooks
+      - run: |
+          nix develop --command "pre-commit run --all-files --show-diff-on-failure"
