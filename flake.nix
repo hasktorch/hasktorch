@@ -29,10 +29,6 @@
       inputs.utils.follows = "haskell-nix/flake-utils";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    jupyterWith = {
-      url = "github:tweag/jupyterWith/35eb565c6d00f3c61ef5e74e7e41870cfa3926f7";
-      flake = false;
-    };
     tokenizers = {
       url = "github:hasktorch/tokenizers/flakes";
       inputs.utils.follows = "haskell-nix/flake-utils";
@@ -46,7 +42,6 @@
             , libtorch-nix
             , utils
             , iohkNix
-            , naersk
             , tokenizers
             , pre-commit-hooks
             , ... }: with utils.lib;
@@ -67,14 +62,14 @@
 
         dev-tools = final: prev: {
           haskell-nix = prev.haskell-nix // {
-            custom-tools = prev.haskell-nix.custom-tools // (prev.callPackage ./nix/haskell-language-server {});
+            # custom-tools = prev.haskell-nix.custom-tools // (prev.callPackage ./nix/haskell-language-server {});
           };
         };
 
         hasktorch-project = final: prev: {
           hasktorchProject = import ./nix/haskell.nix ({
             pkgs = prev;
-            compiler-nix-name = "ghc8105";
+            compiler-nix-name = "ghc8107";
             inherit (prev) lib;
             inherit (prev.hasktorch-config) profiling cudaSupport;
           });
