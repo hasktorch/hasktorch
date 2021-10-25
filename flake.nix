@@ -62,14 +62,14 @@
 
         dev-tools = final: prev: {
           haskell-nix = prev.haskell-nix // {
-            # custom-tools = prev.haskell-nix.custom-tools // (prev.callPackage ./nix/haskell-language-server {});
+            custom-tools = prev.haskell-nix.custom-tools // (prev.callPackage ./nix/haskell-language-server {});
           };
         };
 
         hasktorch-project = final: prev: {
           hasktorchProject = import ./nix/haskell.nix ({
             pkgs = prev;
-            compiler-nix-name = "ghc8107";
+            compiler-nix-name = "ghc901";
             inherit (prev) lib;
             inherit (prev.hasktorch-config) profiling cudaSupport;
           });
@@ -112,10 +112,10 @@
             pkg-flake = pkgs.hasktorchProject.flake {};
           in
             mapper2
-                      #(n: head (splitString ":" n) == "hasktorch")
-                      (n: hasInfix ":" n && head (splitString ":" n) != "codegen")
-                      (n: let parts = splitString ":" n; in concatStringsSep ":" (concatLists [["${head parts}-${ty}"] (tail parts)]))
-                      pkg-flake;
+              #(n: head (splitString ":" n) == "hasktorch")
+              (n: hasInfix ":" n && head (splitString ":" n) != "codegen")
+              (n: let parts = splitString ":" n; in concatStringsSep ":" (concatLists [["${head parts}-${ty}"] (tail parts)]))
+              pkg-flake;
 
         builds = {
           cpu     = build-flake "cpu";
@@ -176,7 +176,7 @@
           in {
             lib = pkgset;
             devShell =  dev.pkgs.callPackage ./shell.nix {
-#              preCommitShellHook = self.checks.${system}.pre-commit-check.shellHook;
+              # preCommitShellHook = self.checks.${system}.pre-commit-check.shellHook;
               inherit (build-config.dev) cudaSupport cudaMajorVersion;
             };
           } )
