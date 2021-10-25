@@ -393,7 +393,7 @@ type ArgmaxF selectDim shape = BoolReductionF "argmax" selectDim shape
 -- >>> r <- argmax (SSelectDim $ SByIndex @1) t
 -- >>> :type r
 -- r :: Tensor
---        ('Gradient 'WithGradient)
+--        ('Gradient 'WithoutGradient)
 --        ('Layout 'Dense)
 --        ('Device 'CPU)
 --        ('DataType 'Int64)
