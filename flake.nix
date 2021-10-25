@@ -10,7 +10,7 @@
       hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
       hasktorch.cachix.org-1:wLjNS6HuFVpmzbmv01lxwjdCOtWRD8pQVR3Zr/wVoQc=
     ];
-    bash-prompt = "\[\\e[1m\\e[32mdev-hasktorch\\e[0m:\\w\]$ ";
+    bash-prompt = "\\[\\033[1m\\][dev-hasktorch]\\[\\033\[m\\]\\040\\w$\\040";
   };
 
   inputs = {
@@ -29,10 +29,6 @@
       inputs.utils.follows = "haskell-nix/flake-utils";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    jupyterWith = {
-      url = "github:tweag/jupyterWith/35eb565c6d00f3c61ef5e74e7e41870cfa3926f7";
-      flake = false;
-    };
     tokenizers = {
       url = "github:hasktorch/tokenizers/flakes";
       inputs.utils.follows = "haskell-nix/flake-utils";
@@ -46,7 +42,6 @@
             , libtorch-nix
             , utils
             , iohkNix
-            , naersk
             , tokenizers
             , pre-commit-hooks
             , ... }: with utils.lib;
@@ -117,10 +112,10 @@
             pkg-flake = pkgs.hasktorchProject.flake {};
           in
             mapper2
-                      #(n: head (splitString ":" n) == "hasktorch")
-                      (n: hasInfix ":" n && head (splitString ":" n) != "codegen")
-                      (n: let parts = splitString ":" n; in concatStringsSep ":" (concatLists [["${head parts}-${ty}"] (tail parts)]))
-                      pkg-flake;
+              #(n: head (splitString ":" n) == "hasktorch")
+              (n: hasInfix ":" n && head (splitString ":" n) != "codegen")
+              (n: let parts = splitString ":" n; in concatStringsSep ":" (concatLists [["${head parts}-${ty}"] (tail parts)]))
+              pkg-flake;
 
         builds = {
           cpu     = build-flake "cpu";
@@ -181,7 +176,7 @@
           in {
             lib = pkgset;
             devShell =  dev.pkgs.callPackage ./shell.nix {
-#              preCommitShellHook = self.checks.${system}.pre-commit-check.shellHook;
+              # preCommitShellHook = self.checks.${system}.pre-commit-check.shellHook;
               inherit (build-config.dev) cudaSupport cudaMajorVersion;
             };
           } )

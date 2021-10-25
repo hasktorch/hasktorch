@@ -25,6 +25,7 @@ module Torch.GraduallyTyped.NN.Linear where
 
 import Control.Monad.Indexed (IxPointed (ireturn), (>>>=))
 import Control.Monad.Indexed.State (IxStateT (..))
+import Control.Monad.Indexed.Trans (IxMonadTrans (ilift))
 import Data.Functor.Indexed ((<<$>>), (<<*>>))
 import Data.Kind (Type)
 import GHC.Generics (Generic)
@@ -175,7 +176,11 @@ instance
               )
         bias =
           IxStateT (sRandn linearBias)
-            >>>= ireturn . (\bias' -> (bias' `mulScalar` (bound * 2)) `subScalar` bound)
+            >>>= ilift
+              . ( \bias' -> do
+                    x <- bias' `mulScalar` (bound * 2)
+                    x `subScalar` bound
+                )
      in runIxStateT $ GLinear <<$>> weight <<*>> bias
 
 instance

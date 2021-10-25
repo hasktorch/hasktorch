@@ -452,9 +452,9 @@ instance
             >>>= IxStateT . forward lmHeadActivation
             >>>= IxStateT . forward lmHeadLayerNorm
             >>>= IxStateT . forward lmHeadDecoder
-            >>>= ireturn
+            >>>= ilift
               . ( \case
-                    LMHeadWithoutScaling -> id
+                    LMHeadWithoutScaling -> pure
                     LMHeadWithScaling -> flip mulScalar scaling
                 )
                 lmHeadHasScaling

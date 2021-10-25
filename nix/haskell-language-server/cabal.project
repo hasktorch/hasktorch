@@ -1,105 +1,72 @@
 packages:
-  ./
-  ./hie-compat
-  ./shake-bench
-  ./hls-graph
-  ./ghcide
-  ./hls-plugin-api
-  ./hls-test-utils
---  ./plugins/hls-tactics-plugin
---  ./plugins/hls-brittany-plugin
---  ./plugins/hls-stylish-haskell-plugin
---  ./plugins/hls-fourmolu-plugin
-  ./plugins/hls-class-plugin
-  ./plugins/hls-eval-plugin
-  ./plugins/hls-explicit-imports-plugin
-  ./plugins/hls-refine-imports-plugin
-  ./plugins/hls-hlint-plugin
-  ./plugins/hls-retrie-plugin
-  ./plugins/hls-haddock-comments-plugin
---  ./plugins/hls-splice-plugin
-  ./plugins/hls-floskell-plugin
-  ./plugins/hls-pragmas-plugin
-  ./plugins/hls-module-name-plugin
-  ./plugins/hls-ormolu-plugin
-  ./plugins/hls-call-hierarchy-plugin
+         ./
+         ./hie-compat
+         ./shake-bench
+         ./hls-graph
+         ./ghcide
+         ./hls-plugin-api
+         ./hls-test-utils
+        -- ./plugins/hls-tactics-plugin
+        -- ./plugins/hls-brittany-plugin
+        -- ./plugins/hls-stylish-haskell-plugin
+         ./plugins/hls-fourmolu-plugin
+        -- ./plugins/hls-class-plugin
+         ./plugins/hls-eval-plugin
+         ./plugins/hls-explicit-imports-plugin
+         ./plugins/hls-refine-imports-plugin
+         ./plugins/hls-hlint-plugin
+         ./plugins/hls-rename-plugin
+         ./plugins/hls-retrie-plugin
+         ./plugins/hls-haddock-comments-plugin
+         ./plugins/hls-splice-plugin
+         ./plugins/hls-floskell-plugin
+         ./plugins/hls-pragmas-plugin
+         ./plugins/hls-module-name-plugin
+         ./plugins/hls-ormolu-plugin
+         ./plugins/hls-call-hierarchy-plugin
 
-constraints:
-  haskell-language-server -brittany -class -fourmolu -splice -stylishhaskell -tactic -refineImports
+with-compiler: ghc-9.0.1
 
-source-repository-package
-  type: git
-  location: https://github.com/jwaldmann/blaze-textual.git
-  tag: d8ee6cf80e27f9619d621c936bb4bda4b99a183f
-  --sha256: 0k1xv17f4dk67d6ina3hrljvj009cink4qb9yac1cz5qzv6lhiqb
+tests: true
+
+package *
+  ghc-options: -haddock
+  test-show-details: direct
 
 source-repository-package
   type: git
   location: https://github.com/mithrandi/czipwith.git
   tag: b6245884ae83e00dd2b5261762549b37390179f8
   --sha256: 0hapj3n8vnk2xx1vqn6v6g10kzn0cjgcfa8pnnng6kzi58dsir6s
-
-source-repository-package
-  type: git
-  location: https://github.com/jneira/hie-bios/
-  tag: 9b1445ab5efcabfad54043fc9b8e50e9d8c5bbf3
-  --sha256: 0jfm7shlkb8vg2srprabvsnhmr77bvp59z771cl81i28gjvppjzi
-
-source-repository-package
-  type: git
-  location: https://github.com/hsyl20/ghc-api-compat
-  tag: 8fee87eac97a538dbe81ff1ab18cff10f2f9fa15
-  --sha256: sha256-byehvdxQxhNk5ZQUXeFHjAZpAze4Ct9261ro4c5acZk=
+  -- https://github.com/lspitzner/czipwith/pull/2
 
 source-repository-package
   type: git
   location: https://github.com/anka-213/th-extras
   tag: 57a97b4df128eb7b360e8ab9c5759392de8d1659
   --sha256: 1yg0ikw63kmgp35kwhdi63sbk4f6g7bdj5app3z442xz0zb5mn22
+-- https://github.com/mokus0/th-extras/pull/8
+-- https://github.com/mokus0/th-extras/issues/7
 
 source-repository-package
   type: git
-  location: https://github.com/anka-213/dependent-sum
-  tag: 8cf4c7fbc3bfa2be475a17bb7c94a1e1e9a830b5
+  location: https://github.com/fendor/dependent-sum
+  tag: 5de03c38b0de4945f4e9bce1b026110e69dc8118
   subdir: dependent-sum-template
-  --sha256: 0x3lgd1ckd1666infydx9iijdvllw4kikb8k9fx90kczmc3m7p2s
+  --sha256: 1k7hfwaghc5i78rmqndzss40zhqq51zy2glczz0fbljvnfzz8pwm
+-- https://github.com/obsidiansystems/dependent-sum/pull/59
 
-source-repository-package
-  type: git
-  location: https://github.com/HeinrichApfelmus/operational
-  tag: 16e19aaf34e286f3d27b3988c61040823ec66537
-  --sha256: 1831g81pnx8sn0w1j9srs37bmai2wv521dvmjqjdy21a8xqairiz
+write-ghc-environment-files: never
+
+index-state: 2021-10-04T02:41:06Z
+
+constraints:
+    -- These plugins don't work on GHC9 yet
+    haskell-language-server -brittany -class -stylishhaskell -tactic
 
 allow-newer:
-  assoc:base,
-  cryptohash-md5:base,
-  cryptohash-sha1:base,
-  constraints-extras:template-haskell,
-  data-tree-print:base,
-  deepseq:base,
-  dependent-sum:some,
-  dependent-sum:constraints,
-  diagrams-postscript:base,
-  diagrams-postscript:lens,
-  diagrams-postscript:diagrams-core,
-  diagrams-postscript:monoid-extras,
-  diagrams:diagrams-core,
-  Chart-diagrams:diagrams-core,
-  SVGFonts:diagrams-core,
-  dual-tree:base,
-  entropy:Cabal,
-  force-layout:base,
-  force-layout:lens,
-  floskell:ghc-prim,
-  floskell:base,
-  hashable:base,
-  hslogger:base,
-  monoid-extras:base,
-  newtype-generics:base,
-  parallel:base,
-  regex-base:base,
-  regex-tdfa:base,
-  statestack:base,
-  svg-builder:base,
-  these:base,
-  time-compat:base
+    floskell:base,
+    floskell:ghc-prim,
+    -- for shake-bench
+    Chart-diagrams:diagrams-core,
+    SVGFonts:diagrams-core

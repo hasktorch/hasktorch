@@ -194,7 +194,9 @@ instance
     (Tensor requiresGradient layout device dataType shape)
     generator
   where
-  forward GeluNew input = pure . (geluNew input,)
+  forward GeluNew input g = do
+    output <- geluNew input
+    pure (output, g)
 
 -- | 'Tanh' is a non-linear activation function.
 data Tanh where

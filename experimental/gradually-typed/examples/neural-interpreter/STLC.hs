@@ -1,10 +1,8 @@
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE DeriveFoldable #-}
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -15,12 +13,16 @@
 
 module STLC where
 
-import Bound (Scope, abstract1, fromScope, instantiate1, toScope, (>>>=))
+import Bound (Scope, Var, abstract1, fromScope, instantiate1, toScope, (>>>=))
 import Control.Monad (MonadPlus (mzero), ap, guard)
 import Control.Monad.Fresh (Fresh, MonadFresh (fresh), runFreshFrom)
+import Control.Monad.State (MonadState, modify)
 import Control.Monad.Trans.Maybe (MaybeT (..))
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
 import Data.Functor.Classes (compare1, eq1, showsPrec1)
+import Data.Hashable (Hashable)
+import Data.Hashable.Lifted (Hashable1)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import GHC.Generics (Generic, Generic1)
@@ -31,7 +33,8 @@ data Ty
     TArr Ty Ty
   | -- | Integer number type.
     TInt
-  deriving (Eq, Ord, Show, Generic)
+  deriving stock (Eq, Ord, Show, Generic)
+  deriving anyclass (Hashable)
 
 data Exp a
   = -- | Variable.
@@ -55,6 +58,7 @@ data Exp a
   | -- | Sign of a number.
     Sign {exp :: Exp a}
   deriving stock (Functor, Foldable, Traversable, Generic, Generic1)
+  deriving anyclass (Hashable, Hashable1)
 
 instance Applicative Exp where
   pure = Var
@@ -72,6 +76,22 @@ instance Monad Exp where
   (Neg e) >>= f = Neg (e >>= f)
   (Abs e) >>= f = Abs (e >>= f)
   (Sign e) >>= f = Sign (e >>= f)
+
+instance FromJSON Ty
+
+instance FromJSON a => FromJSON (Var () (Exp a))
+
+instance FromJSON a => FromJSON (Scope () Exp a)
+
+instance FromJSON a => FromJSON (Exp a)
+
+instance ToJSON Ty
+
+instance ToJSON a => ToJSON (Var () (Exp a))
+
+instance ToJSON a => ToJSON (Scope () Exp a)
+
+instance ToJSON a => ToJSON (Exp a)
 
 deriveEq1 ''Exp
 deriveShow1 ''Exp
@@ -92,47 +112,75 @@ int :: forall a n. Integral n => n -> Exp a
 int = Const . fromIntegral
 
 -- | Compute the normal form of an expression.
-nf :: forall a. Exp a -> Exp a
-nf e@Var {} = e
-nf (Lam ty' b) = Lam ty' (toScope . nf . fromScope $ b)
-nf (f :@ a) = case whnf f of
-  Lam _ b -> nf (instantiate1 a b)
-  f' -> nf f' :@ nf a
-nf e@(Const _) = e
-nf (Add l r) =
-  case (nf l, nf r) of
-    (Const i, Const j) -> Const $ i + j
-    (l', r') -> Add l' r'
-nf (Sub l r) = case (nf l, nf r) of
-  (Const i, Const j) -> Const $ i - j
-  (l', r') -> Sub l' r'
-nf (Mul l r) = case (nf l, nf r) of
-  (Const i, Const j) -> Const $ i * j
-  (l', r') -> Mul l' r'
-nf (Neg e) = case nf e of
-  Const i -> Const . negate $ i
-  e' -> Neg e'
-nf (Abs e) = case nf e of
-  Const i -> Const . abs $ i
-  e' -> Neg e'
-nf (Sign e) = case nf e of
-  Const i -> Const . signum $ i
-  e' -> Neg e'
+nf :: forall a n m. (Enum n, MonadState n m) => Exp a -> m (Exp a)
+nf e = do
+  modify succ
+  go e
+  where
+    go e@Var {} = pure e
+    go (Lam ty' b) = do
+      b' <- toScope <$> nf (fromScope b)
+      pure $ Lam ty' b'
+    go (f :@ a) = do
+      r <- whnf f
+      case r of
+        Lam _ b -> nf (instantiate1 a b)
+        f' -> (:@) <$> nf f' <*> nf a
+    go e@(Const _) = pure e
+    go (Add l r) = do
+      l' <- nf l
+      r' <- nf r
+      case (l', r') of
+        (Const i, Const j) -> pure $ Const (i + j)
+        (l', r') -> pure $ Add l' r'
+    go (Sub l r) = do
+      l' <- nf l
+      r' <- nf r
+      case (l', r') of
+        (Const i, Const j) -> pure $ Const (i - j)
+        (l', r') -> pure $ Sub l' r'
+    go (Mul l r) = do
+      l' <- nf l
+      r' <- nf r
+      case (l', r') of
+        (Const i, Const j) -> pure $ Const (i * j)
+        (l', r') -> pure $ Mul l' r'
+    go (Neg e) = do
+      e' <- nf e
+      case e' of
+        Const i -> pure $ Const (negate i)
+        e' -> pure $ Neg e'
+    go (Abs e) = do
+      e' <- nf e
+      case e' of
+        Const i -> pure $ Const (abs i)
+        e' -> pure $ Abs e'
+    go (Sign e) = do
+      e' <- nf e
+      case e' of
+        Const i -> pure $ Const (signum i)
+        e' -> pure $ Sign e'
 
 -- | Reduce a term to weak head normal form.
-whnf :: forall a. Exp a -> Exp a
-whnf e@Var {} = e
-whnf e@Lam {} = e
-whnf (f :@ a) = case whnf f of
-  Lam _ b -> whnf (instantiate1 a b)
-  f' -> f' :@ a
-whnf e@(Const _) = e
-whnf e@Add {} = e
-whnf e@Sub {} = e
-whnf e@Mul {} = e
-whnf e@Neg {} = e
-whnf e@Abs {} = e
-whnf e@Sign {} = e
+whnf :: forall a n m. (Enum n, MonadState n m) => Exp a -> m (Exp a)
+whnf e = do
+  modify succ
+  go e
+  where
+    go e@Var {} = pure e
+    go e@Lam {} = pure e
+    go (f :@ a) = do
+      r <- whnf f
+      case r of
+        Lam _ b -> whnf (instantiate1 a b)
+        f' -> pure $ f' :@ a
+    go e@(Const _) = pure e
+    go e@Add {} = pure e
+    go e@Sub {} = pure e
+    go e@Mul {} = pure e
+    go e@Neg {} = pure e
+    go e@Abs {} = pure e
+    go e@Sign {} = pure e
 
 -- | Monad stack for type checking.
 type TyM a = MaybeT (Fresh a)

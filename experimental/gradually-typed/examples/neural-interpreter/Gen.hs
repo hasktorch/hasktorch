@@ -7,7 +7,7 @@ import Bound (instantiate1)
 import Control.Applicative (Alternative (empty), (<|>))
 import Control.Monad.Fresh (FreshT, MonadFresh (fresh), runFreshT)
 import Control.Monad.Reader (MonadReader (ask, local), MonadTrans (lift), ReaderT (runReaderT))
-import Control.Monad.State (MonadState (get, put), StateT)
+import Control.Monad.State (MonadState (get, put), StateT, evalState)
 import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -59,9 +59,11 @@ genWellTypedExp' ty' =
         ]
 
 shrinkExp :: forall a. STLC.Exp a -> [STLC.Exp a]
-shrinkExp (f STLC.:@ a) = case STLC.whnf f of
-  STLC.Lam _ b -> [STLC.whnf (instantiate1 a b)]
-  _ -> []
+shrinkExp (f STLC.:@ a) = flip evalState (0 :: Int) $ do
+  r <- STLC.whnf f 
+  case r of
+    STLC.Lam _ b -> pure <$> STLC.whnf (instantiate1 a b)
+    _ -> pure []
 shrinkExp _ = []
 
 -- | Pattern match on a given type and produce a corresponding term.

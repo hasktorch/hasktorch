@@ -1,5 +1,5 @@
 { pkgs, ... }: {
-  haskell-language-server."1.3.0" = args':
+  haskell-language-server."1.5.0.0" = args':
     let
       args = removeAttrs args' [ "version" ];
     in
@@ -8,8 +8,8 @@
         src = pkgs.fetchFromGitHub {
           owner = "haskell";
           repo = "haskell-language-server";
-          rev = "790afc6b920ed82e10135014e4a4ab67348d7898";
-          sha256 = "19prgrlqs66a08vq5xvfx0ms4kxcx4d2hdw565bkhd080l553nb4";
+          rev = "9233be8ec7666555462560fd2637586cadad1898";
+          sha256 = "1w87gwnvkb17l7rzyx7qni4hspjfk6qc6yxlr8mxi384d3dpsap0";
         };
         modules = [{
           nonReinstallablePkgs = [

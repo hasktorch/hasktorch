@@ -86,6 +86,7 @@ library
                      , Torch.GraduallyTyped.NN.Transformer.T5
                      , Torch.GraduallyTyped.NN.Transformer.BART.Common
                      , Torch.GraduallyTyped.NN.Transformer.BART.Base
+                     , Torch.GraduallyTyped.NN.Transformer.BART.Large
                      , Torch.GraduallyTyped.NN.Transformer.BART
                      , Torch.GraduallyTyped.NN.Transformer.BERT.Common
                      , Torch.GraduallyTyped.NN.Transformer.BERT.BaseUncased
@@ -96,6 +97,7 @@ library
                      , Torch.GraduallyTyped.NN.Transformer.Pegasus.Common
                      , Torch.GraduallyTyped.NN.Transformer.Pegasus.XSum
                      , Torch.GraduallyTyped.NN.Transformer.Pegasus
+                     , Torch.GraduallyTyped.NN.Transformer.Generation
                      , Torch.GraduallyTyped.NN.Dropout
                      , Torch.GraduallyTyped.NN.Activation
                      , Torch.GraduallyTyped.NN.Normalization
@@ -200,24 +202,36 @@ executable neural-interpreter
                      , Model
                      , STLC
                      , Gen
+                     , Monitor
+                     , Opts
   default-language:    Haskell2010
   ghc-options:         -W -Wall -O2 -threaded -rtsopts
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       aeson
+                     , base >= 4.7 && < 5
                      , bound
+                     , bytestring
                      , containers
                      , deriving-compat
                      , hasktorch-gradually-typed
+                     , hashable
                      , hedgehog
                      , indexed
                      , indexed-extras
+                     , lens
                      , mtl
+                     , optparse-applicative
                      , pipes
                      , pipes-concurrency
+                     , pipes-safe
                      , random
+                     , SafeSemaphore
+                     , stm
                      , template-haskell
+                     , terminal-progress-bar
                      , text
                      , tokenizers
                      , transformers
+                     , unordered-containers
 
 test-suite spec
   type:                exitcode-stdio-1.0
@@ -256,6 +270,7 @@ test-suite spec
                      , hspec
                      , hspec-hedgehog
                      , HUnit-approx
+                     , lens
                      , mtl
                      , tokenizers
                      , vector

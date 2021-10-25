@@ -178,7 +178,7 @@ type family
       (FFNInputLayerNormF style gradient device dataType queryEmbedDim)
       (FFNInputTransformationF style gradient device dataType queryEmbedDim ffnDim)
       (FFNActivationF style)
-      (FFNActivationDropoutF style)
+      (FFNActivationDropoutF style hasDropout)
       (FFNOutputProjectionF style gradient device dataType queryEmbedDim ffnDim)
       (FFNOutputDropoutF style hasDropout)
       (FFNOutputLayerNormF style gradient device dataType queryEmbedDim)
@@ -246,16 +246,18 @@ type family
 -- | Specifies the activation dropout.
 type family
   FFNActivationDropoutF
-    (style :: TransformerStyle) ::
+    (style :: TransformerStyle)
+    (hasDropout :: HasDropout) ::
     Type
   where
-  FFNActivationDropoutF 'T5 = Dropout
-  FFNActivationDropoutF 'ByT5 = FFNActivationDropoutF 'T5
-  FFNActivationDropoutF 'BART = Dropout
-  FFNActivationDropoutF 'MBART = FFNActivationDropoutF 'BART
-  FFNActivationDropoutF 'Pegasus = FFNActivationDropoutF 'BART
-  FFNActivationDropoutF 'BERT = ()
-  FFNActivationDropoutF 'RoBERTa = FFNActivationDropoutF 'BERT
+  FFNActivationDropoutF 'T5 'WithDropout = Dropout
+  FFNActivationDropoutF 'ByT5 hasDropout = FFNActivationDropoutF 'T5 hasDropout
+  FFNActivationDropoutF 'BART 'WithDropout = Dropout
+  FFNActivationDropoutF 'MBART hasDropout = FFNActivationDropoutF 'BART hasDropout
+  FFNActivationDropoutF 'Pegasus hasDropout = FFNActivationDropoutF 'BART hasDropout
+  FFNActivationDropoutF 'BERT _ = ()
+  FFNActivationDropoutF 'RoBERTa hasDropout = FFNActivationDropoutF 'BERT hasDropout
+  FFNActivationDropoutF _ 'WithoutDropout = ()
 
 -- | Specifies the output projection.
 type family
@@ -370,14 +372,19 @@ transformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim f
       activationSpec SBERT = Gelu
       activationSpec SRoBERTa = Gelu
       activationSpec SGPT2 = undefined
-      activationDropoutSpec ST5 = Dropout dropoutP
-      activationDropoutSpec SByT5 = Dropout dropoutP
-      activationDropoutSpec SBART = Dropout dropoutP
-      activationDropoutSpec SMBART = Dropout dropoutP
-      activationDropoutSpec SPegasus = Dropout dropoutP
-      activationDropoutSpec SBERT = ()
-      activationDropoutSpec SRoBERTa = ()
-      activationDropoutSpec SGPT2 = undefined
+      activationDropoutSpec ST5 SWithDropout = Dropout dropoutP
+      activationDropoutSpec ST5 SWithoutDropout = ()
+      activationDropoutSpec SByT5 SWithDropout = Dropout dropoutP
+      activationDropoutSpec SByT5 SWithoutDropout = ()
+      activationDropoutSpec SBART SWithDropout = Dropout dropoutP
+      activationDropoutSpec SBART SWithoutDropout = ()
+      activationDropoutSpec SMBART SWithDropout = Dropout dropoutP
+      activationDropoutSpec SMBART SWithoutDropout = ()
+      activationDropoutSpec SPegasus SWithDropout = Dropout dropoutP
+      activationDropoutSpec SPegasus SWithoutDropout = ()
+      activationDropoutSpec SBERT _ = ()
+      activationDropoutSpec SRoBERTa _ = ()
+      activationDropoutSpec SGPT2 _ = undefined
       outputProjectionSpec ST5 = NamedModel "DenseReluDense.wo." $ weightSpecWithoutBias ffnDim queryEmbedDim
       outputProjectionSpec SByT5 = NamedModel "DenseReluDense.wo." $ weightSpecWithoutBias ffnDim queryEmbedDim
       outputProjectionSpec SBART = NamedModel "fc2." $ weightSpecWithBias ffnDim queryEmbedDim
@@ -400,7 +407,7 @@ transformerFeedForwardNetworkSpec style gradient device dataType queryEmbedDim f
         (inputLayerNormSpec style)
         (inputTransformationSpec style)
         (activationSpec style)
-        (activationDropoutSpec style)
+        (activationDropoutSpec style hasDropout)
         (outputProjectionSpec style)
         (outputDropoutSpec style hasDropout)
         (outputLayerNormSpec style)

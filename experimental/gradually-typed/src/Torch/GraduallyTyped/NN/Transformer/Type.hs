@@ -192,7 +192,7 @@ instance
     pure (pos, g)
   forward MkAbsPosWithOffset {..} input g = do
     pos <- mkPos input
-    let pos' = addScalar pos absPosOffset
+    pos' <- pos `addScalar` absPosOffset
     pure (pos', g)
 
 -- | Computes relative positions of the input tokens to the encoder.
@@ -386,13 +386,14 @@ instance
 type MkTransformerPaddingMaskC layout device dataType shape output =
   ( SGetDevice device,
     Catch (dataType <+> 'DataType 'Int64),
+    Catch (BroadcastShapesF shape ('Shape '[])),
     output
       ~ Tensor
           ('Gradient 'WithoutGradient)
           (layout <+> 'Layout 'Dense)
           device
           ('DataType 'Bool)
-          (BroadcastShapesF shape ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
+          (BroadcastShapesF shape ('Shape '[]))
   )
 
 -- | Computes the padding mask for a transformer.
@@ -411,17 +412,8 @@ mkTransformerPaddingMask ::
   m output
 mkTransformerPaddingMask padTokenId input = do
   let device = sGetDevice input
-  padToken <-
-    sFull
-      ( TensorSpec
-          (SGradient SWithoutGradient)
-          (SLayout SDense)
-          device
-          (SDataType SInt64)
-          (SShape $ SName @"*" :&: SSize @1 :|: SNil)
-      )
-      padTokenId
-  pure $ input ==. padToken
+  padToken <- sToTensor (SGradient SWithoutGradient) (SLayout SDense) device padTokenId
+  input ==. padToken
 
 newtype MkTransformerPaddingMask = MkTransformerPaddingMask {padTokenId :: Int}
   deriving stock (Show, Generic)

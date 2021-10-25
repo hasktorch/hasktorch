@@ -555,11 +555,11 @@ instance
       let q =
             ireturn query
               >>>= IxStateT . forward mhaQInProj
-              >>>= ireturn
+              >>>= ilift
                 . ( \case
-                      MultiHeadAttentionWithoutScaling -> id
+                      MultiHeadAttentionWithoutScaling -> pure
                       MultiHeadAttentionWithQueryScaling -> flip mulScalar scaling
-                      MultiHeadAttentionWithWeightScaling -> id
+                      MultiHeadAttentionWithWeightScaling -> pure
                   )
                   mhaScaling
               >>>= ilift . sReshape (SShape $ batchDim :|: querySeqDim :|: mhaHeadDim :|: mhaHeadEmbedDim :|: SNil)
@@ -573,10 +573,10 @@ instance
           weights =
             (,) <<$>> q <<*>> kt
               >>>= ilift . uncurry matmul
-              >>>= ireturn
+              >>>= ilift
                 . ( \case
-                      MultiHeadAttentionWithoutScaling -> id
-                      MultiHeadAttentionWithQueryScaling -> id
+                      MultiHeadAttentionWithoutScaling -> pure
+                      MultiHeadAttentionWithQueryScaling -> pure
                       MultiHeadAttentionWithWeightScaling -> flip mulScalar scaling
                   )
                   mhaScaling

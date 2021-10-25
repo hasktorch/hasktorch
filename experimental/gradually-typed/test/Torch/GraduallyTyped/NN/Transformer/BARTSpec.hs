@@ -7,11 +7,13 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -v2 #-}
 
 module Torch.GraduallyTyped.NN.Transformer.BARTSpec where
 
-import Control.Monad.State (evalStateT)
+import Control.Monad.State (StateT (..), get, evalStateT)
+import Control.Lens ((%~))
 import Data.Function (fix)
 import Data.List (sortBy)
 import Data.Ord (Down (..), comparing)
@@ -122,3 +124,66 @@ testBARTAutoencoder prompt = do
         else loop (completionIds ++ [lastId], g'')
 
     Tokenizers.decode tokenizer outputIds
+
+
+testGreedySearch :: [String] -> IO [String]
+testGreedySearch xs = withTokenizer $ \tokenizer -> do
+
+      stateDict <- stateDictFromFile "/tmp/bart-base-state-dict.pt"
+
+      encoderIds <- traverse (\s -> Tokenizers.encode tokenizer s >>= Tokenizers.getIDs) xs
+
+      let device = SDevice SCPU
+          padTokenId = bartPadTokenId
+          eosTokenId = bartEOSTokenId
+          batchDim = SNoName :&: SUncheckedSize (fromIntegral $ length encoderIds)
+          seqDim = SNoName :&: SUncheckedSize (fromIntegral $ min 512 (foldr (max . length) 0 encoderIds))
+      
+      let spec = bartBaseSpec SWithLMHead (SGradient SWithoutGradient) device SWithoutDropout
+      model <- flip evalStateT stateDict $ fromStateDict spec mempty
+
+      g <- sMkGenerator device 0
+
+      input <- SimplifiedEncoderDecoderTransformerInput'
+                  <$> mkTransformerInput
+                        padTokenId
+                        batchDim
+                        seqDim
+                        device
+                        encoderIds
+      
+      (SimplifiedEncoderDecoderTransformerOutput' encoderOutput paddingMask, g') <- forward model input g
+
+      x <- SimplifiedEncoderDecoderTransformerGenerationInput 
+                <$> mkTransformerInput
+                      padTokenId
+                      batchDim
+                      (SNoName :&: SUncheckedSize 0)
+                      device
+                      []
+                <*> pure encoderOutput
+                <*> pure paddingMask
+
+      us <- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) device (SDataType SInt64) (SShape $ batchDim :|: SNil)
+
+      ((SimplifiedEncoderDecoderTransformerGenerationInput decoderInput _ _, _g), _us) <- flip runStateT us $ 
+        greedySearch padTokenId eosTokenId model sedtOutputToInput x g'
+      
+      let decoderIds :: [[Int]] = fromTensor decoderInput
+
+      traverse (Tokenizers.decode tokenizer) decoderIds
+
+  where
+    
+    greedySearch padTokenId eosTokenId model zoom =
+      decode (\input g -> do
+        unfinishedSequences <- get
+        b <- allSequencesFinished unfinishedSequences
+        if b then
+          pure Nothing
+        else
+          do
+            (output, g') <- forward model input g
+            input' <- (zoom . prepNext %~ greedyNextTokens padTokenId eosTokenId) output
+            pure $ Just (input', g')      
+      )
