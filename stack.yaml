@@ -1,6 +1,6 @@
 resolver: nightly-2021-07-22
 
-#compiler: ghc-9.0.1
+compiler: ghc-8.10.7
 
 packages:
 - codegen
