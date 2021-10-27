@@ -69,7 +69,7 @@
         hasktorch-project = final: prev: {
           hasktorchProject = import ./nix/haskell.nix ({
             pkgs = prev;
-            compiler-nix-name = "ghc8107";
+            compiler-nix-name = "ghc901";
             inherit (prev) lib;
             inherit (prev.hasktorch-config) profiling cudaSupport;
           });
