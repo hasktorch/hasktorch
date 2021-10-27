@@ -15,7 +15,7 @@ hasktorchProject.shellFor {
 
   tools = {
     cabal = "latest";
-    haskell-language-server = "1.5.0.0";
+    haskell-language-server = "latest";
   };
 
   # packages = ps: with ps; [ ];
