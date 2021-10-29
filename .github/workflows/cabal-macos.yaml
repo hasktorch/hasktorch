@@ -28,9 +28,9 @@ jobs:
         path: |
           ~/.cabal/store
           dist-newstyle
-        key: ${{ runner.os }}-cabal-${{ hashFiles('**/fallible.cabal') }}
+        key: ${{ runner.os }}-cabal-ghc8107-${{ hashFiles('**/fallible.cabal') }}
         restore-keys: |
-          ${{ runner.os }}-cabal-
+          ${{ runner.os }}-cabal-ghc8107-
     - name: Build
       run: |
         #. setenv
