@@ -11,7 +11,7 @@ packages:
 - examples/model-serving
 - experimental/bounding-box
 - experimental/dataloader-cifar10
-- experimental/gradually-typed
+# - experimental/gradually-typed
 - experimental/untyped-nlp
 
 extra-include-dirs:
@@ -44,6 +44,9 @@ extra-deps:
   commit: 1262d69e7e16705c1a85832125ce0b5b82a41278
 - git: https://github.com/hasktorch/pipes-text
   commit: d4805e84327e266daa730d23982db3172f226cac
+- exceptions-0.10.4@sha256:d2546046d7ba4b460d3bc7fd269cd2c52d0b7fb3cfecc038715dd0881b78a484,2796
+- generic-lens-core-2.2.0.0@sha256:b6b69e992f15fa80001de737f41f2123059011a1163d6c8941ce2e3ab44f8c03,2913
+- union-find-array-0.1.0.3@sha256:242e066ec516d61f262947e5794edc7bbc11fd538a0415c03ac0c01b028cfa8a,1372
 
 allow-newer: true
 
