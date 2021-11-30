@@ -20,7 +20,7 @@ import Test.Hspec (Spec, before_, describe, it)
 import Test.QuickCheck ()
 import Torch.Internal.Managed.Type.Context (get_manual_seed)
 import Torch.Typed
-import Torch.Typed.AuxSpec
+import Torch.Typed.AuxiliarySpec
 import Prelude hiding
   ( abs,
     acos,

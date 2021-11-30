@@ -21,7 +21,7 @@ import qualified Torch.Distributions.BernoulliSpec
 import qualified Torch.Distributions.CategoricalSpec
 import qualified Torch.Distributions.ConstraintsSpec
 import qualified Torch.Typed.AutogradSpec
-import qualified Torch.Typed.AuxSpec
+import qualified Torch.Typed.AuxiliarySpec
 import qualified Torch.Typed.FactoriesSpec
 import qualified Torch.Typed.FunctionalSpec0
 import qualified Torch.Typed.FunctionalSpec1
@@ -60,7 +60,7 @@ main = hspec $ do
   Torch.Distributions.CategoricalSpec.spec
   Torch.Distributions.ConstraintsSpec.spec
   Torch.Typed.AutogradSpec.spec
-  Torch.Typed.AuxSpec.spec
+  Torch.Typed.AuxiliarySpec.spec
   Torch.Typed.FactoriesSpec.spec
   Torch.Typed.FunctionalSpec0.spec
   Torch.Typed.FunctionalSpec1.spec

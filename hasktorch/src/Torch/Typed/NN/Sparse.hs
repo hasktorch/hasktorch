@@ -20,7 +20,7 @@ import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.HList
 import Torch.NN (HasForward (..), Randomizable (..))
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Parameter

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 
-module Torch.Typed.NN.Recurrent.Aux where
+module Torch.Typed.NN.Recurrent.Auxiliary where
 
 import GHC.Generics
 import Torch.Functional (mulScalar, subScalar)

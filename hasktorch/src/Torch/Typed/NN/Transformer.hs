@@ -27,7 +27,7 @@ import qualified Torch.Device as D
 import Torch.HList
 import Torch.NN (HasForward (..))
 import qualified Torch.NN as A
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.Factories
 import Torch.Typed.Functional hiding (linear, log)
 import Torch.Typed.NN.Dropout

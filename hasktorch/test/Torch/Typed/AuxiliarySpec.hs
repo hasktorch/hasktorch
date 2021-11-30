@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
-module Torch.Typed.AuxSpec where
+module Torch.Typed.AuxiliarySpec where
 
 import Data.Proxy
 import System.IO.Unsafe

@@ -2,7 +2,7 @@ module Torch.Typed
   ( module Torch.HList,
     module Torch.Typed,
     module Torch.Data,
-    module Torch.Typed.Aux,
+    module Torch.Typed.Auxiliary,
     module Torch.Typed.Autograd,
     module Torch.Typed.Device,
     module Torch.Typed.DType,
@@ -30,7 +30,7 @@ import Torch.Functional (Reduction (..), Tri (..))
 import Torch.HList
 import Torch.Scalar (Scalar (..))
 import Torch.Typed.Autograd
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.DType
 import Torch.Typed.Device
 import Torch.Typed.Factories

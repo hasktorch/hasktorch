@@ -21,7 +21,7 @@ import Test.QuickCheck ()
 import qualified Torch as Torch
 import Torch.Internal.Class (Castable (cast), uncast)
 import Torch.Typed
-import Torch.Typed.AuxSpec
+import Torch.Typed.AuxiliarySpec
 
 data BinaryCmpSpec = GTSpec | LTSpec | GESpec | LESpec | EQSpec | NESpec
 

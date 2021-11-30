@@ -29,7 +29,7 @@ import Torch (ATenTensor)
 import Torch.Internal.Class (Castable)
 import Torch.Internal.Managed.Type.Context (manual_seed_L)
 import Torch.Typed
-import Torch.Typed.AuxSpec
+import Torch.Typed.AuxiliarySpec
 import Prelude hiding
   ( cos,
     exp,

@@ -35,7 +35,7 @@ import Torch.Device (DeviceType)
 import Torch.HList
 import qualified Torch.NN (Parameter, Randomizable (..), sample)
 import qualified Torch.Tensor (toType, _toDevice)
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Tensor

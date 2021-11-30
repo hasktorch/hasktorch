@@ -51,7 +51,7 @@ import qualified Torch.TensorFactories as D
 import Torch.Typed.Factories
 import Torch.Typed.Functional hiding (sqrt)
 import Torch.Typed.NN.Dropout
-import Torch.Typed.NN.Recurrent.Aux
+import Torch.Typed.NN.Recurrent.Auxiliary
 import Torch.Typed.Parameter
 import Torch.Typed.Tensor
 import Prelude hiding (tanh)

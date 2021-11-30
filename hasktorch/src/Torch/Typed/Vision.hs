@@ -28,7 +28,7 @@ import Torch.Internal.Cast
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import qualified Torch.Tensor as D
 import qualified Torch.TensorOptions as D
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.Functional
 import Torch.Typed.Tensor
 

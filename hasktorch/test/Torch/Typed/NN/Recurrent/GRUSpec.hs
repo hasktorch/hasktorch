@@ -14,7 +14,7 @@ import qualified Torch.NN as A
 import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.NN
-import Torch.Typed.NN.Recurrent.Aux
+import Torch.Typed.NN.Recurrent.Auxiliary
 import Torch.Typed.NN.Recurrent.GRU
 import Torch.Typed.Parameter
 

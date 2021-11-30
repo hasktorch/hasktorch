@@ -26,7 +26,7 @@ import qualified Torch.Internal.Class as ATen
 import Torch.Internal.GC (mallocTrim)
 import qualified Torch.Tensor as D
 import Torch.Typed.Autograd
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Parameter
