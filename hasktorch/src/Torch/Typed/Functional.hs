@@ -58,7 +58,7 @@ import qualified Torch.Scalar as D
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.TensorOptions as D
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.Factories
 import Torch.Typed.Tensor
 import Prelude hiding
@@ -2411,16 +2411,16 @@ cudnnIsAcceptable input =
 
 constantPadNd1d ::
   forall (pad :: (Nat, Nat)) n dtype device.
-  (All KnownNat '[Torch.Typed.Aux.Fst pad, Torch.Typed.Aux.Snd pad, n]) =>
+  (All KnownNat '[Torch.Typed.Auxiliary.Fst pad, Torch.Typed.Auxiliary.Snd pad, n]) =>
   Float ->
   Tensor device dtype '[n] ->
-  Tensor device dtype '[n + Torch.Typed.Aux.Fst pad + Torch.Typed.Aux.Snd pad]
+  Tensor device dtype '[n + Torch.Typed.Auxiliary.Fst pad + Torch.Typed.Auxiliary.Snd pad]
 constantPadNd1d value input =
   unsafePerformIO $
     ATen.cast3
       ATen.Managed.constant_pad_nd_tls
       input
-      ([natValI @(Torch.Typed.Aux.Fst pad), natValI @(Torch.Typed.Aux.Snd pad)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst pad), natValI @(Torch.Typed.Auxiliary.Snd pad)] :: [Int])
       value
 
 -- convolution :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> [Int] -> [Int] -> [Int] -> Bool -> [Int] -> Int -> Tensor device dtype shape
@@ -2525,10 +2525,10 @@ conv2d ::
     device.
   ( All
       KnownNat
-      '[ Torch.Typed.Aux.Fst stride,
-         Torch.Typed.Aux.Snd stride,
-         Torch.Typed.Aux.Fst padding,
-         Torch.Typed.Aux.Snd padding,
+      '[ Torch.Typed.Auxiliary.Fst stride,
+         Torch.Typed.Auxiliary.Snd stride,
+         Torch.Typed.Auxiliary.Fst padding,
+         Torch.Typed.Auxiliary.Snd padding,
          inputChannelSize,
          outputChannelSize,
          kernelSize0,
@@ -2539,8 +2539,8 @@ conv2d ::
          outputSize0,
          outputSize1
        ],
-    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
-    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Auxiliary.Fst stride) (Torch.Typed.Auxiliary.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Auxiliary.Snd stride) (Torch.Typed.Auxiliary.Snd padding) outputSize1
   ) =>
   -- | weight
   Tensor device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1] ->
@@ -2557,8 +2557,8 @@ conv2d weight bias input =
       input
       weight
       bias
-      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst stride), natValI @(Torch.Typed.Auxiliary.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst padding), natValI @(Torch.Typed.Auxiliary.Snd padding)] :: [Int])
       ([1, 1] :: [Int])
       (1 :: Int)
 
@@ -2728,10 +2728,10 @@ convTranspose2d ::
     device.
   ( All
       KnownNat
-      '[ Torch.Typed.Aux.Fst stride,
-         Torch.Typed.Aux.Snd stride,
-         Torch.Typed.Aux.Fst padding,
-         Torch.Typed.Aux.Snd padding,
+      '[ Torch.Typed.Auxiliary.Fst stride,
+         Torch.Typed.Auxiliary.Snd stride,
+         Torch.Typed.Auxiliary.Fst padding,
+         Torch.Typed.Auxiliary.Snd padding,
          inputChannelSize,
          outputChannelSize,
          kernelSize0,
@@ -2742,8 +2742,8 @@ convTranspose2d ::
          outputSize0,
          outputSize1
        ],
-    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
-    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Auxiliary.Fst stride) (Torch.Typed.Auxiliary.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Auxiliary.Snd stride) (Torch.Typed.Auxiliary.Snd padding) outputSize1
   ) =>
   -- | weight
   Tensor device dtype '[inputChannelSize, outputChannelSize, kernelSize0, kernelSize1] ->
@@ -2760,8 +2760,8 @@ convTranspose2d weight bias input =
       input
       weight
       bias
-      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst stride), natValI @(Torch.Typed.Auxiliary.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst padding), natValI @(Torch.Typed.Auxiliary.Snd padding)] :: [Int])
       ([0, 0] :: [Int])
       (1 :: Int)
 
@@ -3710,19 +3710,19 @@ maxPool2d ::
   forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device.
   ( All
       KnownNat
-      '[ Torch.Typed.Aux.Fst kernelSize,
-         Torch.Typed.Aux.Snd kernelSize,
-         Torch.Typed.Aux.Fst stride,
-         Torch.Typed.Aux.Snd stride,
-         Torch.Typed.Aux.Fst padding,
-         Torch.Typed.Aux.Snd padding,
+      '[ Torch.Typed.Auxiliary.Fst kernelSize,
+         Torch.Typed.Auxiliary.Snd kernelSize,
+         Torch.Typed.Auxiliary.Fst stride,
+         Torch.Typed.Auxiliary.Snd stride,
+         Torch.Typed.Auxiliary.Fst padding,
+         Torch.Typed.Auxiliary.Snd padding,
          channelSize,
          inputSize0,
          inputSize1,
          batchSize
        ],
-    ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
-    ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+    ConvSideCheck inputSize0 (Torch.Typed.Auxiliary.Fst kernelSize) (Torch.Typed.Auxiliary.Fst stride) (Torch.Typed.Auxiliary.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 (Torch.Typed.Auxiliary.Snd kernelSize) (Torch.Typed.Auxiliary.Snd stride) (Torch.Typed.Auxiliary.Snd padding) outputSize1
   ) =>
   -- | input
   Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
@@ -3733,9 +3733,9 @@ maxPool2d input =
     ATen.cast6
       ATen.Managed.max_pool2d_tllllb
       input
-      ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst kernelSize), natValI @(Torch.Typed.Auxiliary.Snd kernelSize)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst stride), natValI @(Torch.Typed.Auxiliary.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst padding), natValI @(Torch.Typed.Auxiliary.Snd padding)] :: [Int])
       ([1, 1] :: [Int])
       False
 
@@ -3752,19 +3752,19 @@ mkldnnMaxPool2d ::
   forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device.
   ( All
       KnownNat
-      '[ Torch.Typed.Aux.Fst kernelSize,
-         Torch.Typed.Aux.Snd kernelSize,
-         Torch.Typed.Aux.Fst stride,
-         Torch.Typed.Aux.Snd stride,
-         Torch.Typed.Aux.Fst padding,
-         Torch.Typed.Aux.Snd padding,
+      '[ Torch.Typed.Auxiliary.Fst kernelSize,
+         Torch.Typed.Auxiliary.Snd kernelSize,
+         Torch.Typed.Auxiliary.Fst stride,
+         Torch.Typed.Auxiliary.Snd stride,
+         Torch.Typed.Auxiliary.Fst padding,
+         Torch.Typed.Auxiliary.Snd padding,
          channelSize,
          inputSize0,
          inputSize1,
          batchSize
        ],
-    ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
-    ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+    ConvSideCheck inputSize0 (Torch.Typed.Auxiliary.Fst kernelSize) (Torch.Typed.Auxiliary.Fst stride) (Torch.Typed.Auxiliary.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 (Torch.Typed.Auxiliary.Snd kernelSize) (Torch.Typed.Auxiliary.Snd stride) (Torch.Typed.Auxiliary.Snd padding) outputSize1
   ) =>
   -- | input
   Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
@@ -3775,9 +3775,9 @@ mkldnnMaxPool2d input =
     ATen.cast6
       ATen.Managed.mkldnn_max_pool2d_tllllb
       input
-      ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst kernelSize), natValI @(Torch.Typed.Auxiliary.Snd kernelSize)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst stride), natValI @(Torch.Typed.Auxiliary.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst padding), natValI @(Torch.Typed.Auxiliary.Snd padding)] :: [Int])
       ([1, 1] :: [Int])
       False
 
@@ -3793,19 +3793,19 @@ quantizedMaxPool2d ::
   forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device.
   ( All
       KnownNat
-      '[ Torch.Typed.Aux.Fst kernelSize,
-         Torch.Typed.Aux.Snd kernelSize,
-         Torch.Typed.Aux.Fst stride,
-         Torch.Typed.Aux.Snd stride,
-         Torch.Typed.Aux.Fst padding,
-         Torch.Typed.Aux.Snd padding,
+      '[ Torch.Typed.Auxiliary.Fst kernelSize,
+         Torch.Typed.Auxiliary.Snd kernelSize,
+         Torch.Typed.Auxiliary.Fst stride,
+         Torch.Typed.Auxiliary.Snd stride,
+         Torch.Typed.Auxiliary.Fst padding,
+         Torch.Typed.Auxiliary.Snd padding,
          channelSize,
          inputSize0,
          inputSize1,
          batchSize
        ],
-    ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
-    ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+    ConvSideCheck inputSize0 (Torch.Typed.Auxiliary.Fst kernelSize) (Torch.Typed.Auxiliary.Fst stride) (Torch.Typed.Auxiliary.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 (Torch.Typed.Auxiliary.Snd kernelSize) (Torch.Typed.Auxiliary.Snd stride) (Torch.Typed.Auxiliary.Snd padding) outputSize1
   ) =>
   -- | input
   Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
@@ -3816,9 +3816,9 @@ quantizedMaxPool2d input =
     ATen.cast5
       ATen.Managed.quantized_max_pool2d_tllll
       input
-      ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst kernelSize), natValI @(Torch.Typed.Auxiliary.Snd kernelSize)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst stride), natValI @(Torch.Typed.Auxiliary.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst padding), natValI @(Torch.Typed.Auxiliary.Snd padding)] :: [Int])
       ([1, 1] :: [Int])
 
 -- | maxPool3d
@@ -5684,20 +5684,20 @@ adaptiveAvgPool2d ::
          inputSize0,
          inputSize1,
          batchSize,
-         Torch.Typed.Aux.Fst outputSize,
-         Torch.Typed.Aux.Snd outputSize
+         Torch.Typed.Auxiliary.Fst outputSize,
+         Torch.Typed.Auxiliary.Snd outputSize
        ]
   ) =>
   -- | input
   Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
   -- | output
-  Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
+  Tensor device dtype '[batchSize, channelSize, Torch.Typed.Auxiliary.Fst outputSize, Torch.Typed.Auxiliary.Snd outputSize]
 adaptiveAvgPool2d input =
   unsafePerformIO $
     ATen.cast2
       ATen.Managed.adaptive_avg_pool2d_tl
       input
-      ([natValI @(Torch.Typed.Aux.Fst outputSize), natValI @(Torch.Typed.Aux.Snd outputSize)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst outputSize), natValI @(Torch.Typed.Auxiliary.Snd outputSize)] :: [Int])
 
 -- | MKLDNN adaptive averaged 2-D pooling
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -5719,20 +5719,20 @@ mkldnnAdaptiveAvgPool2d ::
          inputSize0,
          inputSize1,
          batchSize,
-         Torch.Typed.Aux.Fst outputSize,
-         Torch.Typed.Aux.Snd outputSize
+         Torch.Typed.Auxiliary.Fst outputSize,
+         Torch.Typed.Auxiliary.Snd outputSize
        ]
   ) =>
   -- | input
   Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
   -- | output
-  Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
+  Tensor device dtype '[batchSize, channelSize, Torch.Typed.Auxiliary.Fst outputSize, Torch.Typed.Auxiliary.Snd outputSize]
 mkldnnAdaptiveAvgPool2d input =
   unsafePerformIO $
     ATen.cast2
       ATen.Managed.adaptive_avg_pool2d_tl
       input
-      ([natValI @(Torch.Typed.Aux.Fst outputSize), natValI @(Torch.Typed.Aux.Snd outputSize)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst outputSize), natValI @(Torch.Typed.Auxiliary.Snd outputSize)] :: [Int])
 
 -- | adaptive averaged 3-D pooling
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -5796,22 +5796,22 @@ adaptiveMaxPool2d ::
          inputSize0,
          inputSize1,
          batchSize,
-         Torch.Typed.Aux.Fst outputSize,
-         Torch.Typed.Aux.Snd outputSize
+         Torch.Typed.Auxiliary.Fst outputSize,
+         Torch.Typed.Auxiliary.Snd outputSize
        ]
   ) =>
   -- | input
   Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
   -- | output
-  ( Tensor device dtype '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize],
-    Tensor device 'D.Int64 '[batchSize, channelSize, Torch.Typed.Aux.Fst outputSize, Torch.Typed.Aux.Snd outputSize]
+  ( Tensor device dtype '[batchSize, channelSize, Torch.Typed.Auxiliary.Fst outputSize, Torch.Typed.Auxiliary.Snd outputSize],
+    Tensor device 'D.Int64 '[batchSize, channelSize, Torch.Typed.Auxiliary.Fst outputSize, Torch.Typed.Auxiliary.Snd outputSize]
   )
 adaptiveMaxPool2d input =
   unsafePerformIO $
     ATen.cast2
       ATen.Managed.adaptive_max_pool2d_tl
       input
-      ([natValI @(Torch.Typed.Aux.Fst outputSize), natValI @(Torch.Typed.Aux.Snd outputSize)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst outputSize), natValI @(Torch.Typed.Auxiliary.Snd outputSize)] :: [Int])
 
 -- | adaptive 3-D max-pool
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
@@ -5883,19 +5883,19 @@ avgPool2d ::
     device.
   ( All
       KnownNat
-      '[ Torch.Typed.Aux.Fst kernelSize,
-         Torch.Typed.Aux.Snd kernelSize,
-         Torch.Typed.Aux.Fst stride,
-         Torch.Typed.Aux.Snd stride,
-         Torch.Typed.Aux.Fst padding,
-         Torch.Typed.Aux.Snd padding,
+      '[ Torch.Typed.Auxiliary.Fst kernelSize,
+         Torch.Typed.Auxiliary.Snd kernelSize,
+         Torch.Typed.Auxiliary.Fst stride,
+         Torch.Typed.Auxiliary.Snd stride,
+         Torch.Typed.Auxiliary.Fst padding,
+         Torch.Typed.Auxiliary.Snd padding,
          channelSize,
          inputSize0,
          inputSize1,
          batchSize
        ],
-    ConvSideCheck inputSize0 (Torch.Typed.Aux.Fst kernelSize) (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
-    ConvSideCheck inputSize1 (Torch.Typed.Aux.Snd kernelSize) (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+    ConvSideCheck inputSize0 (Torch.Typed.Auxiliary.Fst kernelSize) (Torch.Typed.Auxiliary.Fst stride) (Torch.Typed.Auxiliary.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 (Torch.Typed.Auxiliary.Snd kernelSize) (Torch.Typed.Auxiliary.Snd stride) (Torch.Typed.Auxiliary.Snd padding) outputSize1
   ) =>
   -- | input
   Tensor device dtype '[batchSize, channelSize, inputSize0, inputSize1] ->
@@ -5906,9 +5906,9 @@ avgPool2d input =
     ATen.cast7
       ATen.Managed.avg_pool2d_tlllbbl
       input
-      ([natValI @(Torch.Typed.Aux.Fst kernelSize), natValI @(Torch.Typed.Aux.Snd kernelSize)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst stride), natValI @(Torch.Typed.Aux.Snd stride)] :: [Int])
-      ([natValI @(Torch.Typed.Aux.Fst padding), natValI @(Torch.Typed.Aux.Snd padding)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst kernelSize), natValI @(Torch.Typed.Auxiliary.Snd kernelSize)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst stride), natValI @(Torch.Typed.Auxiliary.Snd stride)] :: [Int])
+      ([natValI @(Torch.Typed.Auxiliary.Fst padding), natValI @(Torch.Typed.Auxiliary.Snd padding)] :: [Int])
       False
       True
       (1 :: Int)

@@ -27,7 +27,7 @@ import qualified Torch.Internal.Cast as ATen
 import qualified Torch.Internal.Class as ATen
 import qualified Torch.Internal.Managed.Autograd as LibTorch
 import qualified Torch.Tensor as D
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.Functional
 import Torch.Typed.Parameter
 import Torch.Typed.Tensor

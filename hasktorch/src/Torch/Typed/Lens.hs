@@ -34,7 +34,7 @@ import qualified Torch.Functional.Internal as I
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import Torch.Lens (Lens, Lens', Traversal, Traversal')
 import qualified Torch.Tensor as T
-import Torch.Typed.Aux hiding (If)
+import Torch.Typed.Auxiliary hiding (If)
 import Torch.Typed.Tensor
 
 class HasName (name :: Type -> Type) shape where

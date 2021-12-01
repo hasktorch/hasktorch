@@ -38,7 +38,7 @@ import Test.QuickCheck ()
 import Torch (ATenTensor)
 import Torch.Internal.Class (Castable)
 import Torch.Typed
-import Torch.Typed.AuxSpec
+import Torch.Typed.AuxiliarySpec
 import Prelude hiding
   ( all,
     cos,

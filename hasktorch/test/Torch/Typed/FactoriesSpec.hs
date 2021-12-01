@@ -15,7 +15,7 @@ import Data.Proxy
 import Test.Hspec (Spec, describe, it)
 import Test.QuickCheck ()
 import Torch.Typed
-import Torch.Typed.AuxSpec
+import Torch.Typed.AuxiliarySpec
 
 data SimpleFactoriesSpec = ZerosSpec | OnesSpec | FullSpec
 

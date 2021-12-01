@@ -33,7 +33,7 @@ import qualified Torch.Scalar as D
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
 import qualified Torch.TensorOptions as D
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.Tensor
 import Prelude hiding (sin)
 

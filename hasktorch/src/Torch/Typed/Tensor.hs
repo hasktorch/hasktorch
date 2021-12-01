@@ -52,7 +52,7 @@ import Torch.Internal.Class
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Tensor as D
 import qualified Torch.TensorFactories as D
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Prelude hiding (id, (.))
 
 class KnownShape (shape :: [Nat]) where

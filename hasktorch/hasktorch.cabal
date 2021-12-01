@@ -51,14 +51,14 @@ library
                     , Torch.HList
                     , Torch.Lens
                     , Torch.Typed
-                    , Torch.Typed.Aux
+                    , Torch.Typed.Auxiliary
                     , Torch.Typed.Factories
                     , Torch.Typed.Functional
                     , Torch.Typed.NN
                     , Torch.Typed.NN.Convolution
                     , Torch.Typed.NN.Normalization
                     , Torch.Typed.NN.Recurrent
-                    , Torch.Typed.NN.Recurrent.Aux
+                    , Torch.Typed.NN.Recurrent.Auxiliary
                     , Torch.Typed.NN.Recurrent.Cell.LSTM
                     , Torch.Typed.NN.Recurrent.Cell.GRU
                     , Torch.Typed.NN.Recurrent.LSTM
@@ -154,7 +154,7 @@ test-suite spec
                     , NNSpec
                     , DimnameSpec
                     , PipelineSpec
-                    , Torch.Typed.AuxSpec
+                    , Torch.Typed.AuxiliarySpec
                     , Torch.Typed.TensorSpec0
                     , Torch.Typed.TensorSpec1
                     , Torch.Typed.FactoriesSpec

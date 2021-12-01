@@ -24,7 +24,7 @@ import GHC.TypeLits
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.NN (HasForward (..), Randomizable (..))
-import Torch.Typed.Aux
+import Torch.Typed.Auxiliary
 import Torch.Typed.Factories
 import Torch.Typed.Functional
 import Torch.Typed.Parameter
@@ -162,10 +162,10 @@ conv2dForward Conv2d {..} input =
 instance
   ( All
       KnownNat
-      '[ Torch.Typed.Aux.Fst stride,
-         Torch.Typed.Aux.Snd stride,
-         Torch.Typed.Aux.Fst padding,
-         Torch.Typed.Aux.Snd padding,
+      '[ Torch.Typed.Auxiliary.Fst stride,
+         Torch.Typed.Auxiliary.Snd stride,
+         Torch.Typed.Auxiliary.Fst padding,
+         Torch.Typed.Auxiliary.Snd padding,
          inputChannelSize,
          outputChannelSize,
          kernelSize0,
@@ -176,8 +176,8 @@ instance
          outputSize0,
          outputSize1
        ],
-    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
-    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Auxiliary.Fst stride) (Torch.Typed.Auxiliary.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Auxiliary.Snd stride) (Torch.Typed.Auxiliary.Snd padding) outputSize1
   ) =>
   HasForward (Conv2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1])
   where
@@ -429,10 +429,10 @@ convTranspose2dForward ConvTranspose2d {..} input =
 instance
   ( All
       KnownNat
-      '[ Torch.Typed.Aux.Fst stride,
-         Torch.Typed.Aux.Snd stride,
-         Torch.Typed.Aux.Fst padding,
-         Torch.Typed.Aux.Snd padding,
+      '[ Torch.Typed.Auxiliary.Fst stride,
+         Torch.Typed.Auxiliary.Snd stride,
+         Torch.Typed.Auxiliary.Fst padding,
+         Torch.Typed.Auxiliary.Snd padding,
          inputChannelSize,
          outputChannelSize,
          kernelSize0,
@@ -443,8 +443,8 @@ instance
          outputSize0,
          outputSize1
        ],
-    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Aux.Fst stride) (Torch.Typed.Aux.Fst padding) outputSize0,
-    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Aux.Snd stride) (Torch.Typed.Aux.Snd padding) outputSize1
+    ConvSideCheck inputSize0 kernelSize0 (Torch.Typed.Auxiliary.Fst stride) (Torch.Typed.Auxiliary.Fst padding) outputSize0,
+    ConvSideCheck inputSize1 kernelSize1 (Torch.Typed.Auxiliary.Snd stride) (Torch.Typed.Auxiliary.Snd padding) outputSize1
   ) =>
   HasForward (ConvTranspose2d inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device) (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1], Proxy stride, Proxy padding) (Tensor device dtype '[batchSize, outputChannelSize, outputSize0, outputSize1])
   where
