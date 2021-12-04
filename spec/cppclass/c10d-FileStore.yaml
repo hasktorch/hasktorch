@@ -1,0 +1,30 @@
+- name: set
+  type: void (const std::string &, const int &)
+  namespace: c10d::FileStore
+- name: compareSet
+  type: int (const std::string &, const int &, const int &)
+  namespace: c10d::FileStore
+- name: get
+  type: int (const std::string &)
+  namespace: c10d::FileStore
+- name: add
+  type: int64_t (const std::string &, int64_t)
+  namespace: c10d::FileStore
+- name: getNumKeys
+  type: int64_t ()
+  namespace: c10d::FileStore
+- name: deleteKey
+  type: bool (const std::string &)
+  namespace: c10d::FileStore
+- name: check
+  type: bool (const int &)
+  namespace: c10d::FileStore
+- name: wait
+  type: void (const int &)
+  namespace: c10d::FileStore
+- name: wait
+  type: void (const int &, const std::chrono::milliseconds &)
+  namespace: c10d::FileStore
+- name: addHelper
+  type: int64_t (const std::string &, int64_t)
+  namespace: c10d::FileStore

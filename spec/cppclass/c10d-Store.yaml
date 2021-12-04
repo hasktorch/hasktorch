@@ -1,0 +1,36 @@
+- name: set
+  type: void (const std::string &, const int &)
+  namespace: c10d::Store
+- name: compareSet
+  type: int (const std::string &, const int &, const int &)
+  namespace: c10d::Store
+- name: get
+  type: int (const std::string &)
+  namespace: c10d::Store
+- name: add
+  type: int64_t (const std::string &, int64_t)
+  namespace: c10d::Store
+- name: deleteKey
+  type: bool (const std::string &)
+  namespace: c10d::Store
+- name: check
+  type: bool (const int &)
+  namespace: c10d::Store
+- name: getNumKeys
+  type: int64_t ()
+  namespace: c10d::Store
+- name: wait
+  type: void (const int &)
+  namespace: c10d::Store
+- name: wait
+  type: void (const int &, const std::chrono::milliseconds &)
+  namespace: c10d::Store
+- name: getTimeout
+  type: const std::chrono::milliseconds &() const noexcept
+  namespace: c10d::Store
+- name: setTimeout
+  type: void (const std::chrono::milliseconds &)
+  namespace: c10d::Store
+- name: watchKey
+  type: void (const std::string &, c10d::WatchKeyCallback)
+  namespace: c10d::Store

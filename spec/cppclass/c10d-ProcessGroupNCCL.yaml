@@ -1,0 +1,1236 @@
+- name: getNcclVersion
+  type: std::string ()
+  namespace: c10d
+- name: ncclGetErrorWithVersion
+  type: std::string (int)
+  namespace: c10d
+- name: create
+  type: std::shared_ptr<NCCLComm> (int, int, int)
+  namespace: c10d::NCCLComm
+- name: getNcclId
+  type: int ()
+  namespace: c10d::NCCLComm
+- name: operator=
+  type: c10d::NCCLComm &(const c10d::NCCLComm &)
+  namespace: c10d::NCCLComm
+- name: operator=
+  type: c10d::NCCLComm &(c10d::NCCLComm &&)
+  namespace: c10d::NCCLComm
+- name: getNcclComm
+  type: int ()
+  namespace: c10d::NCCLComm
+- name: ncclCommAbort
+  type: void ()
+  namespace: c10d::NCCLComm
+- name: isAborted
+  type: bool () const
+  namespace: c10d::NCCLComm
+- name: checkForNcclError
+  type: int ()
+  namespace: c10d::NCCLComm
+- name: readahead
+  type: __ssize_t (int, __off64_t, int) throw()
+  namespace: c10d
+- name: sync_file_range
+  type: int (int, __off64_t, __off64_t, unsigned int)
+  namespace: c10d
+- name: vmsplice
+  type: __ssize_t (int, const struct iovec *, int, unsigned int)
+  namespace: c10d
+- name: splice
+  type: __ssize_t (int, __off64_t *, int, __off64_t *, int, unsigned int)
+  namespace: c10d
+- name: tee
+  type: __ssize_t (int, int, int, unsigned int)
+  namespace: c10d
+- name: fallocate
+  type: int (int, int, __off_t, __off_t)
+  namespace: c10d
+- name: fallocate64
+  type: int (int, int, __off64_t, __off64_t)
+  namespace: c10d
+- name: name_to_handle_at
+  type: int (int, const char *, struct file_handle *, int *, int) throw()
+  namespace: c10d
+- name: open_by_handle_at
+  type: int (int, struct file_handle *, int)
+  namespace: c10d
+- name: fcntl
+  type: int (int, int, ...)
+  namespace: c10d
+- name: fcntl64
+  type: int (int, int, ...)
+  namespace: c10d
+- name: open
+  type: int (const char *, int, ...)
+  namespace: c10d
+- name: open64
+  type: int (const char *, int, ...)
+  namespace: c10d
+- name: openat
+  type: int (int, const char *, int, ...)
+  namespace: c10d
+- name: openat64
+  type: int (int, const char *, int, ...)
+  namespace: c10d
+- name: creat
+  type: int (const char *, mode_t)
+  namespace: c10d
+- name: creat64
+  type: int (const char *, mode_t)
+  namespace: c10d
+- name: lockf
+  type: int (int, int, off_t)
+  namespace: c10d
+- name: lockf64
+  type: int (int, int, off64_t)
+  namespace: c10d
+- name: posix_fadvise
+  type: int (int, off_t, off_t, int) throw()
+  namespace: c10d
+- name: posix_fadvise64
+  type: int (int, off64_t, off64_t, int) throw()
+  namespace: c10d
+- name: posix_fallocate
+  type: int (int, off_t, off_t)
+  namespace: c10d
+- name: posix_fallocate64
+  type: int (int, off64_t, off64_t)
+  namespace: c10d
+- name: __cmsg_nxthdr
+  type: struct cmsghdr *(struct msghdr *, struct cmsghdr *) throw()
+  namespace: c10d
+- name: socket
+  type: int (int, int, int) throw()
+  namespace: c10d
+- name: socketpair
+  type: int (int, int, int, int *) throw()
+  namespace: c10d
+- name: bind
+  type: int (int, const struct sockaddr *, socklen_t) throw()
+  namespace: c10d
+- name: getsockname
+  type: int (int, struct sockaddr *__restrict, socklen_t *__restrict) throw()
+  namespace: c10d
+- name: connect
+  type: int (int, const struct sockaddr *, socklen_t)
+  namespace: c10d
+- name: getpeername
+  type: int (int, struct sockaddr *__restrict, socklen_t *__restrict) throw()
+  namespace: c10d
+- name: send
+  type: ssize_t (int, const void *, int, int)
+  namespace: c10d
+- name: recv
+  type: ssize_t (int, void *, int, int)
+  namespace: c10d
+- name: sendto
+  type: ssize_t (int, const void *, int, int, const struct sockaddr *, socklen_t)
+  namespace: c10d
+- name: recvfrom
+  type: ssize_t (int, void *__restrict, int, int, struct sockaddr *__restrict, socklen_t *__restrict)
+  namespace: c10d
+- name: sendmsg
+  type: ssize_t (int, const struct msghdr *, int)
+  namespace: c10d
+- name: sendmmsg
+  type: int (int, struct mmsghdr *, unsigned int, int)
+  namespace: c10d
+- name: recvmsg
+  type: ssize_t (int, struct msghdr *, int)
+  namespace: c10d
+- name: recvmmsg
+  type: int (int, struct mmsghdr *, unsigned int, int, struct timespec *)
+  namespace: c10d
+- name: getsockopt
+  type: int (int, int, int, void *__restrict, socklen_t *__restrict) throw()
+  namespace: c10d
+- name: setsockopt
+  type: int (int, int, int, const void *, socklen_t) throw()
+  namespace: c10d
+- name: listen
+  type: int (int, int) throw()
+  namespace: c10d
+- name: accept
+  type: int (int, struct sockaddr *__restrict, socklen_t *__restrict)
+  namespace: c10d
+- name: accept4
+  type: int (int, struct sockaddr *__restrict, socklen_t *__restrict, int)
+  namespace: c10d
+- name: shutdown
+  type: int (int, int) throw()
+  namespace: c10d
+- name: sockatmark
+  type: int (int) throw()
+  namespace: c10d
+- name: isfdtype
+  type: int (int, int) throw()
+  namespace: c10d
+- name: ntohl
+  type: uint32_t (uint32_t) throw()
+  namespace: c10d
+- name: ntohs
+  type: uint16_t (uint16_t) throw()
+  namespace: c10d
+- name: htonl
+  type: uint32_t (uint32_t) throw()
+  namespace: c10d
+- name: htons
+  type: uint16_t (uint16_t) throw()
+  namespace: c10d
+- name: bindresvport
+  type: int (int, struct sockaddr_in *) throw()
+  namespace: c10d
+- name: bindresvport6
+  type: int (int, struct sockaddr_in6 *) throw()
+  namespace: c10d
+- name: inet6_option_space
+  type: int (int) throw()
+  namespace: c10d
+- name: inet6_option_init
+  type: int (void *, struct cmsghdr **, int) throw()
+  namespace: c10d
+- name: inet6_option_append
+  type: int (struct cmsghdr *, const uint8_t *, int, int) throw()
+  namespace: c10d
+- name: inet6_option_alloc
+  type: uint8_t *(struct cmsghdr *, int, int, int) throw()
+  namespace: c10d
+- name: inet6_option_next
+  type: int (const struct cmsghdr *, uint8_t **) throw()
+  namespace: c10d
+- name: inet6_option_find
+  type: int (const struct cmsghdr *, uint8_t **, int) throw()
+  namespace: c10d
+- name: inet6_opt_init
+  type: int (void *, socklen_t) throw()
+  namespace: c10d
+- name: inet6_opt_append
+  type: int (void *, socklen_t, int, uint8_t, socklen_t, uint8_t, void **) throw()
+  namespace: c10d
+- name: inet6_opt_finish
+  type: int (void *, socklen_t, int) throw()
+  namespace: c10d
+- name: inet6_opt_set_val
+  type: int (void *, int, void *, socklen_t) throw()
+  namespace: c10d
+- name: inet6_opt_next
+  type: int (void *, socklen_t, int, uint8_t *, socklen_t *, void **) throw()
+  namespace: c10d
+- name: inet6_opt_find
+  type: int (void *, socklen_t, int, uint8_t, socklen_t *, void **) throw()
+  namespace: c10d
+- name: inet6_opt_get_val
+  type: int (void *, int, void *, socklen_t) throw()
+  namespace: c10d
+- name: inet6_rth_space
+  type: socklen_t (int, int) throw()
+  namespace: c10d
+- name: inet6_rth_init
+  type: void *(void *, socklen_t, int, int) throw()
+  namespace: c10d
+- name: inet6_rth_add
+  type: int (void *, const struct in6_addr *) throw()
+  namespace: c10d
+- name: inet6_rth_reverse
+  type: int (const void *, void *) throw()
+  namespace: c10d
+- name: inet6_rth_segments
+  type: int (const void *) throw()
+  namespace: c10d
+- name: inet6_rth_getaddr
+  type: struct in6_addr *(const void *, int) throw()
+  namespace: c10d
+- name: getipv4sourcefilter
+  type: int (int, struct in_addr, struct in_addr, uint32_t *, uint32_t *, struct in_addr *) throw()
+  namespace: c10d
+- name: setipv4sourcefilter
+  type: int (int, struct in_addr, struct in_addr, uint32_t, uint32_t, const struct in_addr *) throw()
+  namespace: c10d
+- name: getsourcefilter
+  type: int (int, uint32_t, const struct sockaddr *, socklen_t, uint32_t *, uint32_t *, struct sockaddr_storage *) throw()
+  namespace: c10d
+- name: setsourcefilter
+  type: int (int, uint32_t, const struct sockaddr *, socklen_t, uint32_t, uint32_t, const struct sockaddr_storage *) throw()
+  namespace: c10d
+- name: setrpcent
+  type: void (int) throw()
+  namespace: c10d
+- name: endrpcent
+  type: void () throw()
+  namespace: c10d
+- name: getrpcbyname
+  type: struct rpcent *(const char *) throw()
+  namespace: c10d
+- name: getrpcbynumber
+  type: struct rpcent *(int) throw()
+  namespace: c10d
+- name: getrpcent
+  type: struct rpcent *() throw()
+  namespace: c10d
+- name: getrpcbyname_r
+  type: int (const char *, struct rpcent *, char *, int, struct rpcent **) throw()
+  namespace: c10d
+- name: getrpcbynumber_r
+  type: int (int, struct rpcent *, char *, int, struct rpcent **) throw()
+  namespace: c10d
+- name: getrpcent_r
+  type: int (struct rpcent *, char *, int, struct rpcent **) throw()
+  namespace: c10d
+- name: __h_errno_location
+  type: int *() throw()
+  namespace: c10d
+- name: herror
+  type: void (const char *) throw()
+  namespace: c10d
+- name: hstrerror
+  type: const char *(int) throw()
+  namespace: c10d
+- name: sethostent
+  type: void (int)
+  namespace: c10d
+- name: endhostent
+  type: void ()
+  namespace: c10d
+- name: gethostent
+  type: struct hostent *()
+  namespace: c10d
+- name: gethostbyaddr
+  type: struct hostent *(const void *, __socklen_t, int)
+  namespace: c10d
+- name: gethostbyname
+  type: struct hostent *(const char *)
+  namespace: c10d
+- name: gethostbyname2
+  type: struct hostent *(const char *, int)
+  namespace: c10d
+- name: gethostent_r
+  type: int (struct hostent *__restrict, char *__restrict, int, struct hostent **__restrict, int *__restrict)
+  namespace: c10d
+- name: gethostbyaddr_r
+  type: int (const void *__restrict, __socklen_t, int, struct hostent *__restrict, char *__restrict, int, struct hostent **__restrict, int *__restrict)
+  namespace: c10d
+- name: gethostbyname_r
+  type: int (const char *__restrict, struct hostent *__restrict, char *__restrict, int, struct hostent **__restrict, int *__restrict)
+  namespace: c10d
+- name: gethostbyname2_r
+  type: int (const char *__restrict, int, struct hostent *__restrict, char *__restrict, int, struct hostent **__restrict, int *__restrict)
+  namespace: c10d
+- name: setnetent
+  type: void (int)
+  namespace: c10d
+- name: endnetent
+  type: void ()
+  namespace: c10d
+- name: getnetent
+  type: struct netent *()
+  namespace: c10d
+- name: getnetbyaddr
+  type: struct netent *(uint32_t, int)
+  namespace: c10d
+- name: getnetbyname
+  type: struct netent *(const char *)
+  namespace: c10d
+- name: getnetent_r
+  type: int (struct netent *__restrict, char *__restrict, int, struct netent **__restrict, int *__restrict)
+  namespace: c10d
+- name: getnetbyaddr_r
+  type: int (uint32_t, int, struct netent *__restrict, char *__restrict, int, struct netent **__restrict, int *__restrict)
+  namespace: c10d
+- name: getnetbyname_r
+  type: int (const char *__restrict, struct netent *__restrict, char *__restrict, int, struct netent **__restrict, int *__restrict)
+  namespace: c10d
+- name: setservent
+  type: void (int)
+  namespace: c10d
+- name: endservent
+  type: void ()
+  namespace: c10d
+- name: getservent
+  type: struct servent *()
+  namespace: c10d
+- name: getservbyname
+  type: struct servent *(const char *, const char *)
+  namespace: c10d
+- name: getservbyport
+  type: struct servent *(int, const char *)
+  namespace: c10d
+- name: getservent_r
+  type: int (struct servent *__restrict, char *__restrict, int, struct servent **__restrict)
+  namespace: c10d
+- name: getservbyname_r
+  type: int (const char *__restrict, const char *__restrict, struct servent *__restrict, char *__restrict, int, struct servent **__restrict)
+  namespace: c10d
+- name: getservbyport_r
+  type: int (int, const char *__restrict, struct servent *__restrict, char *__restrict, int, struct servent **__restrict)
+  namespace: c10d
+- name: setprotoent
+  type: void (int)
+  namespace: c10d
+- name: endprotoent
+  type: void ()
+  namespace: c10d
+- name: getprotoent
+  type: struct protoent *()
+  namespace: c10d
+- name: getprotobyname
+  type: struct protoent *(const char *)
+  namespace: c10d
+- name: getprotobynumber
+  type: struct protoent *(int)
+  namespace: c10d
+- name: getprotoent_r
+  type: int (struct protoent *__restrict, char *__restrict, int, struct protoent **__restrict)
+  namespace: c10d
+- name: getprotobyname_r
+  type: int (const char *__restrict, struct protoent *__restrict, char *__restrict, int, struct protoent **__restrict)
+  namespace: c10d
+- name: getprotobynumber_r
+  type: int (int, struct protoent *__restrict, char *__restrict, int, struct protoent **__restrict)
+  namespace: c10d
+- name: setnetgrent
+  type: int (const char *)
+  namespace: c10d
+- name: endnetgrent
+  type: void ()
+  namespace: c10d
+- name: getnetgrent
+  type: int (char **__restrict, char **__restrict, char **__restrict)
+  namespace: c10d
+- name: innetgr
+  type: int (const char *, const char *, const char *, const char *)
+  namespace: c10d
+- name: getnetgrent_r
+  type: int (char **__restrict, char **__restrict, char **__restrict, char *__restrict, int)
+  namespace: c10d
+- name: rcmd
+  type: int (char **__restrict, unsigned short, const char *__restrict, const char *__restrict, const char *__restrict, int *__restrict)
+  namespace: c10d
+- name: rcmd_af
+  type: int (char **__restrict, unsigned short, const char *__restrict, const char *__restrict, const char *__restrict, int *__restrict, sa_family_t)
+  namespace: c10d
+- name: rexec
+  type: int (char **__restrict, int, const char *__restrict, const char *__restrict, const char *__restrict, int *__restrict)
+  namespace: c10d
+- name: rexec_af
+  type: int (char **__restrict, int, const char *__restrict, const char *__restrict, const char *__restrict, int *__restrict, sa_family_t)
+  namespace: c10d
+- name: ruserok
+  type: int (const char *, int, const char *, const char *)
+  namespace: c10d
+- name: ruserok_af
+  type: int (const char *, int, const char *, const char *, sa_family_t)
+  namespace: c10d
+- name: iruserok
+  type: int (uint32_t, int, const char *, const char *)
+  namespace: c10d
+- name: iruserok_af
+  type: int (const void *, int, const char *, const char *, sa_family_t)
+  namespace: c10d
+- name: rresvport
+  type: int (int *)
+  namespace: c10d
+- name: rresvport_af
+  type: int (int *, sa_family_t)
+  namespace: c10d
+- name: getaddrinfo
+  type: int (const char *__restrict, const char *__restrict, const struct addrinfo *__restrict, struct addrinfo **__restrict)
+  namespace: c10d
+- name: freeaddrinfo
+  type: void (struct addrinfo *) throw()
+  namespace: c10d
+- name: gai_strerror
+  type: const char *(int) throw()
+  namespace: c10d
+- name: getnameinfo
+  type: int (const struct sockaddr *__restrict, socklen_t, char *__restrict, socklen_t, char *__restrict, socklen_t, int)
+  namespace: c10d
+- name: getaddrinfo_a
+  type: int (int, struct gaicb **, int, struct sigevent *__restrict)
+  namespace: c10d
+- name: gai_suspend
+  type: int (const struct gaicb *const *, int, const struct timespec *)
+  namespace: c10d
+- name: gai_error
+  type: int (struct gaicb *) throw()
+  namespace: c10d
+- name: gai_cancel
+  type: int (struct gaicb *) throw()
+  namespace: c10d
+- name: poll
+  type: int (struct pollfd *, nfds_t, int)
+  namespace: c10d
+- name: ppoll
+  type: int (struct pollfd *, nfds_t, const struct timespec *, const __sigset_t *)
+  namespace: c10d
+- name: access
+  type: int (const char *, int) throw()
+  namespace: c10d
+- name: euidaccess
+  type: int (const char *, int) throw()
+  namespace: c10d
+- name: eaccess
+  type: int (const char *, int) throw()
+  namespace: c10d
+- name: faccessat
+  type: int (int, const char *, int, int) throw()
+  namespace: c10d
+- name: lseek
+  type: __off_t (int, __off_t, int) throw()
+  namespace: c10d
+- name: lseek64
+  type: __off64_t (int, __off64_t, int) throw()
+  namespace: c10d
+- name: close
+  type: int (int)
+  namespace: c10d
+- name: read
+  type: ssize_t (int, void *, int)
+  namespace: c10d
+- name: write
+  type: ssize_t (int, const void *, int)
+  namespace: c10d
+- name: pread
+  type: ssize_t (int, void *, int, __off_t)
+  namespace: c10d
+- name: pwrite
+  type: ssize_t (int, const void *, int, __off_t)
+  namespace: c10d
+- name: pread64
+  type: ssize_t (int, void *, int, __off64_t)
+  namespace: c10d
+- name: pwrite64
+  type: ssize_t (int, const void *, int, __off64_t)
+  namespace: c10d
+- name: pipe
+  type: int (int *) throw()
+  namespace: c10d
+- name: pipe2
+  type: int (int *, int) throw()
+  namespace: c10d
+- name: alarm
+  type: unsigned int (unsigned int) throw()
+  namespace: c10d
+- name: sleep
+  type: unsigned int (unsigned int)
+  namespace: c10d
+- name: ualarm
+  type: __useconds_t (__useconds_t, __useconds_t) throw()
+  namespace: c10d
+- name: usleep
+  type: int (__useconds_t)
+  namespace: c10d
+- name: pause
+  type: int ()
+  namespace: c10d
+- name: chown
+  type: int (const char *, __uid_t, __gid_t) throw()
+  namespace: c10d
+- name: fchown
+  type: int (int, __uid_t, __gid_t) throw()
+  namespace: c10d
+- name: lchown
+  type: int (const char *, __uid_t, __gid_t) throw()
+  namespace: c10d
+- name: fchownat
+  type: int (int, const char *, __uid_t, __gid_t, int) throw()
+  namespace: c10d
+- name: chdir
+  type: int (const char *) throw()
+  namespace: c10d
+- name: fchdir
+  type: int (int) throw()
+  namespace: c10d
+- name: getcwd
+  type: char *(char *, int) throw()
+  namespace: c10d
+- name: get_current_dir_name
+  type: char *() throw()
+  namespace: c10d
+- name: getwd
+  type: char *(char *) throw()
+  namespace: c10d
+- name: dup
+  type: int (int) throw()
+  namespace: c10d
+- name: dup2
+  type: int (int, int) throw()
+  namespace: c10d
+- name: dup3
+  type: int (int, int, int) throw()
+  namespace: c10d
+- name: execve
+  type: int (const char *, char *const *, char *const *) throw()
+  namespace: c10d
+- name: fexecve
+  type: int (int, char *const *, char *const *) throw()
+  namespace: c10d
+- name: execv
+  type: int (const char *, char *const *) throw()
+  namespace: c10d
+- name: execle
+  type: int (const char *, const char *, ...) throw()
+  namespace: c10d
+- name: execl
+  type: int (const char *, const char *, ...) throw()
+  namespace: c10d
+- name: execvp
+  type: int (const char *, char *const *) throw()
+  namespace: c10d
+- name: execlp
+  type: int (const char *, const char *, ...) throw()
+  namespace: c10d
+- name: execvpe
+  type: int (const char *, char *const *, char *const *) throw()
+  namespace: c10d
+- name: nice
+  type: int (int) throw()
+  namespace: c10d
+- name: _exit
+  type: void (int) __attribute__((noreturn))
+  namespace: c10d
+- name: pathconf
+  type: long (const char *, int) throw()
+  namespace: c10d
+- name: fpathconf
+  type: long (int, int) throw()
+  namespace: c10d
+- name: sysconf
+  type: long (int) throw()
+  namespace: c10d
+- name: confstr
+  type: int (int, char *, int) throw()
+  namespace: c10d
+- name: getpid
+  type: __pid_t () throw()
+  namespace: c10d
+- name: getppid
+  type: __pid_t () throw()
+  namespace: c10d
+- name: getpgrp
+  type: __pid_t () throw()
+  namespace: c10d
+- name: __getpgid
+  type: __pid_t (__pid_t) throw()
+  namespace: c10d
+- name: getpgid
+  type: __pid_t (__pid_t) throw()
+  namespace: c10d
+- name: setpgid
+  type: int (__pid_t, __pid_t) throw()
+  namespace: c10d
+- name: setpgrp
+  type: int () throw()
+  namespace: c10d
+- name: setsid
+  type: __pid_t () throw()
+  namespace: c10d
+- name: getsid
+  type: __pid_t (__pid_t) throw()
+  namespace: c10d
+- name: getuid
+  type: __uid_t () throw()
+  namespace: c10d
+- name: geteuid
+  type: __uid_t () throw()
+  namespace: c10d
+- name: getgid
+  type: __gid_t () throw()
+  namespace: c10d
+- name: getegid
+  type: __gid_t () throw()
+  namespace: c10d
+- name: getgroups
+  type: int (int, __gid_t *) throw()
+  namespace: c10d
+- name: group_member
+  type: int (__gid_t) throw()
+  namespace: c10d
+- name: setuid
+  type: int (__uid_t) throw()
+  namespace: c10d
+- name: setreuid
+  type: int (__uid_t, __uid_t) throw()
+  namespace: c10d
+- name: seteuid
+  type: int (__uid_t) throw()
+  namespace: c10d
+- name: setgid
+  type: int (__gid_t) throw()
+  namespace: c10d
+- name: setregid
+  type: int (__gid_t, __gid_t) throw()
+  namespace: c10d
+- name: setegid
+  type: int (__gid_t) throw()
+  namespace: c10d
+- name: getresuid
+  type: int (__uid_t *, __uid_t *, __uid_t *) throw()
+  namespace: c10d
+- name: getresgid
+  type: int (__gid_t *, __gid_t *, __gid_t *) throw()
+  namespace: c10d
+- name: setresuid
+  type: int (__uid_t, __uid_t, __uid_t) throw()
+  namespace: c10d
+- name: setresgid
+  type: int (__gid_t, __gid_t, __gid_t) throw()
+  namespace: c10d
+- name: fork
+  type: __pid_t () throw()
+  namespace: c10d
+- name: vfork
+  type: __pid_t () throw()
+  namespace: c10d
+- name: ttyname
+  type: char *(int) throw()
+  namespace: c10d
+- name: ttyname_r
+  type: int (int, char *, int) throw()
+  namespace: c10d
+- name: isatty
+  type: int (int) throw()
+  namespace: c10d
+- name: ttyslot
+  type: int () throw()
+  namespace: c10d
+- name: link
+  type: int (const char *, const char *) throw()
+  namespace: c10d
+- name: linkat
+  type: int (int, const char *, int, const char *, int) throw()
+  namespace: c10d
+- name: symlink
+  type: int (const char *, const char *) throw()
+  namespace: c10d
+- name: readlink
+  type: ssize_t (const char *__restrict, char *__restrict, int) throw()
+  namespace: c10d
+- name: symlinkat
+  type: int (const char *, int, const char *) throw()
+  namespace: c10d
+- name: readlinkat
+  type: ssize_t (int, const char *__restrict, char *__restrict, int) throw()
+  namespace: c10d
+- name: unlink
+  type: int (const char *) throw()
+  namespace: c10d
+- name: unlinkat
+  type: int (int, const char *, int) throw()
+  namespace: c10d
+- name: rmdir
+  type: int (const char *) throw()
+  namespace: c10d
+- name: tcgetpgrp
+  type: __pid_t (int) throw()
+  namespace: c10d
+- name: tcsetpgrp
+  type: int (int, __pid_t) throw()
+  namespace: c10d
+- name: getlogin
+  type: char *()
+  namespace: c10d
+- name: getlogin_r
+  type: int (char *, int)
+  namespace: c10d
+- name: setlogin
+  type: int (const char *) throw()
+  namespace: c10d
+- name: getopt
+  type: int (int, char *const *, const char *) throw()
+  namespace: c10d
+- name: gethostname
+  type: int (char *, int) throw()
+  namespace: c10d
+- name: sethostname
+  type: int (const char *, int) throw()
+  namespace: c10d
+- name: sethostid
+  type: int (long) throw()
+  namespace: c10d
+- name: getdomainname
+  type: int (char *, int) throw()
+  namespace: c10d
+- name: setdomainname
+  type: int (const char *, int) throw()
+  namespace: c10d
+- name: vhangup
+  type: int () throw()
+  namespace: c10d
+- name: revoke
+  type: int (const char *) throw()
+  namespace: c10d
+- name: profil
+  type: int (unsigned short *, int, int, unsigned int) throw()
+  namespace: c10d
+- name: acct
+  type: int (const char *) throw()
+  namespace: c10d
+- name: getusershell
+  type: char *() throw()
+  namespace: c10d
+- name: endusershell
+  type: void () throw()
+  namespace: c10d
+- name: setusershell
+  type: void () throw()
+  namespace: c10d
+- name: daemon
+  type: int (int, int) throw()
+  namespace: c10d
+- name: chroot
+  type: int (const char *) throw()
+  namespace: c10d
+- name: getpass
+  type: char *(const char *)
+  namespace: c10d
+- name: fsync
+  type: int (int)
+  namespace: c10d
+- name: syncfs
+  type: int (int) throw()
+  namespace: c10d
+- name: gethostid
+  type: long ()
+  namespace: c10d
+- name: sync
+  type: void () throw()
+  namespace: c10d
+- name: getpagesize
+  type: int () throw()
+  namespace: c10d
+- name: getdtablesize
+  type: int () throw()
+  namespace: c10d
+- name: truncate
+  type: int (const char *, __off_t) throw()
+  namespace: c10d
+- name: truncate64
+  type: int (const char *, __off64_t) throw()
+  namespace: c10d
+- name: ftruncate
+  type: int (int, __off_t) throw()
+  namespace: c10d
+- name: ftruncate64
+  type: int (int, __off64_t) throw()
+  namespace: c10d
+- name: brk
+  type: int (void *) throw()
+  namespace: c10d
+- name: sbrk
+  type: void *(intptr_t) throw()
+  namespace: c10d
+- name: syscall
+  type: long (long, ...) throw()
+  namespace: c10d
+- name: copy_file_range
+  type: ssize_t (int, __off64_t *, int, __off64_t *, int, unsigned int)
+  namespace: c10d
+- name: fdatasync
+  type: int (int)
+  namespace: c10d
+- name: crypt
+  type: char *(const char *, const char *) throw()
+  namespace: c10d
+- name: swab
+  type: void (const void *__restrict, void *__restrict, ssize_t) throw()
+  namespace: c10d
+- name: getentropy
+  type: int (void *, int)
+  namespace: c10d
+- name: gettid
+  type: __pid_t () throw()
+  namespace: c10d
+- name: parse_env
+  type: std::string (const char *)
+  namespace: c10d
+- name: parseDistDebugLevel
+  type: c10d::DistributedDebugLevel ()
+  namespace: c10d
+- name: toString
+  type: std::string (at::IntArrayRef)
+  namespace: c10d
+- name: toString
+  type: std::string (const c10::Layout &)
+  namespace: c10d
+- name: assertSameType
+  type: void (const at::DeprecatedTypeProperties &, const int &)
+  namespace: c10d
+- name: parseEnvVarFlag
+  type: bool (const char *)
+  namespace: c10d
+- name: assertSameSizes
+  type: void (const at::IntArrayRef &, const int &)
+  namespace: c10d
+- name: assertSameSizeAndType
+  type: void (const int &)
+  namespace: c10d
+- name: assertTypeMatch
+  type: void (std::function<void (const std::string &)>, const at::DeprecatedTypeProperties &, const at::ArrayRef<at::Tensor>, int)
+  namespace: c10d
+- name: assertTypeMatch
+  type: void (std::function<void (const std::string &)>, const at::TensorOptions &, const at::ArrayRef<at::Tensor>, int)
+  namespace: c10d
+- name: assertSizesMatch
+  type: void (std::function<void (const std::string &)>, const at::IntArrayRef &, const at::ArrayRef<at::Tensor>, int)
+  namespace: c10d
+- name: assertLayoutMatch
+  type: void (std::function<void (const std::string &)>, const c10::Layout &, const at::ArrayRef<at::Tensor>, int)
+  namespace: c10d
+- name: assertLayoutMatch
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>)
+  namespace: c10d
+- name: assertNonEmpty
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>)
+  namespace: c10d
+- name: assertSingleElement
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>)
+  namespace: c10d
+- name: assertSingleElementInput
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>)
+  namespace: c10d
+- name: assertSingleElementOutput
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>)
+  namespace: c10d
+- name: assertRootRank
+  type: void (std::function<void (const std::string &)>, int, int)
+  namespace: c10d
+- name: assertRootTensor
+  type: void (std::function<void (const std::string &)>, int, int)
+  namespace: c10d
+- name: assertDense
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>)
+  namespace: c10d
+- name: assertCPU
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>)
+  namespace: c10d
+- name: assertSameDevice
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>)
+  namespace: c10d
+- name: assertTypeAndSizesMatch
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>, const at::DeprecatedTypeProperties &, const at::IntArrayRef &)
+  namespace: c10d
+- name: assertTypeAndSizesMatch
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>, const at::TensorOptions &, const at::IntArrayRef &)
+  namespace: c10d
+- name: assertTypeAndSizesMatch
+  type: void (std::function<void (const std::string &)>, const at::ArrayRef<at::Tensor>)
+  namespace: c10d
+- name: flattenDenseTensors
+  type: at::Tensor (at::TensorList)
+  namespace: c10d
+- name: newLikeFlat
+  type: at::Tensor (int &, int)
+  namespace: c10d
+- name: newLikeFlat
+  type: at::Tensor (int &)
+  namespace: c10d
+- name: getSizes
+  type: int (const int &)
+  namespace: c10d
+- name: getDevices
+  type: int (const int &)
+  namespace: c10d
+- name: checkSplitSizes
+  type: void (const int &, const at::Tensor &, int)
+  namespace: c10d
+- name: release
+  type: void ()
+  namespace: c10d::ResourceGuard
+- name: opTypeToString
+  type: std::string (c10d::OpType)
+  namespace: c10d
+- name: isP2POp
+  type: bool (c10d::OpType)
+  namespace: c10d
+- name: isCompleted
+  type: bool ()
+  namespace: c10d::Work
+- name: isSuccess
+  type: bool () const
+  namespace: c10d::Work
+- name: exception
+  type: std::exception_ptr () const
+  namespace: c10d::Work
+- name: sourceRank
+  type: int () const
+  namespace: c10d::Work
+- name: result
+  type: int ()
+  namespace: c10d::Work
+- name: synchronize
+  type: void ()
+  namespace: c10d::Work
+- name: wait
+  type: bool (std::chrono::milliseconds)
+  namespace: c10d::Work
+- name: abort
+  type: void ()
+  namespace: c10d::Work
+- name: getFuture
+  type: int ()
+  namespace: c10d::Work
+- name: retrieveOpType
+  type: c10d::OpType ()
+  namespace: c10d::Work
+- name: finish
+  type: void (std::exception_ptr)
+  namespace: c10d::Work
+- name: finishAndThrow
+  type: void (std::exception_ptr)
+  namespace: c10d::Work
+- name: getRank
+  type: int () const
+  namespace: c10d::Work
+- name: getSize
+  type: int () const
+  namespace: c10d::Work
+- name: getBackendName
+  type: const std::string () const
+  namespace: c10d::Work
+- name: broadcast
+  type: int (int &, const c10d::BroadcastOptions &)
+  namespace: c10d::Work
+- name: allreduce
+  type: int (int &, const c10d::AllreduceOptions &)
+  namespace: c10d::Work
+- name: allreduce_coalesced
+  type: int (int &, const c10d::AllreduceCoalescedOptions &)
+  namespace: c10d::Work
+- name: reduce
+  type: int (int &, const c10d::ReduceOptions &)
+  namespace: c10d::Work
+- name: allgather
+  type: int (int &, int &, const c10d::AllgatherOptions &)
+  namespace: c10d::Work
+- name: _allgather_base
+  type: int (at::Tensor &, at::Tensor &, const c10d::AllgatherOptions &)
+  namespace: c10d::Work
+- name: allgather_coalesced
+  type: int (int &, int &, const c10d::AllgatherOptions &)
+  namespace: c10d::Work
+- name: gather
+  type: int (int &, int &, const c10d::GatherOptions &)
+  namespace: c10d::Work
+- name: scatter
+  type: int (int &, int &, const c10d::ScatterOptions &)
+  namespace: c10d::Work
+- name: reduce_scatter
+  type: int (int &, int &, const c10d::ReduceScatterOptions &)
+  namespace: c10d::Work
+- name: alltoall_base
+  type: int (at::Tensor &, at::Tensor &, int &, int &, const c10d::AllToAllOptions &)
+  namespace: c10d::Work
+- name: alltoall
+  type: int (int &, int &, const c10d::AllToAllOptions &)
+  namespace: c10d::Work
+- name: monitoredBarrier
+  type: void (const c10d::BarrierOptions &, bool)
+  namespace: c10d::Work
+- name: setSequenceNumberForGroup
+  type: void ()
+  namespace: c10d::Work
+- name: getSequenceNumberForGroup
+  type: uint64_t ()
+  namespace: c10d::Work
+- name: send
+  type: int (int &, int, int)
+  namespace: c10d::Work
+- name: recv
+  type: int (int &, int, int)
+  namespace: c10d::Work
+- name: recvAnysource
+  type: int (int &, int)
+  namespace: c10d::Work
+- name: barrier
+  type: int (const c10d::BarrierOptions &)
+  namespace: c10d::Work
+- name: set
+  type: void (const std::string &, const int &)
+  namespace: c10d::Store
+- name: compareSet
+  type: int (const std::string &, const int &, const int &)
+  namespace: c10d::Store
+- name: get
+  type: int (const std::string &)
+  namespace: c10d::Store
+- name: add
+  type: int64_t (const std::string &, int64_t)
+  namespace: c10d::Store
+- name: deleteKey
+  type: bool (const std::string &)
+  namespace: c10d::Store
+- name: check
+  type: bool (const int &)
+  namespace: c10d::Store
+- name: getNumKeys
+  type: int64_t ()
+  namespace: c10d::Store
+- name: wait
+  type: void (const int &)
+  namespace: c10d::Store
+- name: wait
+  type: void (const int &, const std::chrono::milliseconds &)
+  namespace: c10d::Store
+- name: getTimeout
+  type: const std::chrono::milliseconds &() const noexcept
+  namespace: c10d::Store
+- name: setTimeout
+  type: void (const std::chrono::milliseconds &)
+  namespace: c10d::Store
+- name: watchKey
+  type: void (const std::string &, c10d::WatchKeyCallback)
+  namespace: c10d::Store
+- name: isCompleted
+  type: bool ()
+  namespace: c10d::WorkNCCL
+- name: isSuccess
+  type: bool () const
+  namespace: c10d::WorkNCCL
+- name: wait
+  type: bool (std::chrono::milliseconds)
+  namespace: c10d::WorkNCCL
+- name: abort
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: synchronize
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: synchronizeStreams
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: handleNCCLGuard
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: finishedGPUExecution
+  type: bool ()
+  namespace: c10d::WorkNCCL
+- name: getFuture
+  type: int ()
+  namespace: c10d::WorkNCCL
+- name: setException
+  type: void (std::exception_ptr)
+  namespace: c10d::WorkNCCL
+- name: timedOut
+  type: bool ()
+  namespace: c10d::WorkNCCL
+- name: result
+  type: int ()
+  namespace: c10d::WorkNCCL
+- name: checkForNCCLErrors
+  type: std::exception_ptr (const int &) const
+  namespace: c10d::WorkNCCL
+- name: operator<<
+  type: std::ostream &(std::ostream &, const c10d::ProcessGroupNCCL::WorkNCCL &)
+  namespace: c10d
+- name: synchronizeInternal
+  type: void (std::chrono::milliseconds)
+  namespace: c10d::WorkNCCL
+- name: checkAndSetException
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: checkAndThrowException
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: finishedGPUExecutionInternal
+  type: bool () const
+  namespace: c10d::WorkNCCL
+- name: create
+  type: int (bool)
+  namespace: c10d::WorkNCCL
+- name: getOptions
+  type: int ()
+  namespace: c10d::WorkNCCL
+- name: getBackendName
+  type: const std::string () const
+  namespace: c10d::WorkNCCL
+- name: broadcast
+  type: int (int &, const c10d::BroadcastOptions &)
+  namespace: c10d::WorkNCCL
+- name: allreduce
+  type: int (int &, const c10d::AllreduceOptions &)
+  namespace: c10d::WorkNCCL
+- name: allreduce_coalesced
+  type: int (int &, const c10d::AllreduceCoalescedOptions &)
+  namespace: c10d::WorkNCCL
+- name: reduce
+  type: int (int &, const c10d::ReduceOptions &)
+  namespace: c10d::WorkNCCL
+- name: allgather
+  type: int (int &, int &, const c10d::AllgatherOptions &)
+  namespace: c10d::WorkNCCL
+- name: _allgather_base
+  type: int (at::Tensor &, at::Tensor &, const c10d::AllgatherOptions &)
+  namespace: c10d::WorkNCCL
+- name: allgather_coalesced
+  type: int (int &, int &, const c10d::AllgatherOptions &)
+  namespace: c10d::WorkNCCL
+- name: reduce_scatter
+  type: int (int &, int &, const c10d::ReduceScatterOptions &)
+  namespace: c10d::WorkNCCL
+- name: barrier
+  type: int (const c10d::BarrierOptions &)
+  namespace: c10d::WorkNCCL
+- name: alltoall_base
+  type: int (at::Tensor &, at::Tensor &, int &, int &, const c10d::AllToAllOptions &)
+  namespace: c10d::WorkNCCL
+- name: alltoall
+  type: int (int &, int &, const c10d::AllToAllOptions &)
+  namespace: c10d::WorkNCCL
+- name: send
+  type: int (int &, int, int)
+  namespace: c10d::WorkNCCL
+- name: recv
+  type: int (int &, int, int)
+  namespace: c10d::WorkNCCL
+- name: groupStart
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: groupEnd
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: gather
+  type: int (int &, int &, const c10d::GatherOptions &)
+  namespace: c10d::WorkNCCL
+- name: scatter
+  type: int (int &, int &, const c10d::ScatterOptions &)
+  namespace: c10d::WorkNCCL
+- name: recvAnysource
+  type: int (int &, int)
+  namespace: c10d::WorkNCCL
+- name: setSequenceNumberForGroup
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: getSequenceNumberForGroup
+  type: uint64_t ()
+  namespace: c10d::WorkNCCL
+- name: broadcastUniqueNCCLID
+  type: void (int *, c10d::OpType, const std::string &, int)
+  namespace: c10d::WorkNCCL
+- name: getNCCLComm
+  type: int &(const std::string &, const int &, c10d::OpType, int, bool)
+  namespace: c10d::WorkNCCL
+- name: checkForNCCLErrors
+  type: std::exception_ptr (const int &)
+  namespace: c10d::WorkNCCL
+- name: initWork
+  type: int (int, int, c10d::OpType, const char *, const int &)
+  namespace: c10d::WorkNCCL
+- name: checkForNCCLErrorsInternal
+  type: std::exception_ptr (const int &)
+  namespace: c10d::WorkNCCL
+- name: ncclCommWatchdog
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: ncclCommWatchdogInternal
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: abortTimedOutCollectives
+  type: void (int &)
+  namespace: c10d::WorkNCCL
+- name: workCleanupLoop
+  type: void ()
+  namespace: c10d::WorkNCCL
+- name: workEnqueue
+  type: void (int)
+  namespace: c10d::WorkNCCL
