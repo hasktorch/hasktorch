@@ -20,15 +20,25 @@ def dump(cursor, indent=0):
             ns = cursor.spelling;
     if cursor.kind.name == 'CLASS_DECL' :
             cl = cursor.spelling;
+            print('signature: ' + cl)
+            print('cppname: ' + ns + '::' + cl)
+            print('hsname: ' + cl)
+            print('headers:')
+            print('- ' + header)
+            print('functions: []')
+            print('constructors:')
+            print('methods:')
     
     if cursor.kind.name == 'CXX_METHOD' and ns == namespace:
             print('- name: ' + cursor.spelling)
-            print('  type: ' + cursor.type.spelling)
-            print('  namespace: ' + ns + '::' + cl)
+            ts = cursor.type.spelling
+            pos = ts.find('(')
+            print('- ' + cursor.spelling + ' ' + ts[pos:] + ' -> ' + ts[0:pos-1])
     if cursor.kind.name == 'FUNCTION_DECL' and ns == namespace:
             print('- name: ' + cursor.spelling)
-            print('  type: ' + cursor.type.spelling)
-            print('  namespace: ' + ns)
+            ts = cursor.type.spelling
+            pos = ts.find('(')
+            print('- ' + cursor.spelling + ' ' + ts[pos:] + ' -> ' + ts[0:pos-1])
     
     for child in cursor.get_children():
     	dump(child, indent+1)
