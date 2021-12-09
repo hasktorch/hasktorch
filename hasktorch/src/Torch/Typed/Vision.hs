@@ -151,8 +151,8 @@ data Box a = Box
   }
   deriving (Show, Eq, Generic, Default)
 
-nms_cpu :: Num a => [Box a] -> a -> [Box a]
-nms_cpu dets = nms_cpu' (sortBy score dets)
+nmsCpu :: Num a => [Box a] -> a -> [Box a]
+nmsCpu dets = nms_cpu' (sortBy score dets)
   where
     nms_cpu' :: Num a => [Box a] -> a -> [Box a]
     nms_cpu' [] _ = []
@@ -194,8 +194,33 @@ nms dets iou_threshold = dets ! (loop sort_idxes 0)
           iou = inter_areas / ((area ! idx) + (areas ! other_idxes) - inter_areas)
         in loop (delete sort_idxes (iou >= iou_threshold)) (i+1)
 
-nms_with_dotsyntax :: NamedTensor device dtype '[Vector n, Box] -> Float -> NamedTensor device dtype '[Vector m, Box]
-nms_with_dotsyntax dets iou_threshold = dets ! (loop sort_idxes 0)
+nmsWithDotsyntax :: NamedTensor device dtype '[Vector n, Box] -> Float -> NamedTensor device dtype '[Vector m, Box]
+nmsWithDotsyntax dets iou_threshold = dets ! (loop sort_idxes 0)
+  where
+    sort_idxes = sortNamedDim @"score" dets
+    areas =
+      (dets.x2 - dets.x1) *
+      (dets.y2 - dets.y1)
+    loop sort_idxes i | length sort_idxes <= i = sort_idxes
+                      | otherwise =
+        let
+          idx = sort_idxes ! i
+          other_idxes = sort_idxes ! [slice|({i}+1):|]
+          xx1 = max (dets ! i).x1 (dets ! other_idxes).x1
+          xx2 = min (dets ! i).x2 (dets ! other_idxes).x2
+          yy1 = max (dets ! i).y1 (dets ! other_idxes).y1
+          yy2 = min (dets ! i).y2 (dets ! other_idxes).y2
+          inter_areas = (xx2 - xx1) * (yy2 - yy1)
+          iou = inter_areas / ((area ! idx) + (areas ! other_idxes) - inter_areas)
+        in loop (delete sort_idxes (iou >= iou_threshold)) (i+1)
+
+genericNms :: ( HasField "x1" a
+              , HasField "x2" a
+              , HasField "y1" a
+              , HasField "y2" a
+              , HasField "score" a
+              ) => NamedTensor device dtype '[Vector n, a] -> Float -> NamedTensor device dtype '[Vector m, a]
+genericNms dets iou_threshold = dets ! (loop sort_idxes 0)
   where
     sort_idxes = sortNamedDim @"score" dets
     areas =
