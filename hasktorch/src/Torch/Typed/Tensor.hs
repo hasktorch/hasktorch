@@ -295,7 +295,10 @@ someDevice D.Device {..} = case someNatVal (fromIntegral deviceIndex) of
 withTensor ::
   D.Tensor ->
   ( forall shape dtype device.
-    KnownShape shape =>
+    ( KnownDevice device,
+      KnownDType dtype,
+      KnownShape shape
+    ) =>
     Tensor device dtype shape ->
     r
   ) ->
@@ -304,6 +307,34 @@ withTensor untypedTensor f = case someShape (D.shape untypedTensor) of
   (SomeShape (Proxy :: Proxy shape)) -> case someDType (D.dtype untypedTensor) of
     (SomeDType (Proxy :: Proxy dtype)) -> case someDevice (D.device untypedTensor) of
       (SomeDevice (Proxy :: Proxy device)) -> f $ UnsafeMkTensor @device @dtype @shape untypedTensor
+
+withTensorShape ::
+  forall device dtype r.
+  ( KnownDevice device,
+    KnownDType dtype
+  ) =>
+  D.Tensor ->
+  ( forall shape.
+    KnownShape shape =>
+    Tensor device dtype shape ->
+    r
+  ) ->
+  r
+withTensorShape untypedTensor f = case someShape (D.shape untypedTensor) of
+  -- ToDo: check device/dtype of untyped tensor.
+  (SomeShape (Proxy :: Proxy shape)) -> f $ UnsafeMkTensor @device @dtype @shape untypedTensor
+
+withNat ::
+  Int ->
+  ( forall n.
+    KnownNat n =>
+    Proxy n ->
+    r
+  ) ->
+  r
+withNat i f = case someNatVal (fromIntegral i) of
+  Nothing -> error "Negative Number in withNat!"
+  (Just (SomeNat p)) -> f p
 
 --------------------------------------------------------------------------------
 -- Broadcast type-level function
