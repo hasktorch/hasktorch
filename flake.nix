@@ -3,6 +3,7 @@
 
   nixConfig = {
     substituters = [
+      https://cache.nixos.org
       https://hydra.iohk.io
       https://hasktorch.cachix.org
     ];
