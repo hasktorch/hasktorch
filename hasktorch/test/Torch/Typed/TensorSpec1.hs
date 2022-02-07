@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -183,6 +184,20 @@ spec' device =
           hfoldrM @IO ToTypeSpec () (hattach cpu (hproduct (hproduct allDTypes allDTypes) standardShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO ToTypeSpec () (hattach cuda0 (hproduct (hproduct allDTypes allDTypes) standardShapes))
+
+    describe "untyped to typed tensor" $ do
+      it "withTensor" $ do
+        withTensor (Torch.zeros' [2, 3, 4]) $ \t -> print t
+      it "withTensorShape with matmul" $ do
+        --    ToDo: withTensor does not work with matmul.
+        --        withTensor (Torch.zeros' [3,4]) $ \(t0 :: Tensor device0 dtype0 shape0)->
+        --          withTensor (Torch.zeros' [4,3]) $ \(t1 :: Tensor device1 dtype1 shape1)-> do
+        --            print (matmul t0 t1)
+        withTensorShape @'(CPU, 0) @'Float (Torch.zeros' [3, 4]) $ \t0 -> do
+          withTensorShape @'(CPU, 0) @'Float (Torch.zeros' [4, 3]) $ \t1 -> do
+            print (matmul t0 t1)
+      it "withNat" $ do
+        withNat 2 $ \(_ :: Proxy n) -> print $ (zeros :: Tensor '(CPU, 0) 'Float [n, 2, 3])
 
 testTensorListFold ::
   forall device dtype shape. Tensor device dtype shape -> IO [Torch.ATenTensor]
