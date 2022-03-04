@@ -17,6 +17,7 @@ module Torch.Tensor where
 
 import Control.Exception.Safe (throwIO)
 import Control.Monad (forM, forM_)
+import Data.Complex
 import Data.Int (Int16, Int64)
 import Data.List (intercalate)
 import Data.Proxy
@@ -120,6 +121,9 @@ dtype ::
   -- | data type of the input tensor
   DType
 dtype t = unsafePerformIO $ cast1 ATen.tensor_scalar_type t
+
+toComplex :: Tensor -> Complex Double
+toComplex t = unsafePerformIO $ withTensor t $ \ptr -> peekElemOff (castPtr ptr) 0
 
 toDouble :: Tensor -> Double
 toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double t
@@ -676,7 +680,13 @@ instance Show Tensor where
       show0d x =
         if isIntegral (dtype t)
           then padPositive (toInt x) $ show $ toInt x
-          else padLarge (toDouble x) $ padPositive (toDouble x) $ showGFloat (Just 4) (toDouble x) ""
+          else
+            if isComplex (dtype t)
+               then
+                 let r :+ i = toComplex x
+                 in (padLarge r $ padPositive r $ showGFloat (Just 4) r "") ++ " + i" ++
+                    (padLarge i $ padPositive i $ showGFloat (Just 4) i "")
+               else padLarge (toDouble x) $ padPositive (toDouble x) $ showGFloat (Just 4) (toDouble x) ""
       show1d = showElems show0d ", "
       shownd n offset =
         case n of

@@ -134,6 +134,7 @@ library
                     , vector-sized
                     , template-haskell
                     , megaparsec
+                    , half
 
  default-extensions:  Strict
                     , StrictData
@@ -200,6 +201,7 @@ test-suite spec
                     , vector-sized
                     , lens-family-core
                     , data-default-class
+                    , half
 
 test-suite doctests
   if os(darwin) || flag(disable-doctest)

@@ -5,6 +5,8 @@ module TensorSpec (spec) where
 
 import Control.Arrow ((&&&))
 import Control.Exception.Safe
+import Numeric.Half
+import Data.Complex
 import Data.Int
 import Data.Word
 import Test.Hspec
@@ -14,6 +16,11 @@ import Torch.Functional
 import Torch.Tensor
 import Torch.TensorFactories
 import Torch.TensorOptions
+import Test.QuickCheck.Arbitrary
+
+instance Arbitrary Half where
+  arbitrary = arbitrarySizedFractional
+  shrink    = shrinkDecimal
 
 spec :: Spec
 spec = do
@@ -39,12 +46,24 @@ spec = do
     it "TensorLike Int64" $
       property $
         \x -> asValue (asTensor x) `shouldBe` (x :: Int64)
+    it "TensorLike Half" $
+      property $
+        \x -> asValue (asTensor x) `shouldBe` (x :: Half)
     it "TensorLike Float" $
       property $
         \x -> asValue (asTensor x) `shouldBe` (x :: Float)
     it "TensorLike Double" $
       property $
         \x -> asValue (asTensor x) `shouldBe` (x :: Double)
+    it "TensorLike ComplexHalf" $
+      property $
+        \x -> asValue (asTensor x) `shouldBe` (x :: Complex Half)
+    it "TensorLike Complex Float" $
+      property $
+        \x -> asValue (asTensor x) `shouldBe` (x :: Complex Float)
+    it "TensorLike Complex Double" $
+      property $
+        \x -> asValue (asTensor x) `shouldBe` (x :: Complex Double)
 
     it "Compare internal expression of c++ with Storable expression of haskell" $ do
       show (asTensor [True, False, True, False])
@@ -140,6 +159,16 @@ spec = do
           asValue (asTensor xx) `shouldBe` xx
           let xxx = replicate 3 xx
           asValue (asTensor xxx) `shouldBe` xxx
+    it "TensorLike [Half]" $
+      property $
+        \(NonEmpty (x :: [Half])) -> do
+          asValue (asTensor x) `shouldBe` x
+          toDouble (select 0 0 (asTensor x)) `shouldBe` realToFrac (head x)
+          shape (asTensor x) `shouldBe` [length x]
+          let xx = replicate 5 x
+          asValue (asTensor xx) `shouldBe` xx
+          let xxx = replicate 3 xx
+          asValue (asTensor xxx) `shouldBe` xxx
     it "TensorLike [Float]" $
       property $
         \(NonEmpty (x :: [Float])) -> do
@@ -155,6 +184,36 @@ spec = do
         \(NonEmpty (x :: [Double])) -> do
           asValue (asTensor x) `shouldBe` x
           toDouble (select 0 0 (asTensor x)) `shouldBe` realToFrac (head x)
+          shape (asTensor x) `shouldBe` [length x]
+          let xx = replicate 5 x
+          asValue (asTensor xx) `shouldBe` xx
+          let xxx = replicate 3 xx
+          asValue (asTensor xxx) `shouldBe` xxx
+    it "TensorLike [Complex Half]" $
+      property $
+        \(NonEmpty (x :: [Complex Half])) -> do
+          asValue (asTensor x) `shouldBe` x
+          asValue (select 0 0 (asTensor x)) `shouldBe` (head x)
+          shape (asTensor x) `shouldBe` [length x]
+          let xx = replicate 5 x
+          asValue (asTensor xx) `shouldBe` xx
+          let xxx = replicate 3 xx
+          asValue (asTensor xxx) `shouldBe` xxx
+    it "TensorLike [Complex Float]" $
+      property $
+        \(NonEmpty (x :: [Complex Float])) -> do
+          asValue (asTensor x) `shouldBe` x
+          asValue (select 0 0 (asTensor x)) `shouldBe` (head x)
+          shape (asTensor x) `shouldBe` [length x]
+          let xx = replicate 5 x
+          asValue (asTensor xx) `shouldBe` xx
+          let xxx = replicate 3 xx
+          asValue (asTensor xxx) `shouldBe` xxx
+    it "TensorLike [Complex Double]" $
+      property $
+        \(NonEmpty (x :: [Complex Double])) -> do
+          asValue (asTensor x) `shouldBe` x
+          asValue (select 0 0 (asTensor x)) `shouldBe` (head x)
           shape (asTensor x) `shouldBe` [length x]
           let xx = replicate 5 x
           asValue (asTensor xx) `shouldBe` xx

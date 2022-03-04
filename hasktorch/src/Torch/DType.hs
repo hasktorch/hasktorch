@@ -5,6 +5,8 @@
 
 module Torch.DType where
 
+import Data.Complex
+import qualified Numeric.Half as N
 import Data.Int
 import Data.Reflection
 import Data.Word
@@ -83,6 +85,12 @@ instance Reifies Int64 DType where
 instance Reifies 'Int64 DType where
   reflect _ = Int64
 
+instance Reifies N.Half DType where
+  reflect _ = Half
+
+instance Reifies 'Half DType where
+  reflect _ = Half
+
 instance Reifies Float DType where
   reflect _ = Float
 
@@ -94,6 +102,24 @@ instance Reifies Double DType where
 
 instance Reifies 'Double DType where
   reflect _ = Double
+
+instance Reifies (Complex N.Half) DType where
+  reflect _ = ComplexHalf
+
+instance Reifies 'ComplexHalf DType where
+  reflect _ = ComplexHalf
+
+instance Reifies (Complex Float) DType where
+  reflect _ = ComplexFloat
+
+instance Reifies 'ComplexFloat DType where
+  reflect _ = ComplexFloat
+
+instance Reifies (Complex Double) DType where
+  reflect _ = ComplexDouble
+
+instance Reifies 'ComplexDouble DType where
+  reflect _ = ComplexDouble
 
 instance Castable DType ATen.ScalarType where
   cast Bool f = f ATen.kBool
@@ -148,6 +174,24 @@ isIntegral QInt8 = False
 isIntegral QUInt8 = False
 isIntegral QInt32 = False
 isIntegral BFloat16 = False
+
+isComplex :: DType -> Bool
+isComplex Bool = False
+isComplex UInt8 = False
+isComplex Int8 = False
+isComplex Int16 = False
+isComplex Int32 = False
+isComplex Int64 = False
+isComplex Half = False
+isComplex Float = False
+isComplex Double = False
+isComplex ComplexHalf = True
+isComplex ComplexFloat = True
+isComplex ComplexDouble = True
+isComplex QInt8 = False
+isComplex QUInt8 = False
+isComplex QInt32 = False
+isComplex BFloat16 = False
 
 byteLength :: DType -> Int
 byteLength dtype =
