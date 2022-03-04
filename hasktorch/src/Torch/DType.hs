@@ -175,6 +175,24 @@ isIntegral QUInt8 = False
 isIntegral QInt32 = False
 isIntegral BFloat16 = False
 
+isComplex :: DType -> Bool
+isComplex Bool = False
+isComplex UInt8 = False
+isComplex Int8 = False
+isComplex Int16 = False
+isComplex Int32 = False
+isComplex Int64 = False
+isComplex Half = False
+isComplex Float = False
+isComplex Double = False
+isComplex ComplexHalf = True
+isComplex ComplexFloat = True
+isComplex ComplexDouble = True
+isComplex QInt8 = False
+isComplex QUInt8 = False
+isComplex QInt32 = False
+isComplex BFloat16 = False
+
 byteLength :: DType -> Int
 byteLength dtype =
   case dtype of
