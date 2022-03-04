@@ -17,6 +17,7 @@ module Torch.Tensor where
 
 import Control.Exception.Safe (throwIO)
 import Control.Monad (forM, forM_)
+import Numeric.Half
 import Data.Complex
 import Data.Int (Int16, Int64)
 import Data.List (intercalate)
@@ -123,7 +124,16 @@ dtype ::
 dtype t = unsafePerformIO $ cast1 ATen.tensor_scalar_type t
 
 toComplex :: Tensor -> Complex Double
-toComplex t = unsafePerformIO $ withTensor t $ \ptr -> peekElemOff (castPtr ptr) 0
+toComplex t = unsafePerformIO $
+    case dtype t of
+      ComplexHalf -> do
+        r :+ i  <- withTensor t $ \ptr -> peekElemOff (castPtr ptr) 0 :: IO (Complex Half)
+        return (realToFrac r :+ realToFrac i)
+      ComplexFloat -> do
+        r :+ i  <- withTensor t $ \ptr -> peekElemOff (castPtr ptr) 0 :: IO (Complex Float)
+        return (realToFrac r :+ realToFrac i)
+      ComplexDouble -> withTensor t $ \ptr -> peekElemOff (castPtr ptr) 0 :: IO (Complex Double)
+      _ -> (:+ 0) <$> cast1 ATen.tensor_item_double t
 
 toDouble :: Tensor -> Double
 toDouble t = unsafePerformIO $ cast1 ATen.tensor_item_double t
