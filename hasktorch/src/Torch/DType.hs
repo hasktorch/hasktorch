@@ -5,6 +5,8 @@
 
 module Torch.DType where
 
+import Data.Complex
+import qualified Numeric.Half as N
 import Data.Int
 import Data.Reflection
 import Data.Word
@@ -83,6 +85,12 @@ instance Reifies Int64 DType where
 instance Reifies 'Int64 DType where
   reflect _ = Int64
 
+instance Reifies N.Half DType where
+  reflect _ = Half
+
+instance Reifies 'Half DType where
+  reflect _ = Half
+
 instance Reifies Float DType where
   reflect _ = Float
 
@@ -94,6 +102,24 @@ instance Reifies Double DType where
 
 instance Reifies 'Double DType where
   reflect _ = Double
+
+instance Reifies (Complex N.Half) DType where
+  reflect _ = ComplexHalf
+
+instance Reifies 'ComplexHalf DType where
+  reflect _ = ComplexHalf
+
+instance Reifies (Complex Float) DType where
+  reflect _ = ComplexFloat
+
+instance Reifies 'ComplexFloat DType where
+  reflect _ = ComplexFloat
+
+instance Reifies (Complex Double) DType where
+  reflect _ = ComplexDouble
+
+instance Reifies 'ComplexDouble DType where
+  reflect _ = ComplexDouble
 
 instance Castable DType ATen.ScalarType where
   cast Bool f = f ATen.kBool
