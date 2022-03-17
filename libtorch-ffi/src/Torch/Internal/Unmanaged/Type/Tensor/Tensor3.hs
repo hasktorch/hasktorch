@@ -158,6 +158,42 @@ tensor___ilshift___t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
+tensor_bitwise_left_shift_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_bitwise_left_shift_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_left_shift(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_bitwise_left_shift__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_bitwise_left_shift__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_left_shift_(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_bitwise_left_shift_s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_bitwise_left_shift_s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_left_shift(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_bitwise_left_shift__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_bitwise_left_shift__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_left_shift_(
+    *$(at::Scalar* _other)));
+  }|]
+
 tensor___rshift___s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -194,6 +230,42 @@ tensor___irshift___t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
+tensor_bitwise_right_shift_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_bitwise_right_shift_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_right_shift(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_bitwise_right_shift__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_bitwise_right_shift__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_right_shift_(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_bitwise_right_shift_s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_bitwise_right_shift_s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_right_shift(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_bitwise_right_shift__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_bitwise_right_shift__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_right_shift_(
+    *$(at::Scalar* _other)));
+  }|]
+
 tensor_tril__l
   :: Ptr Tensor
   -> Int64
@@ -220,19 +292,6 @@ tensor_digamma_ _obj =
     ));
   }|]
 
-tensor_renorm__sls
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> Int64
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_renorm__sls _obj _p _dim _maxnorm =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).renorm_(
-    *$(at::Scalar* _p)
-  , $(int64_t _dim)
-  , *$(at::Scalar* _maxnorm)));
-  }|]
-
 tensor_lerp__ts
   :: Ptr Tensor
   -> Ptr Tensor
@@ -253,42 +312,6 @@ tensor_lerp__tt _obj _end _weight =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).lerp_(
     *$(at::Tensor* _end)
   , *$(at::Tensor* _weight)));
-  }|]
-
-tensor_fmod__s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_fmod__s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).fmod_(
-    *$(at::Scalar* _other)));
-  }|]
-
-tensor_fmod__t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_fmod__t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).fmod_(
-    *$(at::Tensor* _other)));
-  }|]
-
-tensor_remainder__s
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_remainder__s _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).remainder_(
-    *$(at::Scalar* _other)));
-  }|]
-
-tensor_remainder__t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_remainder__t _obj _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).remainder_(
-    *$(at::Tensor* _other)));
   }|]
 
 tensor_addbmm__ttss
@@ -319,19 +342,6 @@ tensor_addbmm_ttss _obj _batch1 _batch2 _beta _alpha =
   , *$(at::Tensor* _batch2)
   , *$(at::Scalar* _beta)
   , *$(at::Scalar* _alpha)));
-  }|]
-
-tensor_addcdiv__tts
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-tensor_addcdiv__tts _obj _tensor1 _tensor2 _value =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).addcdiv_(
-    *$(at::Tensor* _tensor1)
-  , *$(at::Tensor* _tensor2)
-  , *$(at::Scalar* _value)));
   }|]
 
 tensor_random__llG
@@ -919,6 +929,14 @@ tensor_nonzero_numpy _obj =
     ));
   }|]
 
+tensor_argwhere
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_argwhere _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).argwhere(
+    ));
+  }|]
+
 tensor_gather_ltb
   :: Ptr Tensor
   -> Int64
@@ -984,6 +1002,19 @@ tensor_addcdiv_tts _obj _tensor1 _tensor2 _value =
   , *$(at::Scalar* _value)));
   }|]
 
+tensor_addcdiv__tts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_addcdiv__tts _obj _tensor1 _tensor2 _value =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).addcdiv_(
+    *$(at::Tensor* _tensor1)
+  , *$(at::Tensor* _tensor2)
+  , *$(at::Scalar* _value)));
+  }|]
+
 tensor_lstsq_t
   :: Ptr Tensor
   -> Ptr Tensor
@@ -1005,6 +1036,21 @@ tensor_triangular_solve_tbbb _obj _A _upper _transpose _unitriangular =
     *$(at::Tensor* _A)
   , $(bool _upper)
   , $(bool _transpose)
+  , $(bool _unitriangular)));
+  }|]
+
+tensor_linalg_solve_triangular_tbbb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> CBool
+  -> CBool
+  -> IO (Ptr Tensor)
+tensor_linalg_solve_triangular_tbbb _obj _B _upper _left _unitriangular =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).linalg_solve_triangular(
+    *$(at::Tensor* _B)
+  , $(bool _upper)
+  , $(bool _left)
   , $(bool _unitriangular)));
   }|]
 
@@ -1304,6 +1350,24 @@ tensor_atan2_t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
+tensor_arctan2_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arctan2_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arctan2(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_arctan2__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_arctan2__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).arctan2_(
+    *$(at::Tensor* _other)));
+  }|]
+
 tensor_lerp_ts
   :: Ptr Tensor
   -> Ptr Tensor
@@ -1339,6 +1403,34 @@ tensor_histc_lss _obj _bins _min _max =
   , *$(at::Scalar* _max)));
   }|]
 
+tensor_histogram_ttb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_histogram_ttb _obj _bins _weight _density =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).histogram(
+    *$(at::Tensor* _bins)
+  , *$(at::Tensor* _weight)
+  , $(bool _density)));
+  }|]
+
+tensor_histogram_latb
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr (StdVector CDouble)
+  -> Ptr Tensor
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_histogram_latb _obj _bins _range _weight _density =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).histogram(
+    $(int64_t _bins)
+  , *$(std::vector<double>* _range)
+  , *$(at::Tensor* _weight)
+  , $(bool _density)));
+  }|]
+
 tensor_fmod_s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1348,12 +1440,30 @@ tensor_fmod_s _obj _other =
     *$(at::Scalar* _other)));
   }|]
 
+tensor_fmod__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_fmod__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).fmod_(
+    *$(at::Scalar* _other)));
+  }|]
+
 tensor_fmod_t
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
 tensor_fmod_t _obj _other =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).fmod(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_fmod__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_fmod__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).fmod_(
     *$(at::Tensor* _other)));
   }|]
 
@@ -1438,12 +1548,30 @@ tensor_remainder_s _obj _other =
     *$(at::Scalar* _other)));
   }|]
 
+tensor_remainder__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_remainder__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).remainder_(
+    *$(at::Scalar* _other)));
+  }|]
+
 tensor_remainder_t
   :: Ptr Tensor
   -> Ptr Tensor
   -> IO (Ptr Tensor)
 tensor_remainder_t _obj _other =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).remainder(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_remainder__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_remainder__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).remainder_(
     *$(at::Tensor* _other)));
   }|]
 
@@ -1517,56 +1645,19 @@ tensor_min_t _obj _other =
     *$(at::Tensor* _other)));
   }|]
 
-tensor_quantile_dlb
-  :: Ptr Tensor
-  -> CDouble
-  -> Int64
-  -> CBool
-  -> IO (Ptr Tensor)
-tensor_quantile_dlb _obj _q _dim _keepdim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).quantile(
-    $(double _q)
-  , $(int64_t _dim)
-  , $(bool _keepdim)));
-  }|]
-
-tensor_quantile_tlb
+tensor_quantile_tlbs
   :: Ptr Tensor
   -> Ptr Tensor
   -> Int64
   -> CBool
+  -> Ptr StdString
   -> IO (Ptr Tensor)
-tensor_quantile_tlb _obj _q _dim _keepdim =
+tensor_quantile_tlbs _obj _q _dim _keepdim _interpolation =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).quantile(
     *$(at::Tensor* _q)
   , $(int64_t _dim)
-  , $(bool _keepdim)));
-  }|]
-
-tensor_nanquantile_dlb
-  :: Ptr Tensor
-  -> CDouble
-  -> Int64
-  -> CBool
-  -> IO (Ptr Tensor)
-tensor_nanquantile_dlb _obj _q _dim _keepdim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nanquantile(
-    $(double _q)
-  , $(int64_t _dim)
-  , $(bool _keepdim)));
-  }|]
-
-tensor_nanquantile_tlb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Int64
-  -> CBool
-  -> IO (Ptr Tensor)
-tensor_nanquantile_tlb _obj _q _dim _keepdim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nanquantile(
-    *$(at::Tensor* _q)
-  , $(int64_t _dim)
-  , $(bool _keepdim)));
+  , $(bool _keepdim)
+  , *$(std::string* _interpolation)));
   }|]
 
 tensor_quantile_dlbs
@@ -1584,15 +1675,15 @@ tensor_quantile_dlbs _obj _q _dim _keepdim _interpolation =
   , *$(std::string* _interpolation)));
   }|]
 
-tensor_quantile_tlbs
+tensor_nanquantile_tlbs
   :: Ptr Tensor
   -> Ptr Tensor
   -> Int64
   -> CBool
   -> Ptr StdString
   -> IO (Ptr Tensor)
-tensor_quantile_tlbs _obj _q _dim _keepdim _interpolation =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).quantile(
+tensor_nanquantile_tlbs _obj _q _dim _keepdim _interpolation =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nanquantile(
     *$(at::Tensor* _q)
   , $(int64_t _dim)
   , $(bool _keepdim)
@@ -1609,21 +1700,6 @@ tensor_nanquantile_dlbs
 tensor_nanquantile_dlbs _obj _q _dim _keepdim _interpolation =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nanquantile(
     $(double _q)
-  , $(int64_t _dim)
-  , $(bool _keepdim)
-  , *$(std::string* _interpolation)));
-  }|]
-
-tensor_nanquantile_tlbs
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Int64
-  -> CBool
-  -> Ptr StdString
-  -> IO (Ptr Tensor)
-tensor_nanquantile_tlbs _obj _q _dim _keepdim _interpolation =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nanquantile(
-    *$(at::Tensor* _q)
   , $(int64_t _dim)
   , $(bool _keepdim)
   , *$(std::string* _interpolation)));
@@ -1746,6 +1822,19 @@ tensor_renorm_sls
   -> IO (Ptr Tensor)
 tensor_renorm_sls _obj _p _dim _maxnorm =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).renorm(
+    *$(at::Scalar* _p)
+  , $(int64_t _dim)
+  , *$(at::Scalar* _maxnorm)));
+  }|]
+
+tensor_renorm__sls
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> Int64
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_renorm__sls _obj _p _dim _maxnorm =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).renorm_(
     *$(at::Scalar* _p)
   , $(int64_t _dim)
   , *$(at::Scalar* _maxnorm)));
@@ -1906,6 +1995,15 @@ tensor_isneginf _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).isneginf(
     ));
   }|]
+
+-- tensor_special_polygamma_t
+--   :: Ptr Tensor
+--   -> Ptr Tensor
+--   -> IO (Ptr Tensor)
+-- tensor_special_polygamma_t _obj _self =
+--   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).special_polygamma(
+--     *$(at::Tensor* _self)));
+--   }|]
 
 tensor_det
   :: Ptr Tensor

@@ -11,7 +11,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
-VERSION=1.9.0
+VERSION=1.11.0
 
 if ! command -v unzip &> /dev/null
 then
@@ -51,7 +51,7 @@ fi
 
 
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu102" or "cu111"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu102" or "cu113"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
     echo "    # Use libtorch-$(VERSION)  w/o -l" 1>&2
     echo "" 1>&2
@@ -60,7 +60,7 @@ usage_exit() {
     echo "" 1>&2
     echo " -a cpu   # Use CPU without CUDA" 1>&2
     echo " -a cu102 # Use CUDA-10.2" 1>&2
-    echo " -a cu111 # Use CUDA-11.1" 1>&2
+    echo " -a cu113 # Use CUDA-11.3" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
@@ -130,7 +130,7 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
 	case "${COMPUTE_ARCH}" in
 	      "cpu" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcpu.zip ;;
 	      "cu102" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu102.zip ;;
-	      "cu111" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu111.zip ;;
+	      "cu113" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu113.zip ;;
               *)
                   1>&2 printf "Error: invalid value '%s' passed to -a\n\n" "$COMPUTE_ARCH"
                   usage_exit
@@ -187,9 +187,9 @@ if ! ($PYTHON -c 'import dataclasses') ; then
     $PYTHON -m pip install --user dataclasses
 fi
 
-if ! ($PYTHON -c 'import typing_extensions') ; then
-    $PYTHON -m pip install --user typing_extensions
-fi
+#if ! ($PYTHON -c 'import typing_extensions') ; then
+#    $PYTHON -m pip install --user typing_extensions
+#fi
 
 # See https://github.com/pytorch/pytorch/blob/master/.circleci/scripts/cpp_doc_push_script.sh
 $PYTHON -m tools.codegen.gen \
@@ -200,12 +200,14 @@ $PYTHON -m tools.codegen.gen \
 
 case "$(uname)" in
   "Darwin")
+    sed -i '' -e "s/::std::/std::/g" build/aten/src/ATen/Declarations.yaml
     sed -i '' -e "s/ name: n$/ name: 'n'/g" -e "s/ name: N$/ name: 'N'/g" build/aten/src/ATen/Declarations.yaml
     sed -i '' -e "s/ name: t$/ name: 't'/g" -e "s/ name: T$/ name: 'T'/g" build/aten/src/ATen/Declarations.yaml
     sed -i '' -e "s/ name: y$/ name: 'y'/g" -e "s/ name: Y$/ name: 'Y'/g" build/aten/src/ATen/Declarations.yaml
     sed -i '' -e "s/ default: \([^'].*\)$/ default: '\1'/g" build/aten/src/ATen/Declarations.yaml
     ;;
   "Linux")
+    sed -i -e "s/::std::/std::/g" build/aten/src/ATen/Declarations.yaml
     sed -i -e "s/ name: n$/ name: 'n'/g" -e "s/ name: N$/ name: 'N'/g" build/aten/src/ATen/Declarations.yaml
     sed -i -e "s/ name: t$/ name: 't'/g" -e "s/ name: T$/ name: 'T'/g" build/aten/src/ATen/Declarations.yaml
     sed -i -e "s/ name: y$/ name: 'y'/g" -e "s/ name: Y$/ name: 'Y'/g" build/aten/src/ATen/Declarations.yaml

@@ -27,9 +27,10 @@ newC10Tuple
   :: IO (ForeignPtr (C10Ptr IVTuple))
 newC10Tuple = cast0 Unmanaged.newC10Tuple
 
-
-
-
+newC10Tuple_tuple
+  :: ForeignPtr IValueList
+  -> IO (ForeignPtr (C10Ptr IVTuple))
+newC10Tuple_tuple  = cast1 Unmanaged.newC10Tuple_tuple
 
 c10Tuple_empty
   :: ForeignPtr (C10Ptr IVTuple)
@@ -46,12 +47,3 @@ c10Tuple_at
   -> CSize
   -> IO (ForeignPtr IValue)
 c10Tuple_at = cast2 Unmanaged.c10Tuple_at
-
-c10Tuple_push_back
-  :: ForeignPtr (C10Ptr IVTuple)
-  -> ForeignPtr IValue
-  -> IO (())
-c10Tuple_push_back = cast2 Unmanaged.c10Tuple_push_back
-
-
-

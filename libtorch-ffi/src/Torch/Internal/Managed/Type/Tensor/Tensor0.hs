@@ -480,6 +480,11 @@ tensor_retain_grad
   -> IO (())
 tensor_retain_grad = cast1 Unmanaged.tensor_retain_grad
 
+tensor_retains_grad
+  :: ForeignPtr Tensor
+  -> IO (CBool)
+tensor_retains_grad = cast1 Unmanaged.tensor_retains_grad
+
 tensor__fw_primal_l
   :: ForeignPtr Tensor
   -> Int64
@@ -558,10 +563,45 @@ tensor_sgn_
   -> IO (ForeignPtr Tensor)
 tensor_sgn_ = cast1 Unmanaged.tensor_sgn_
 
+tensor__conj
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor__conj = cast1 Unmanaged.tensor__conj
+
 tensor_conj
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_conj = cast1 Unmanaged.tensor_conj
+
+tensor__conj_physical
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor__conj_physical = cast1 Unmanaged.tensor__conj_physical
+
+tensor_conj_physical
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_conj_physical = cast1 Unmanaged.tensor_conj_physical
+
+tensor_conj_physical_
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_conj_physical_ = cast1 Unmanaged.tensor_conj_physical_
+
+tensor_resolve_conj
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_resolve_conj = cast1 Unmanaged.tensor_resolve_conj
+
+tensor_resolve_neg
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_resolve_neg = cast1 Unmanaged.tensor_resolve_neg
+
+tensor__neg_view
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor__neg_view = cast1 Unmanaged.tensor__neg_view
 
 tensor_acos
   :: ForeignPtr Tensor
@@ -1125,6 +1165,19 @@ tensor_cosh_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_cosh_ = cast1 Unmanaged.tensor_cosh_
+
+tensor_cov_ltt
+  :: ForeignPtr Tensor
+  -> Int64
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_cov_ltt = cast4 Unmanaged.tensor_cov_ltt
+
+tensor_corrcoef
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_corrcoef = cast1 Unmanaged.tensor_corrcoef
 
 tensor_cummax_l
   :: ForeignPtr Tensor

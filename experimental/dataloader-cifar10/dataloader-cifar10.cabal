@@ -24,6 +24,6 @@ executable dataloader-cifar10
                      , bytestring >= 0.10.8
                      , random >= 1.1
                      , safe-exceptions
-                     , datasets
+                     , datasets >= 0.4.0
                      , streaming
                      , JuicyPixels

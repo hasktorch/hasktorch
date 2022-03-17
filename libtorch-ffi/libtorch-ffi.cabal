@@ -1,7 +1,7 @@
 cabal-version:       3.0
 name:                libtorch-ffi
-version:             1.9.0.0
--- The prefix(1.9) of this version("1.9.0.0") is the same as libtorch's one.
+version:             1.11.0.0
+-- The prefix(1.11) of this version("1.11.0.0") is the same as libtorch's one.
 synopsis:            test out alternative options for ffi interface to libtorch 1.x
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
@@ -138,7 +138,7 @@ library
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
-                    , inline-c-cpp >= 0.4.0.0
+                    , inline-c-cpp >= 0.4.0.0 && < 0.5.0.0
                     , inline-c >= 0.9.0.0
                     , optparse-applicative >= 0.14.3.0
                     , containers

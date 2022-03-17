@@ -7,7 +7,7 @@ import Torch.Internal.Class (Castable (..))
 import qualified Torch.Internal.Const as ATen
 import qualified Torch.Internal.Type as ATen
 
-data Backend = CPU | CUDA | HIP | SparseCPU | SparseCUDA | MSNPU | XLA
+data Backend = CPU | CUDA | HIP | SparseCPU | SparseCUDA | XLA
   deriving (Eq, Show)
 
 instance Castable Backend ATen.Backend where
@@ -16,7 +16,6 @@ instance Castable Backend ATen.Backend where
   cast HIP f = f ATen.bHIP
   cast SparseCPU f = f ATen.bSparseCPU
   cast SparseCUDA f = f ATen.bSparseCUDA
-  cast MSNPU f = f ATen.bMSNPU
   cast XLA f = f ATen.bXLA
 
   uncast x f
@@ -25,5 +24,4 @@ instance Castable Backend ATen.Backend where
     | x == ATen.bHIP = f HIP
     | x == ATen.bSparseCPU = f SparseCPU
     | x == ATen.bSparseCUDA = f SparseCUDA
-    | x == ATen.bMSNPU = f MSNPU
     | x == ATen.bXLA = f XLA

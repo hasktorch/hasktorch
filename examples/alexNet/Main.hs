@@ -15,7 +15,6 @@ import Text.Regex.TDFA ((=~))
 import Torch.Autograd (IndependentTensor (..))
 import qualified Torch.DType as D
 import Torch.Functional as F hiding (take)
-import Torch.Functional.Internal (repeatInterleaveScalar)
 import Torch.NN as N
 import Torch.Optim (Adam, foldLoop, mkAdam, runStep)
 import Torch.Serialize (load)
@@ -103,7 +102,7 @@ fromMNIST ds =
       batchSize = 16 :: Int
       labelT = V.getLabels' nImages ds [0 .. (nImages -1)]
       imagesT = V.getImages' nImages 784 ds [0 .. (nImages -1)]
-      rimages = repeatInterleaveScalar (reshape [nImages, 1, 28, 28] imagesT) 3 1
+      rimages = F.repeatInterleaveScalar (reshape [nImages, 1, 28, 28] imagesT) 3 1
       rszdImgs = F.upsampleBilinear2d (224, 224) True rimages
       nrmlzdImgs = map normalize $ F.split 1 (F.Dim 0) rszdImgs
 
