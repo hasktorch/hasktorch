@@ -31,7 +31,6 @@ jobs:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
-          .github/workflows/setup-iohk-cache.sh
           sed -i -e 's/"x86_64-linux"//g' flake.nix
           nix flake show
       - run: |
