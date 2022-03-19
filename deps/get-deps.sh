@@ -187,9 +187,9 @@ if ! ($PYTHON -c 'import dataclasses') ; then
     $PYTHON -m pip install --user dataclasses
 fi
 
-#if ! ($PYTHON -c 'import typing_extensions') ; then
-#    $PYTHON -m pip install --user typing_extensions
-#fi
+if ! ($PYTHON -c 'import typing_extensions') ; then
+    $PYTHON -m pip install --user typing_extensions
+fi
 
 # See https://github.com/pytorch/pytorch/blob/master/.circleci/scripts/cpp_doc_push_script.sh
 $PYTHON -m tools.codegen.gen \
