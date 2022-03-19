@@ -227,11 +227,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1647497441,
-        "narHash": "sha256-I4m6vLjInLuYUcobowaAoB+mi769+ti0tmkt0+ieXUU=",
+        "lastModified": 1647710908,
+        "narHash": "sha256-Q087FfbOn5vehzENnpPftp2Fy/vwwighCT3jTVG7nIg=",
         "owner": "hasktorch",
         "repo": "libtorch-nix",
-        "rev": "7c7fd9faf56dbd6e02e5c3c0fa091c63bc601282",
+        "rev": "fbf5bb828c5f1eff0f4cf0c88c6eb436845273b3",
         "type": "github"
       },
       "original": {
