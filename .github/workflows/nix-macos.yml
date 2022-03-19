@@ -45,8 +45,8 @@ jobs:
           retry-nix-build () {
             echo $@
             nix build $@ -L || \
-            (sleep 2; nix build $@ --dry-run --json ; sync ; sleep 2; nix build $@ -L) || \
-            (sleep 2; nix build $@ --dry-run --json ; sync ; sleep 2; nix build $@ -L)
+            (nix build $@ --dry-run --store https://hashtorch.cachix.org ; nix build $@ -L) || \
+            (nix build $@ --dry-run --store https://hashtorch.cachix.org ; nix build $@ -L)
           }
           retry-nix-build '.#bounding-box-cpu:exe:bounding-box'
           retry-nix-build '.#codegen:exe:codegen-exe'
