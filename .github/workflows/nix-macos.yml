@@ -41,44 +41,39 @@ jobs:
           nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
           nix build '.#checks.x86_64-darwin.libtorch-ffi-cpu:test:spec' -L -j 1
 
-          ignore-dry-run-failure () {
-            echo $@
-            if nix build $@ --dry-run ; then
-              nix build $@ -L
-            else
-              echo dry-run fails. Skip "nix build $@ -L"
-            fi
+          run-nix-build () {
+            nix build $@ --derivation && nix build $@ -L
           }
-          ignore-dry-run-failure '.#bounding-box-cpu:exe:bounding-box'
-          ignore-dry-run-failure '.#codegen:exe:codegen-exe'
-          ignore-dry-run-failure '.#dataloader-cifar10-cpu:exe:dataloader-cifar10'
-          ignore-dry-run-failure '.#examples-cpu:exe:alexNet'
-          ignore-dry-run-failure '.#examples-cpu:exe:autograd'
-          ignore-dry-run-failure '.#examples-cpu:exe:distill'
-          ignore-dry-run-failure '.#examples-cpu:exe:gaussian-process'
-          ignore-dry-run-failure '.#examples-cpu:exe:gd-field'
-          ignore-dry-run-failure '.#examples-cpu:exe:image-processing'
-          ignore-dry-run-failure '.#examples-cpu:exe:iris-classification'
-          ignore-dry-run-failure '.#examples-cpu:exe:load-torchscript'
-          ignore-dry-run-failure '.#examples-cpu:exe:matrix-factorization'
-          ignore-dry-run-failure '.#examples-cpu:exe:minimal-text-example'
-          ignore-dry-run-failure '.#examples-cpu:exe:mnist-mixed-precision'
-          ignore-dry-run-failure '.#examples-cpu:exe:mnist-mlp'
-          ignore-dry-run-failure '.#examples-cpu:exe:optimizers'
-          ignore-dry-run-failure '.#examples-cpu:exe:optimizers-cpp'
-          ignore-dry-run-failure '.#examples-cpu:exe:optimizers-cpp-typed'
-          ignore-dry-run-failure '.#examples-cpu:exe:regression'
-          ignore-dry-run-failure '.#examples-cpu:exe:regularization'
-          ignore-dry-run-failure '.#examples-cpu:exe:rnn'
-          ignore-dry-run-failure '.#examples-cpu:exe:serialization'
-          ignore-dry-run-failure '.#examples-cpu:exe:static-mnist-cnn'
-          ignore-dry-run-failure '.#examples-cpu:exe:static-mnist-mlp'
-          ignore-dry-run-failure '.#examples-cpu:exe:static-xor-mlp'
-          ignore-dry-run-failure '.#examples-cpu:exe:typed-transformer'
-          ignore-dry-run-failure '.#examples-cpu:exe:vae'
-          ignore-dry-run-failure '.#examples-cpu:exe:xor-mlp'
-          ignore-dry-run-failure '.#hasktorch-gradually-typed-cpu:exe:linear-regression'
-          ignore-dry-run-failure '.#hasktorch-gradually-typed-cpu:exe:neural-interpreter'
-          ignore-dry-run-failure '.#hasktorch-gradually-typed-cpu:exe:two-layer-network'
-          ignore-dry-run-failure '.#untyped-nlp-cpu:exe:untyped-nlp'
+          run-nix-build '.#bounding-box-cpu:exe:bounding-box'
+          run-nix-build '.#codegen:exe:codegen-exe'
+          run-nix-build '.#dataloader-cifar10-cpu:exe:dataloader-cifar10'
+          run-nix-build '.#examples-cpu:exe:alexNet'
+          run-nix-build '.#examples-cpu:exe:autograd'
+          run-nix-build '.#examples-cpu:exe:distill'
+          run-nix-build '.#examples-cpu:exe:gaussian-process'
+          run-nix-build '.#examples-cpu:exe:gd-field'
+          run-nix-build '.#examples-cpu:exe:image-processing'
+          run-nix-build '.#examples-cpu:exe:iris-classification'
+          run-nix-build '.#examples-cpu:exe:load-torchscript'
+          run-nix-build '.#examples-cpu:exe:matrix-factorization'
+          run-nix-build '.#examples-cpu:exe:minimal-text-example'
+          run-nix-build '.#examples-cpu:exe:mnist-mixed-precision'
+          run-nix-build '.#examples-cpu:exe:mnist-mlp'
+          run-nix-build '.#examples-cpu:exe:optimizers'
+          run-nix-build '.#examples-cpu:exe:optimizers-cpp'
+          run-nix-build '.#examples-cpu:exe:optimizers-cpp-typed'
+          run-nix-build '.#examples-cpu:exe:regression'
+          run-nix-build '.#examples-cpu:exe:regularization'
+          run-nix-build '.#examples-cpu:exe:rnn'
+          run-nix-build '.#examples-cpu:exe:serialization'
+          run-nix-build '.#examples-cpu:exe:static-mnist-cnn'
+          run-nix-build '.#examples-cpu:exe:static-mnist-mlp'
+          run-nix-build '.#examples-cpu:exe:static-xor-mlp'
+          run-nix-build '.#examples-cpu:exe:typed-transformer'
+          run-nix-build '.#examples-cpu:exe:vae'
+          run-nix-build '.#examples-cpu:exe:xor-mlp'
+          run-nix-build '.#hasktorch-gradually-typed-cpu:exe:linear-regression'
+          run-nix-build '.#hasktorch-gradually-typed-cpu:exe:neural-interpreter'
+          run-nix-build '.#hasktorch-gradually-typed-cpu:exe:two-layer-network'
+          run-nix-build '.#untyped-nlp-cpu:exe:untyped-nlp'
 
