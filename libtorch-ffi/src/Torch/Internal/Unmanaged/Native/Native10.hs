@@ -818,17 +818,17 @@ sort_tblb _self _stable _dim _descending =
   , $(bool _descending)));
   }|]
 
-sort_tbl
-  :: Ptr Tensor
-  -> CBool
-  -> Int64
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-sort_tbl _self _stable _dim =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::sort(
-    *$(at::Tensor* _self)
-  , $(bool _stable)
-  , $(int64_t _dim)));
-  }|]
+-- sort_tbl
+--   :: Ptr Tensor
+--   -> CBool
+--   -> Int64
+--   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+-- sort_tbl _self _stable _dim =
+--   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::sort(
+--     *$(at::Tensor* _self)
+--   , $(bool _stable)
+--   , $(int64_t _dim)));
+--   }|]
 
 sort_tb
   :: Ptr Tensor
