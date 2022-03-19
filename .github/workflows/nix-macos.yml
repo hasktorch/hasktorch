@@ -42,42 +42,44 @@ jobs:
           nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
           nix build '.#checks.x86_64-darwin.libtorch-ffi-cpu:test:spec' -L -j 1
 
-          retry-nix-build () {
+          ignore-dry-run-failure () {
             echo $@
-            nix build $@ -L || \
-            (nix build $@ --dry-run --impure ; nix build $@ -L) || \
-            (nix build $@ --dry-run --impure ; nix build $@ -L)
+            if nix build $@ --dry-run ; then
+              nix build $@ -L
+            else
+              echo dry-run fails. Skip "nix build $@ -L"
+            fi
           }
-          retry-nix-build '.#bounding-box-cpu:exe:bounding-box'
-          retry-nix-build '.#codegen:exe:codegen-exe'
-          retry-nix-build '.#dataloader-cifar10-cpu:exe:dataloader-cifar10'
-          retry-nix-build '.#examples-cpu:exe:alexNet'
-          retry-nix-build '.#examples-cpu:exe:autograd'
-          retry-nix-build '.#examples-cpu:exe:distill'
-          retry-nix-build '.#examples-cpu:exe:gaussian-process'
-          retry-nix-build '.#examples-cpu:exe:gd-field'
-          retry-nix-build '.#examples-cpu:exe:image-processing'
-          retry-nix-build '.#examples-cpu:exe:iris-classification'
-          retry-nix-build '.#examples-cpu:exe:load-torchscript'
-          retry-nix-build '.#examples-cpu:exe:matrix-factorization'
-          retry-nix-build '.#examples-cpu:exe:minimal-text-example'
-          retry-nix-build '.#examples-cpu:exe:mnist-mixed-precision'
-          retry-nix-build '.#examples-cpu:exe:mnist-mlp'
-          retry-nix-build '.#examples-cpu:exe:optimizers'
-          retry-nix-build '.#examples-cpu:exe:optimizers-cpp'
-          retry-nix-build '.#examples-cpu:exe:optimizers-cpp-typed'
-          retry-nix-build '.#examples-cpu:exe:regression'
-          retry-nix-build '.#examples-cpu:exe:regularization'
-          retry-nix-build '.#examples-cpu:exe:rnn'
-          retry-nix-build '.#examples-cpu:exe:serialization'
-          retry-nix-build '.#examples-cpu:exe:static-mnist-cnn'
-          retry-nix-build '.#examples-cpu:exe:static-mnist-mlp'
-          retry-nix-build '.#examples-cpu:exe:static-xor-mlp'
-          retry-nix-build '.#examples-cpu:exe:typed-transformer'
-          retry-nix-build '.#examples-cpu:exe:vae'
-          retry-nix-build '.#examples-cpu:exe:xor-mlp'
-          retry-nix-build '.#hasktorch-gradually-typed-cpu:exe:linear-regression'
-          retry-nix-build '.#hasktorch-gradually-typed-cpu:exe:neural-interpreter'
-          retry-nix-build '.#hasktorch-gradually-typed-cpu:exe:two-layer-network'
-          retry-nix-build '.#untyped-nlp-cpu:exe:untyped-nlp'
+          ignore-dry-run-failure '.#bounding-box-cpu:exe:bounding-box'
+          ignore-dry-run-failure '.#codegen:exe:codegen-exe'
+          ignore-dry-run-failure '.#dataloader-cifar10-cpu:exe:dataloader-cifar10'
+          ignore-dry-run-failure '.#examples-cpu:exe:alexNet'
+          ignore-dry-run-failure '.#examples-cpu:exe:autograd'
+          ignore-dry-run-failure '.#examples-cpu:exe:distill'
+          ignore-dry-run-failure '.#examples-cpu:exe:gaussian-process'
+          ignore-dry-run-failure '.#examples-cpu:exe:gd-field'
+          ignore-dry-run-failure '.#examples-cpu:exe:image-processing'
+          ignore-dry-run-failure '.#examples-cpu:exe:iris-classification'
+          ignore-dry-run-failure '.#examples-cpu:exe:load-torchscript'
+          ignore-dry-run-failure '.#examples-cpu:exe:matrix-factorization'
+          ignore-dry-run-failure '.#examples-cpu:exe:minimal-text-example'
+          ignore-dry-run-failure '.#examples-cpu:exe:mnist-mixed-precision'
+          ignore-dry-run-failure '.#examples-cpu:exe:mnist-mlp'
+          ignore-dry-run-failure '.#examples-cpu:exe:optimizers'
+          ignore-dry-run-failure '.#examples-cpu:exe:optimizers-cpp'
+          ignore-dry-run-failure '.#examples-cpu:exe:optimizers-cpp-typed'
+          ignore-dry-run-failure '.#examples-cpu:exe:regression'
+          ignore-dry-run-failure '.#examples-cpu:exe:regularization'
+          ignore-dry-run-failure '.#examples-cpu:exe:rnn'
+          ignore-dry-run-failure '.#examples-cpu:exe:serialization'
+          ignore-dry-run-failure '.#examples-cpu:exe:static-mnist-cnn'
+          ignore-dry-run-failure '.#examples-cpu:exe:static-mnist-mlp'
+          ignore-dry-run-failure '.#examples-cpu:exe:static-xor-mlp'
+          ignore-dry-run-failure '.#examples-cpu:exe:typed-transformer'
+          ignore-dry-run-failure '.#examples-cpu:exe:vae'
+          ignore-dry-run-failure '.#examples-cpu:exe:xor-mlp'
+          ignore-dry-run-failure '.#hasktorch-gradually-typed-cpu:exe:linear-regression'
+          ignore-dry-run-failure '.#hasktorch-gradually-typed-cpu:exe:neural-interpreter'
+          ignore-dry-run-failure '.#hasktorch-gradually-typed-cpu:exe:two-layer-network'
+          ignore-dry-run-failure '.#untyped-nlp-cpu:exe:untyped-nlp'
 
