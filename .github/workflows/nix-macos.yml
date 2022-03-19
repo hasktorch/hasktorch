@@ -42,7 +42,7 @@ jobs:
           nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
           nix build '.#checks.x86_64-darwin.libtorch-ffi-cpu:test:spec' -L -j 1
 
-          retry-nix-build () { echo $@ ; nix build $@ -L || (nix build $@ --dry-run --json ; nix build $@ -L) || (nix build $@ --dry-run --json ; nix build $@ -L) ; }
+          retry-nix-build () { echo $@ ; nix build $@ -L || (sleep 1; nix build $@ --dry-run --json ; sleep 1; nix build $@ -L) || (sleep 1; nix build $@ --dry-run --json ; sleep 1; nix build $@ -L) ; }
 
           retry-nix-build '.#bounding-box-cpu:exe:bounding-box'
           retry-nix-build '.#codegen:exe:codegen-exe'
