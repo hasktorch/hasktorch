@@ -28,8 +28,8 @@ jobs:
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
           nix --version
-          sed -i -e 's/"x86_64-linux"//g' flake.nix
-          nix flake show
+          #sed -i -e 's/"x86_64-linux"//g' flake.nix
+          #nix flake show
       - run: |
           nix build '.#codegen:test:doctests' -L -j 1
           nix build '.#checks.x86_64-darwin.codegen:test:spec' -L -j 1
