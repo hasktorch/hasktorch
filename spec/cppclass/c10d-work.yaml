@@ -1,0 +1,18 @@
+signature: Work
+cppname: c10d::ProcessGroup::Work
+hsname: Work
+headers:
+- ../../deps/libtorch/include/c10d/ProcessGroup.hpp
+functions: []
+constructors:
+methods:
+- isCompleted () -> bool
+- isSuccess () const -> bool
+- exception () const -> std::exception_ptr
+- sourceRank () const -> int
+- result () -> std::vector<at::Tensor>
+- synchronize () -> void
+- wait (std::chrono::milliseconds) -> bool
+- abort () -> void
+- getFuture () -> c10::intrusive_ptr<c10::ivalue::Future>
+- retrieveOpType () -> c10d::OpType

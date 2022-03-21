@@ -67,6 +67,9 @@ main = do
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/dimnamelist.yaml" 1
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/symbol.yaml" 1
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/ivalue.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/c10d-store.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/c10d-processgroup.yaml" 1
+  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/c10d-worker.yaml" 1
   RTL.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RP.decodeAndCodeGen (outputDir opts) (specFileDL opts) "spec/bindings.yaml"

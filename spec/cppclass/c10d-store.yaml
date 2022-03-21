@@ -1,0 +1,20 @@
+signature: Store
+cppname: c10d::Store
+hsname: Store
+headers:
+- ../../deps/libtorch/include/c10d/Store.hpp
+functions: []
+constructors:
+methods:
+- set (const std::string &, const std::vector<uint8_t> &) -> void
+- compareSet (const std::string &, const std::vector<uint8_t> &, const std::vector<uint8_t> &) -> std::vector<uint8_t>
+- get (const std::string &) -> std::vector<uint8_t>
+- add (const std::string &, int64_t) -> int64_t
+- deleteKey (const std::string &) -> bool
+- check (const std::vector<std::string> &) -> bool
+- getNumKeys () -> int64_t
+- wait (const std::vector<std::string> &) -> void
+- wait (const std::vector<std::string> &, const std::chrono::milliseconds &) -> void
+- getTimeout () const noexcept -> const std::chrono::milliseconds 
+- setTimeout (const std::chrono::milliseconds &) -> void
+- watchKey (const std::string &, c10d::WatchKeyCallback) -> void
