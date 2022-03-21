@@ -31,6 +31,8 @@ C.include "<torch/script.h>"
 
 C.include "<torch/csrc/jit/serialization/export.h>"
 
+C.include "<torch/csrc/jit/frontend/tracer.h>"
+
 C.include "<vector>"
 
 C.include "<iostream>"

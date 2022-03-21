@@ -121,9 +121,8 @@ instance Castable [ForeignPtr IValue] (ForeignPtr IValueList) where
 
 instance Castable [ForeignPtr IValue] (ForeignPtr (C10Ptr IVTuple)) where
   cast xs f = do
-    l <- newC10Tuple
-    forM_ xs $ (c10Tuple_push_back l)
-    f l
+    cast xs $ \ivalueList -> do
+      f =<< newC10Tuple_tuple ivalueList
   uncast xs f = do
     len <- c10Tuple_size xs
     f =<< mapM (c10Tuple_at xs) [0..(len - 1)]

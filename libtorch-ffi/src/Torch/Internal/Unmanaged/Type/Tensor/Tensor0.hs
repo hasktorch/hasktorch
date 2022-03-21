@@ -751,6 +751,14 @@ tensor_retain_grad _obj =
     );
   }|]
 
+tensor_retains_grad
+  :: Ptr Tensor
+  -> IO (CBool)
+tensor_retains_grad _obj =
+  [C.throwBlock| bool { return (*$(at::Tensor* _obj)).retains_grad(
+    );
+  }|]
+
 tensor__fw_primal_l
   :: Ptr Tensor
   -> Int64
@@ -872,11 +880,67 @@ tensor_sgn_ _obj =
     ));
   }|]
 
+tensor__conj
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor__conj _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))._conj(
+    ));
+  }|]
+
 tensor_conj
   :: Ptr Tensor
   -> IO (Ptr Tensor)
 tensor_conj _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).conj(
+    ));
+  }|]
+
+tensor__conj_physical
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor__conj_physical _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))._conj_physical(
+    ));
+  }|]
+
+tensor_conj_physical
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_conj_physical _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).conj_physical(
+    ));
+  }|]
+
+tensor_conj_physical_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_conj_physical_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).conj_physical_(
+    ));
+  }|]
+
+tensor_resolve_conj
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_resolve_conj _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).resolve_conj(
+    ));
+  }|]
+
+tensor_resolve_neg
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_resolve_neg _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).resolve_neg(
+    ));
+  }|]
+
+tensor__neg_view
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor__neg_view _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))._neg_view(
     ));
   }|]
 
@@ -1764,6 +1828,27 @@ tensor_cosh_
   -> IO (Ptr Tensor)
 tensor_cosh_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).cosh_(
+    ));
+  }|]
+
+tensor_cov_ltt
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_cov_ltt _obj _correction _fweights _aweights =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).cov(
+    $(int64_t _correction)
+  , *$(at::Tensor* _fweights)
+  , *$(at::Tensor* _aweights)));
+  }|]
+
+tensor_corrcoef
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_corrcoef _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).corrcoef(
     ));
   }|]
 

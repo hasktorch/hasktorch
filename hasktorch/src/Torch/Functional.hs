@@ -378,7 +378,6 @@ oneHot ::
   Int ->
   -- | input
   Tensor ->
-  -- |
   Tensor
 oneHot numClasses t = unsafePerformIO $ cast2 ATen.one_hot_tl t numClasses
 
@@ -3171,3 +3170,29 @@ instanceNorm weight bias running_mean running_var training momentum eps input =
       momentum
       eps
       True
+
+repeatInterleaveRange ::
+  -- | repeats
+  Tensor ->
+  Tensor
+repeatInterleaveRange _repeats = unsafePerformIO $ (cast1 ATen.repeat_interleave_t) _repeats
+
+repeatInterleave ::
+  -- | self
+  Tensor ->
+  -- | repeats
+  Tensor ->
+  -- | dim
+  Int ->
+  Tensor
+repeatInterleave _self _repeats _dim = unsafePerformIO $ (cast3 ATen.repeat_interleave_ttl) _self _repeats _dim
+
+repeatInterleaveScalar ::
+  -- | self
+  Tensor ->
+  -- | repeats
+  Int ->
+  -- | dim
+  Int ->
+  Tensor
+repeatInterleaveScalar _self _repeats _dim = unsafePerformIO $ (cast3 ATen.repeat_interleave_tll) _self _repeats _dim

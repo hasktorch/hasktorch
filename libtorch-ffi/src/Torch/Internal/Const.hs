@@ -104,9 +104,6 @@ kHIP = [C.pure| int16_t { (int16_t) at::DeviceType::HIP } |]
 kFPGA :: DeviceType
 kFPGA = [C.pure| int16_t { (int16_t) at::DeviceType::FPGA } |]
 
-kMSNPU :: DeviceType
-kMSNPU = [C.pure| int16_t { (int16_t) at::DeviceType::MSNPU } |]
-
 kXLA :: DeviceType
 kXLA = [C.pure| int16_t { (int16_t) at::DeviceType::XLA } |]
 
@@ -144,9 +141,6 @@ bSparseCUDA = [C.pure| int { (int) at::Backend::SparseCUDA } |]
 
 bSparseHIP :: Backend
 bSparseHIP = [C.pure| int { (int) at::Backend::SparseHIP } |]
-
-bMSNPU :: Backend
-bMSNPU = [C.pure| int { (int) at::Backend::MSNPU } |]
 
 bXLA :: Backend
 bXLA = [C.pure| int { (int) at::Backend::XLA } |]

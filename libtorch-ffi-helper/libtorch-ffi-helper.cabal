@@ -1,7 +1,7 @@
 cabal-version:       3.0
 name:                libtorch-ffi-helper
-version:             1.9.0.0
--- The prefix(1.9) of this version("1.9.0.0") is the same as libtorch's one.
+version:             1.11.0.0
+-- The prefix(1.11) of this version("1.11.0.0") is the same as libtorch's one.
 synopsis:            ffi-wrapper for macos
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme

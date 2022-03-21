@@ -315,6 +315,13 @@ tensor_new_zeros_lo
   -> IO (ForeignPtr Tensor)
 tensor_new_zeros_lo = cast3 Unmanaged.tensor_new_zeros_lo
 
+tensor_new_ones_lo
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+tensor_new_ones_lo = cast3 Unmanaged.tensor_new_ones_lo
+
 tensor_resize__lM
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray
@@ -599,6 +606,21 @@ tensor_is_complex
   -> IO (CBool)
 tensor_is_complex = cast1 Unmanaged.tensor_is_complex
 
+tensor_is_conj
+  :: ForeignPtr Tensor
+  -> IO (CBool)
+tensor_is_conj = cast1 Unmanaged.tensor_is_conj
+
+tensor__is_zerotensor
+  :: ForeignPtr Tensor
+  -> IO (CBool)
+tensor__is_zerotensor = cast1 Unmanaged.tensor__is_zerotensor
+
+tensor_is_neg
+  :: ForeignPtr Tensor
+  -> IO (CBool)
+tensor_is_neg = cast1 Unmanaged.tensor_is_neg
+
 tensor_isreal
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -619,6 +641,11 @@ tensor_is_signed
   :: ForeignPtr Tensor
   -> IO (CBool)
 tensor_is_signed = cast1 Unmanaged.tensor_is_signed
+
+tensor_is_inference
+  :: ForeignPtr Tensor
+  -> IO (CBool)
+tensor_is_inference = cast1 Unmanaged.tensor_is_inference
 
 tensor_kron_t
   :: ForeignPtr Tensor
@@ -808,6 +835,13 @@ tensor_matrix_exp
   -> IO (ForeignPtr Tensor)
 tensor_matrix_exp = cast1 Unmanaged.tensor_matrix_exp
 
+tensor_aminmax_lb
+  :: ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+tensor_aminmax_lb = cast3 Unmanaged.tensor_aminmax_lb
+
 tensor_max_lb
   :: ForeignPtr Tensor
   -> Int64
@@ -850,6 +884,14 @@ tensor_mean_Nbs
   -> ScalarType
   -> IO (ForeignPtr Tensor)
 tensor_mean_Nbs = cast4 Unmanaged.tensor_mean_Nbs
+
+tensor_nanmean_lbs
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> CBool
+  -> ScalarType
+  -> IO (ForeignPtr Tensor)
+tensor_nanmean_lbs = cast4 Unmanaged.tensor_nanmean_lbs
 
 tensor_median
   :: ForeignPtr Tensor
@@ -1031,15 +1073,37 @@ tensor_numpy_T
   -> IO (ForeignPtr Tensor)
 tensor_numpy_T = cast1 Unmanaged.tensor_numpy_T
 
-tensor_is_pinned
-  :: ForeignPtr Tensor
-  -> IO (CBool)
-tensor_is_pinned = cast1 Unmanaged.tensor_is_pinned
-
-tensor_pin_memory
+tensor_matrix_H
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-tensor_pin_memory = cast1 Unmanaged.tensor_pin_memory
+tensor_matrix_H = cast1 Unmanaged.tensor_matrix_H
+
+tensor_mT
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_mT = cast1 Unmanaged.tensor_mT
+
+tensor_mH
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_mH = cast1 Unmanaged.tensor_mH
+
+tensor_adjoint
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_adjoint = cast1 Unmanaged.tensor_adjoint
+
+tensor_is_pinned_D
+  :: ForeignPtr Tensor
+  -> DeviceType
+  -> IO (CBool)
+tensor_is_pinned_D = cast2 Unmanaged.tensor_is_pinned_D
+
+tensor_pin_memory_D
+  :: ForeignPtr Tensor
+  -> DeviceType
+  -> IO (ForeignPtr Tensor)
+tensor_pin_memory_D = cast2 Unmanaged.tensor_pin_memory_D
 
 tensor_pinverse_d
   :: ForeignPtr Tensor
@@ -1108,25 +1172,34 @@ tensor_repeat_l
   -> IO (ForeignPtr Tensor)
 tensor_repeat_l = cast2 Unmanaged.tensor_repeat_l
 
-tensor_repeat_interleave_tl
+tensor_repeat_interleave_tll
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> Int64
+  -> Int64
   -> IO (ForeignPtr Tensor)
-tensor_repeat_interleave_tl = cast3 Unmanaged.tensor_repeat_interleave_tl
+tensor_repeat_interleave_tll = cast4 Unmanaged.tensor_repeat_interleave_tll
 
-tensor_repeat_interleave_ll
+tensor_repeat_interleave_lll
   :: ForeignPtr Tensor
   -> Int64
   -> Int64
+  -> Int64
   -> IO (ForeignPtr Tensor)
-tensor_repeat_interleave_ll = cast3 Unmanaged.tensor_repeat_interleave_ll
+tensor_repeat_interleave_lll = cast4 Unmanaged.tensor_repeat_interleave_lll
 
 tensor_reshape_l
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray
   -> IO (ForeignPtr Tensor)
 tensor_reshape_l = cast2 Unmanaged.tensor_reshape_l
+
+tensor__reshape_alias_ll
+  :: ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+tensor__reshape_alias_ll = cast3 Unmanaged.tensor__reshape_alias_ll
 
 tensor_reshape_as_t
   :: ForeignPtr Tensor
@@ -1143,6 +1216,18 @@ tensor_round_
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 tensor_round_ = cast1 Unmanaged.tensor_round_
+
+tensor_round_l
+  :: ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+tensor_round_l = cast2 Unmanaged.tensor_round_l
+
+tensor_round__l
+  :: ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+tensor_round__l = cast2 Unmanaged.tensor_round__l
 
 tensor_relu
   :: ForeignPtr Tensor
@@ -1196,27 +1281,4 @@ tensor_select_nl
   -> Int64
   -> IO (ForeignPtr Tensor)
 tensor_select_nl = cast3 Unmanaged.tensor_select_nl
-
-tensor_select_ll
-  :: ForeignPtr Tensor
-  -> Int64
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-tensor_select_ll = cast3 Unmanaged.tensor_select_ll
-
-tensor_sigmoid
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_sigmoid = cast1 Unmanaged.tensor_sigmoid
-
-tensor_sigmoid_
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-tensor_sigmoid_ = cast1 Unmanaged.tensor_sigmoid_
-
-tensor_logit_d
-  :: ForeignPtr Tensor
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-tensor_logit_d = cast2 Unmanaged.tensor_logit_d
 

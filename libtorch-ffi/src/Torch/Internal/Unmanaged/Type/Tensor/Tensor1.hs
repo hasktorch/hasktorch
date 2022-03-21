@@ -485,6 +485,17 @@ tensor_new_zeros_lo _obj _size _options =
   , *$(at::TensorOptions* _options)));
   }|]
 
+tensor_new_ones_lo
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+tensor_new_ones_lo _obj _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).new_ones(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
 tensor_resize__lM
   :: Ptr Tensor
   -> Ptr IntArray
@@ -934,6 +945,30 @@ tensor_is_complex _obj =
     );
   }|]
 
+tensor_is_conj
+  :: Ptr Tensor
+  -> IO (CBool)
+tensor_is_conj _obj =
+  [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_conj(
+    );
+  }|]
+
+tensor__is_zerotensor
+  :: Ptr Tensor
+  -> IO (CBool)
+tensor__is_zerotensor _obj =
+  [C.throwBlock| bool { return (*$(at::Tensor* _obj))._is_zerotensor(
+    );
+  }|]
+
+tensor_is_neg
+  :: Ptr Tensor
+  -> IO (CBool)
+tensor_is_neg _obj =
+  [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_neg(
+    );
+  }|]
+
 tensor_isreal
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -964,6 +999,14 @@ tensor_is_signed
   -> IO (CBool)
 tensor_is_signed _obj =
   [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_signed(
+    );
+  }|]
+
+tensor_is_inference
+  :: Ptr Tensor
+  -> IO (CBool)
+tensor_is_inference _obj =
+  [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_inference(
     );
   }|]
 
@@ -1260,6 +1303,17 @@ tensor_matrix_exp _obj =
     ));
   }|]
 
+tensor_aminmax_lb
+  :: Ptr Tensor
+  -> Int64
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_aminmax_lb _obj _dim _keepdim =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).aminmax(
+    $(int64_t _dim)
+  , $(bool _keepdim)));
+  }|]
+
 tensor_max_lb
   :: Ptr Tensor
   -> Int64
@@ -1324,6 +1378,19 @@ tensor_mean_Nbs
 tensor_mean_Nbs _obj _dim _keepdim _dtype =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).mean(
     *$(std::vector<at::Dimname>* _dim)
+  , $(bool _keepdim)
+  , $(at::ScalarType _dtype)));
+  }|]
+
+tensor_nanmean_lbs
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> CBool
+  -> ScalarType
+  -> IO (Ptr Tensor)
+tensor_nanmean_lbs _obj _dim _keepdim _dtype =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).nanmean(
+    *$(std::vector<int64_t>* _dim)
   , $(bool _keepdim)
   , $(at::ScalarType _dtype)));
   }|]
@@ -1607,20 +1674,54 @@ tensor_numpy_T _obj =
     ));
   }|]
 
-tensor_is_pinned
-  :: Ptr Tensor
-  -> IO (CBool)
-tensor_is_pinned _obj =
-  [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_pinned(
-    );
-  }|]
-
-tensor_pin_memory
+tensor_matrix_H
   :: Ptr Tensor
   -> IO (Ptr Tensor)
-tensor_pin_memory _obj =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).pin_memory(
+tensor_matrix_H _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).matrix_H(
     ));
+  }|]
+
+tensor_mT
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_mT _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).mT(
+    ));
+  }|]
+
+tensor_mH
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_mH _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).mH(
+    ));
+  }|]
+
+tensor_adjoint
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_adjoint _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).adjoint(
+    ));
+  }|]
+
+tensor_is_pinned_D
+  :: Ptr Tensor
+  -> DeviceType
+  -> IO (CBool)
+tensor_is_pinned_D _obj _device =
+  [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_pinned(
+    $(at::DeviceType _device));
+  }|]
+
+tensor_pin_memory_D
+  :: Ptr Tensor
+  -> DeviceType
+  -> IO (Ptr Tensor)
+tensor_pin_memory_D _obj _device =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).pin_memory(
+    $(at::DeviceType _device)));
   }|]
 
 tensor_pinverse_d
@@ -1729,26 +1830,30 @@ tensor_repeat_l _obj _repeats =
     *$(std::vector<int64_t>* _repeats)));
   }|]
 
-tensor_repeat_interleave_tl
+tensor_repeat_interleave_tll
   :: Ptr Tensor
   -> Ptr Tensor
   -> Int64
+  -> Int64
   -> IO (Ptr Tensor)
-tensor_repeat_interleave_tl _obj _repeats _dim =
+tensor_repeat_interleave_tll _obj _repeats _dim _output_size =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).repeat_interleave(
     *$(at::Tensor* _repeats)
-  , $(int64_t _dim)));
+  , $(int64_t _dim)
+  , $(int64_t _output_size)));
   }|]
 
-tensor_repeat_interleave_ll
+tensor_repeat_interleave_lll
   :: Ptr Tensor
   -> Int64
   -> Int64
+  -> Int64
   -> IO (Ptr Tensor)
-tensor_repeat_interleave_ll _obj _repeats _dim =
+tensor_repeat_interleave_lll _obj _repeats _dim _output_size =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).repeat_interleave(
     $(int64_t _repeats)
-  , $(int64_t _dim)));
+  , $(int64_t _dim)
+  , $(int64_t _output_size)));
   }|]
 
 tensor_reshape_l
@@ -1758,6 +1863,17 @@ tensor_reshape_l
 tensor_reshape_l _obj _shape =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).reshape(
     *$(std::vector<int64_t>* _shape)));
+  }|]
+
+tensor__reshape_alias_ll
+  :: Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+tensor__reshape_alias_ll _obj _size _stride =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))._reshape_alias(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<int64_t>* _stride)));
   }|]
 
 tensor_reshape_as_t
@@ -1783,6 +1899,24 @@ tensor_round_
 tensor_round_ _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).round_(
     ));
+  }|]
+
+tensor_round_l
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_round_l _obj _decimals =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).round(
+    $(int64_t _decimals)));
+  }|]
+
+tensor_round__l
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_round__l _obj _decimals =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).round_(
+    $(int64_t _decimals)));
   }|]
 
 tensor_relu
@@ -1866,41 +2000,5 @@ tensor_select_nl _obj _dim _index =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).select(
     *$(at::Dimname* _dim)
   , $(int64_t _index)));
-  }|]
-
-tensor_select_ll
-  :: Ptr Tensor
-  -> Int64
-  -> Int64
-  -> IO (Ptr Tensor)
-tensor_select_ll _obj _dim _index =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).select(
-    $(int64_t _dim)
-  , $(int64_t _index)));
-  }|]
-
-tensor_sigmoid
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_sigmoid _obj =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).sigmoid(
-    ));
-  }|]
-
-tensor_sigmoid_
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_sigmoid_ _obj =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).sigmoid_(
-    ));
-  }|]
-
-tensor_logit_d
-  :: Ptr Tensor
-  -> CDouble
-  -> IO (Ptr Tensor)
-tensor_logit_d _obj _eps =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).logit(
-    $(double _eps)));
   }|]
 

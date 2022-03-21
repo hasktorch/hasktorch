@@ -32,6 +32,42 @@ C.include "<vector>"
 
 
 
+tensor_select_ll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_select_ll _obj _dim _index =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).select(
+    $(int64_t _dim)
+  , $(int64_t _index)));
+  }|]
+
+tensor_sigmoid
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_sigmoid _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).sigmoid(
+    ));
+  }|]
+
+tensor_sigmoid_
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_sigmoid_ _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).sigmoid_(
+    ));
+  }|]
+
+tensor_logit_d
+  :: Ptr Tensor
+  -> CDouble
+  -> IO (Ptr Tensor)
+tensor_logit_d _obj _eps =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).logit(
+    $(double _eps)));
+  }|]
+
 tensor_logit__d
   :: Ptr Tensor
   -> CDouble
@@ -127,6 +163,51 @@ tensor_slice_llll _obj _dim _start _end _step =
   , $(int64_t _start)
   , $(int64_t _end)
   , $(int64_t _step)));
+  }|]
+
+tensor_slice_scatter_tllll
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_slice_scatter_tllll _obj _src _dim _start _end _step =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).slice_scatter(
+    *$(at::Tensor* _src)
+  , $(int64_t _dim)
+  , $(int64_t _start)
+  , $(int64_t _end)
+  , $(int64_t _step)));
+  }|]
+
+tensor_select_scatter_tll
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_select_scatter_tll _obj _src _dim _index =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).select_scatter(
+    *$(at::Tensor* _src)
+  , $(int64_t _dim)
+  , $(int64_t _index)));
+  }|]
+
+tensor_diagonal_scatter_tlll
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_diagonal_scatter_tlll _obj _src _offset _dim1 _dim2 =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).diagonal_scatter(
+    *$(at::Tensor* _src)
+  , $(int64_t _offset)
+  , $(int64_t _dim1)
+  , $(int64_t _dim2)));
   }|]
 
 tensor_slogdet
@@ -1326,6 +1407,32 @@ tensor_qscheme _obj =
     );
   }|]
 
+tensor__autocast_to_reduced_precision_bbss
+  :: Ptr Tensor
+  -> CBool
+  -> CBool
+  -> ScalarType
+  -> ScalarType
+  -> IO (Ptr Tensor)
+tensor__autocast_to_reduced_precision_bbss _obj _cuda_enabled _cpu_enabled _cuda_dtype _cpu_dtype =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))._autocast_to_reduced_precision(
+    $(bool _cuda_enabled)
+  , $(bool _cpu_enabled)
+  , $(at::ScalarType _cuda_dtype)
+  , $(at::ScalarType _cpu_dtype)));
+  }|]
+
+tensor__autocast_to_full_precision_bb
+  :: Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr Tensor)
+tensor__autocast_to_full_precision_bb _obj _cuda_enabled _cpu_enabled =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))._autocast_to_full_precision(
+    $(bool _cuda_enabled)
+  , $(bool _cpu_enabled)));
+  }|]
+
 tensor_to_obbM
   :: Ptr Tensor
   -> Ptr TensorOptions
@@ -1556,19 +1663,6 @@ tensor_put_ttb _obj _index _source _accumulate =
   , $(bool _accumulate)));
   }|]
 
-tensor_index_add__ltt
-  :: Ptr Tensor
-  -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_index_add__ltt _obj _dim _index _source =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).index_add_(
-    $(int64_t _dim)
-  , *$(at::Tensor* _index)
-  , *$(at::Tensor* _source)));
-  }|]
-
 tensor_index_add__ltts
   :: Ptr Tensor
   -> Int64
@@ -1582,19 +1676,6 @@ tensor_index_add__ltts _obj _dim _index _source _alpha =
   , *$(at::Tensor* _index)
   , *$(at::Tensor* _source)
   , *$(at::Scalar* _alpha)));
-  }|]
-
-tensor_index_add_ltt
-  :: Ptr Tensor
-  -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_index_add_ltt _obj _dim _index _source =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).index_add(
-    $(int64_t _dim)
-  , *$(at::Tensor* _index)
-  , *$(at::Tensor* _source)));
   }|]
 
 tensor_index_add_ltts
@@ -1731,6 +1812,19 @@ tensor_index_fill_ntt _obj _dim _index _value =
   , *$(at::Tensor* _value)));
   }|]
 
+tensor_scatter_ltt
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_scatter_ltt _obj _dim _index _src =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter(
+    $(int64_t _dim)
+  , *$(at::Tensor* _index)
+  , *$(at::Tensor* _src)));
+  }|]
+
 tensor_scatter__ltt
   :: Ptr Tensor
   -> Int64
@@ -1744,17 +1838,17 @@ tensor_scatter__ltt _obj _dim _index _src =
   , *$(at::Tensor* _src)));
   }|]
 
-tensor_scatter_ltt
+tensor_scatter_lts
   :: Ptr Tensor
   -> Int64
   -> Ptr Tensor
-  -> Ptr Tensor
+  -> Ptr Scalar
   -> IO (Ptr Tensor)
-tensor_scatter_ltt _obj _dim _index _src =
+tensor_scatter_lts _obj _dim _index _value =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter(
     $(int64_t _dim)
   , *$(at::Tensor* _index)
-  , *$(at::Tensor* _src)));
+  , *$(at::Scalar* _value)));
   }|]
 
 tensor_scatter__lts
@@ -1770,17 +1864,64 @@ tensor_scatter__lts _obj _dim _index _value =
   , *$(at::Scalar* _value)));
   }|]
 
-tensor_scatter_lts
+tensor_scatter_ltts
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr StdString
+  -> IO (Ptr Tensor)
+tensor_scatter_ltts _obj _dim _index _src _reduce =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter(
+    $(int64_t _dim)
+  , *$(at::Tensor* _index)
+  , *$(at::Tensor* _src)
+  , *$(std::string* _reduce)));
+  }|]
+
+tensor_scatter__ltts
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr StdString
+  -> IO (Ptr Tensor)
+tensor_scatter__ltts _obj _dim _index _src _reduce =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter_(
+    $(int64_t _dim)
+  , *$(at::Tensor* _index)
+  , *$(at::Tensor* _src)
+  , *$(std::string* _reduce)));
+  }|]
+
+tensor_scatter_ltss
   :: Ptr Tensor
   -> Int64
   -> Ptr Tensor
   -> Ptr Scalar
+  -> Ptr StdString
   -> IO (Ptr Tensor)
-tensor_scatter_lts _obj _dim _index _value =
+tensor_scatter_ltss _obj _dim _index _value _reduce =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter(
     $(int64_t _dim)
   , *$(at::Tensor* _index)
-  , *$(at::Scalar* _value)));
+  , *$(at::Scalar* _value)
+  , *$(std::string* _reduce)));
+  }|]
+
+tensor_scatter__ltss
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> Ptr StdString
+  -> IO (Ptr Tensor)
+tensor_scatter__ltss _obj _dim _index _value _reduce =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter_(
+    $(int64_t _dim)
+  , *$(at::Tensor* _index)
+  , *$(at::Scalar* _value)
+  , *$(std::string* _reduce)));
   }|]
 
 tensor_scatter_ntt
@@ -1809,34 +1950,17 @@ tensor_scatter_nts _obj _dim _index _value =
   , *$(at::Scalar* _value)));
   }|]
 
-tensor_scatter__ltts
+tensor_scatter_add_ltt
   :: Ptr Tensor
   -> Int64
   -> Ptr Tensor
   -> Ptr Tensor
-  -> Ptr StdString
   -> IO (Ptr Tensor)
-tensor_scatter__ltts _obj _dim _index _src _reduce =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter_(
+tensor_scatter_add_ltt _obj _dim _index _src =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter_add(
     $(int64_t _dim)
   , *$(at::Tensor* _index)
-  , *$(at::Tensor* _src)
-  , *$(std::string* _reduce)));
-  }|]
-
-tensor_scatter__ltss
-  :: Ptr Tensor
-  -> Int64
-  -> Ptr Tensor
-  -> Ptr Scalar
-  -> Ptr StdString
-  -> IO (Ptr Tensor)
-tensor_scatter__ltss _obj _dim _index _value _reduce =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter_(
-    $(int64_t _dim)
-  , *$(at::Tensor* _index)
-  , *$(at::Scalar* _value)
-  , *$(std::string* _reduce)));
+  , *$(at::Tensor* _src)));
   }|]
 
 tensor_scatter_add__ltt
@@ -1847,19 +1971,6 @@ tensor_scatter_add__ltt
   -> IO (Ptr Tensor)
 tensor_scatter_add__ltt _obj _dim _index _src =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter_add_(
-    $(int64_t _dim)
-  , *$(at::Tensor* _index)
-  , *$(at::Tensor* _src)));
-  }|]
-
-tensor_scatter_add_ltt
-  :: Ptr Tensor
-  -> Int64
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-tensor_scatter_add_ltt _obj _dim _index _src =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter_add(
     $(int64_t _dim)
   , *$(at::Tensor* _index)
   , *$(at::Tensor* _src)));
@@ -1876,6 +1987,21 @@ tensor_scatter_add_ntt _obj _dim _index _src =
     *$(at::Dimname* _dim)
   , *$(at::Tensor* _index)
   , *$(at::Tensor* _src)));
+  }|]
+
+tensor_scatter_reduce_ltsl
+  :: Ptr Tensor
+  -> Int64
+  -> Ptr Tensor
+  -> Ptr StdString
+  -> Int64
+  -> IO (Ptr Tensor)
+tensor_scatter_reduce_ltsl _obj _dim _index _reduce _output_size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).scatter_reduce(
+    $(int64_t _dim)
+  , *$(at::Tensor* _index)
+  , *$(std::string* _reduce)
+  , $(int64_t _output_size)));
   }|]
 
 tensor_eq__s

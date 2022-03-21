@@ -59,7 +59,7 @@
       hasktorch.overlays = {
         cpu-config     = final: prev: { hasktorch-config = build-config.cpu; }     // (libtorch-nix.overlays.cpu final prev);
         cuda-10-config = final: prev: { hasktorch-config = build-config.cuda-10; } // (libtorch-nix.overlays.cudatoolkit_10_2 final prev);
-        cuda-11-config = final: prev: { hasktorch-config = build-config.cuda-11; } // (libtorch-nix.overlays.cudatoolkit_11_1 final prev);
+        cuda-11-config = final: prev: { hasktorch-config = build-config.cuda-11; } // (libtorch-nix.overlays.cudatoolkit_11_3 final prev);
 
         dev-tools = final: prev: {
           haskell-nix = prev.haskell-nix // {

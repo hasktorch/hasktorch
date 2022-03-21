@@ -481,11 +481,11 @@ linspace_ssl
   -> IO (ForeignPtr Tensor)
 linspace_ssl = cast3 Unmanaged.linspace_ssl
 
-linspace_ss
-  :: ForeignPtr Scalar
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-linspace_ss = cast2 Unmanaged.linspace_ss
+-- linspace_ss
+--   :: ForeignPtr Scalar
+--   -> ForeignPtr Scalar
+--   -> IO (ForeignPtr Tensor)
+-- linspace_ss = cast2 Unmanaged.linspace_ss
 
 logspace_ssldo
   :: ForeignPtr Scalar
@@ -511,11 +511,11 @@ logspace_ssl
   -> IO (ForeignPtr Tensor)
 logspace_ssl = cast3 Unmanaged.logspace_ssl
 
-logspace_ss
-  :: ForeignPtr Scalar
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-logspace_ss = cast2 Unmanaged.logspace_ss
+-- logspace_ss
+--   :: ForeignPtr Scalar
+--   -> ForeignPtr Scalar
+--   -> IO (ForeignPtr Tensor)
+-- logspace_ss = cast2 Unmanaged.logspace_ss
 
 ones_lNo
   :: ForeignPtr IntArray
@@ -896,22 +896,22 @@ zeros_like_t
   -> IO (ForeignPtr Tensor)
 zeros_like_t = cast1 Unmanaged.zeros_like_t
 
-_sparse_csr_tensor_tttlo
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr TensorOptions
-  -> IO (ForeignPtr Tensor)
-_sparse_csr_tensor_tttlo = cast5 Unmanaged._sparse_csr_tensor_tttlo
+-- _sparse_csr_tensor_tttlo
+--   :: ForeignPtr Tensor
+--   -> ForeignPtr Tensor
+--   -> ForeignPtr Tensor
+--   -> ForeignPtr IntArray
+--   -> ForeignPtr TensorOptions
+--   -> IO (ForeignPtr Tensor)
+-- _sparse_csr_tensor_tttlo = cast5 Unmanaged._sparse_csr_tensor_tttlo
 
-_sparse_csr_tensor_ttto
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr TensorOptions
-  -> IO (ForeignPtr Tensor)
-_sparse_csr_tensor_ttto = cast4 Unmanaged._sparse_csr_tensor_ttto
+-- _sparse_csr_tensor_ttto
+--   :: ForeignPtr Tensor
+--   -> ForeignPtr Tensor
+--   -> ForeignPtr Tensor
+--   -> ForeignPtr TensorOptions
+--   -> IO (ForeignPtr Tensor)
+-- _sparse_csr_tensor_ttto = cast4 Unmanaged._sparse_csr_tensor_ttto
 
 sparse_coo_tensor_lo
   :: ForeignPtr IntArray

@@ -3,7 +3,8 @@
 set -xe
 
 if ghc --version | grep 9.0.1 ; then
-curl https://www.stackage.org/nightly-2021-07-22/cabal.config > cabal.project.freeze
+curl https://www.stackage.org/nightly-2022-03-17/cabal.config |\
+sed -e 's/.*inline-c-cpp.*//g' > cabal.project.freeze
 else
 curl https://www.stackage.org/lts-17.2/cabal.config > cabal.project.freeze
 fi

@@ -36,7 +36,14 @@ newC10Tuple  =
     );
   }|]
 
-
+newC10Tuple_tuple
+  :: Ptr IValueList
+  -> IO (Ptr (C10Ptr IVTuple))
+newC10Tuple_tuple _obj =
+  [C.throwBlock| c10::intrusive_ptr<at::ivalue::Tuple>* { return new c10::intrusive_ptr<at::ivalue::Tuple>(
+      at::ivalue::Tuple::create(*$(std::vector<at::IValue>* _obj))
+    );
+  }|]
 
 c10Tuple_empty
   :: Ptr (C10Ptr IVTuple)
@@ -61,15 +68,3 @@ c10Tuple_at
 c10Tuple_at _obj _s =
   [C.throwBlock| at::IValue* { return new at::IValue((*$(c10::intrusive_ptr<at::ivalue::Tuple>* _obj))->elements()[$(size_t _s)]);
   }|]
-
-c10Tuple_push_back
-  :: Ptr (C10Ptr IVTuple)
-  -> Ptr IValue
-  -> IO (())
-c10Tuple_push_back _obj _v =
-  [C.throwBlock| void {  (*$(c10::intrusive_ptr<at::ivalue::Tuple>* _obj))->elements().push_back(
-    *$(at::IValue* _v));
-  }|]
-
-
-

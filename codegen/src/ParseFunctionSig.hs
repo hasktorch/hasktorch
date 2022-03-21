@@ -469,7 +469,8 @@ typ =
         _ -> fail "Can not parse ctype."
     arrayrefScalar = lexm $ string "at::ArrayRef<at::Scalar>" >> pure ArrayRefScalar
     cppstring =
-      ((lexm $ string "std::string") >> (pure $ CppString))
+      try ((lexm $ string "std::string") >> (pure $ CppString))
+        <|> try ((lexm $ string "c10::string_view") >> (pure $ CppString))
         <|> ((lexm $ string "str") >> (pure $ CppString))
 
 -- | parser of defaultValue
