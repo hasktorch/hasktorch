@@ -2,9 +2,10 @@ signature: ProcessGroup
 cppname: c10d::ProcessGroup
 hsname: ProcessGroup
 headers:
-- ../../deps/libtorch/include/c10d/ProcessGroup.hpp
+- c10d/ProcessGroup.hpp
 functions: []
 constructors:
+- new () -> ProcessGroup
 methods:
 - getRank () const -> int
 - getSize () const -> int

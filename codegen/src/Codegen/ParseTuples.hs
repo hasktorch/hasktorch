@@ -2,11 +2,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ParseTuples where
+module Codegen.ParseTuples where
 
 import Data.Yaml
 import GHC.Generics
-import qualified ParseFunctionSig as S
+import qualified Codegen.ParseFunctionSig as S
 
 {- spec/tuples.yaml -}
 

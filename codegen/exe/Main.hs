@@ -5,10 +5,10 @@
 module Main where
 
 import qualified Options.Applicative as O
-import qualified RenderClass as RC
-import qualified RenderDeclarations as RD
-import qualified RenderPure as RP
-import qualified RenderTuples as RTL
+import qualified Codegen.RenderClass as RC
+import qualified Codegen.RenderDeclarations as RD
+import qualified Codegen.RenderPure as RP
+import qualified Codegen.RenderTuples as RTL
 
 {- CLI options -}
 
@@ -68,8 +68,8 @@ main = do
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/symbol.yaml" 1
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/ivalue.yaml" 1
   RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/c10d-store.yaml" 1
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/c10d-processgroup.yaml" 1
-  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/c10d-worker.yaml" 1
+--  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/c10d-processgroup.yaml" 1
+--  RC.decodeAndCodeGen (outputDir opts) "spec/cppclass/c10d-work.yaml" 1
   RTL.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RD.decodeAndCodeGen (outputDir opts) (specFileDL opts)
   RP.decodeAndCodeGen (outputDir opts) (specFileDL opts) "spec/bindings.yaml"

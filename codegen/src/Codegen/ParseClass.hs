@@ -2,12 +2,12 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ParseClass where
+module Codegen.ParseClass where
 
 import Data.Yaml
 import GHC.Generics
 -- import Text.Show.Prettyprint (prettyPrint)
-import qualified ParseFunctionSig as S
+import qualified Codegen.ParseFunctionSig as S
 
 data CppClassSpec = CppClassSpec
   { signature :: String,

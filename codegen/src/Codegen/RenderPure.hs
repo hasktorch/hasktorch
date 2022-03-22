@@ -5,7 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module RenderPure where
+module Codegen.RenderPure where
 
 import Data.Aeson.Types -- (defaultOptions, genericParseJSON, constructorTagModifier, sumEncoding(..))
 import Data.List (isPrefixOf, isSuffixOf, sort)
@@ -15,9 +15,9 @@ import Data.Text (Text)
 import qualified Data.Text.IO as T
 import qualified Data.Yaml as Y
 import GHC.Generics
-import qualified ParseDeclarations as D
-import ParseFunctionSig as P
-import RenderCommon
+import qualified Codegen.ParseDeclarations as D
+import Codegen.ParseFunctionSig as P
+import Codegen.RenderCommon
 import System.Directory (createDirectoryIfMissing)
 import Text.Shakespeare.Text (st)
 

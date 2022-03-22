@@ -5,7 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module RenderDeclarations where
+module Codegen.RenderDeclarations where
 
 import Control.Monad (forM_)
 import qualified Data.Set as S
@@ -13,9 +13,9 @@ import Data.Text (Text, replace, unpack)
 import qualified Data.Text.IO as T
 import Data.Yaml (ParseException)
 import qualified Data.Yaml as Y
-import qualified ParseDeclarations as D
-import ParseFunctionSig as P
-import RenderCommon
+import qualified Codegen.ParseDeclarations as D
+import Codegen.ParseFunctionSig as P
+import Codegen.RenderCommon
 import System.Directory (createDirectoryIfMissing)
 import Text.Shakespeare.Text (st)
 

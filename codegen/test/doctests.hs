@@ -6,5 +6,5 @@ main :: IO ()
 main = do
   doctest $
     [ "-XOverloadedStrings",
-      "src/ParseFunctionSig.hs"
+      "src/Codegen/ParseFunctionSig.hs"
     ]

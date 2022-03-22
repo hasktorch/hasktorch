@@ -2,9 +2,10 @@ signature: Work
 cppname: c10d::ProcessGroup::Work
 hsname: Work
 headers:
-- ../../deps/libtorch/include/c10d/ProcessGroup.hpp
+- c10d/ProcessGroup.hpp
 functions: []
 constructors:
+- new() -> Work
 methods:
 - isCompleted () -> bool
 - isSuccess () const -> bool
