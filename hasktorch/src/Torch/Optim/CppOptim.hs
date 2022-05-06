@@ -61,7 +61,7 @@ class CppOptimizer option where
   initOptimizer :: Parameterized model => option -> model -> IO (CppOptimizerState option)
   unsafeStep :: Parameterized model => model -> CppOptimizerState option -> Tensor -> IO (model, CppOptimizerState option)
   unsafeStep model o@(CppOptimizerState _ optimizer) loss = do
-    v <- cast3 LibTorch.unsafeStep optimizer (map toDependent $ flattenParameters model) loss
+    v <- cast2 LibTorch.unsafeStep optimizer loss
     let newModel = replaceParameters model $ map (IndependentTensor . Unsafe) v
     return (newModel, o)
 

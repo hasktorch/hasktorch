@@ -81,12 +81,12 @@ class CppOptimizer option where
     Tensor dev dtype lossShape ->
     IO (model, CppOptimizerState option (Parameters model))
   unsafeStep model o@(CppOptimizerState _ optimizer) loss = do
-    let deps :: HList tensors
-        deps = hmap' ToDependent $ flattenParameters model
+    -- let deps :: HList tensors
+    --    deps = hmap' ToDependent $ flattenParameters model
 
     -- Debug.traceIO $ "Tensors in: "
     -- cast deps (Debug.traceIO . show . map (TD.shape . TD.Unsafe))
-    v :: [TD.ATenTensor] <- cast3 LibTorch.unsafeStep optimizer deps loss
+    v :: [TD.ATenTensor] <- cast2 LibTorch.unsafeStep optimizer loss
     -- Debug.traceIO $ "Params returned by unsafeStep: "<>show (length v)
 
     newParamTensors :: HList tensors <- uncast v pure

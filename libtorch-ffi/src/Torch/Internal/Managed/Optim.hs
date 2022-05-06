@@ -140,8 +140,8 @@ stepWithGenerator optimizer generator loss = do
       return $ unsafeForeignPtrToPtr ret
 
 
-unsafeStep :: ForeignPtr Optimizer -> ForeignPtr TensorList -> ForeignPtr Tensor -> IO (ForeignPtr TensorList)
-unsafeStep = cast3 Unmanaged.unsafeStep
+unsafeStep :: ForeignPtr Optimizer -> ForeignPtr Tensor -> IO (ForeignPtr TensorList)
+unsafeStep = cast2 Unmanaged.unsafeStep
 
 save :: ForeignPtr Optimizer -> ForeignPtr StdString -> IO ()
 save = cast2 Unmanaged.save
