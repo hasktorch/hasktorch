@@ -28,6 +28,9 @@ grad y inputs = unsafePerformIO $ cast2 Torch.Internal.Managed.Autograd.grad y (
 requiresGrad :: Tensor -> Bool
 requiresGrad t = unsafePerformIO $ cast1 ATen.tensor_requires_grad t
 
+setRequiresGrad :: Bool -> Tensor -> Tensor
+setRequiresGrad flag t = unsafePerformIO $ cast2 ATen.tensor_set_requires_grad_b t flag
+
 makeIndependent :: Tensor -> IO IndependentTensor
 makeIndependent tensor = makeIndependentWithRequiresGrad tensor True
 

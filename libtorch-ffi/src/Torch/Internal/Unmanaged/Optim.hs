@@ -313,14 +313,13 @@ stepWithGenerator optimizer generator lossFunc =
     lossFunc' :: Ptr () -> Ptr () -> IO (Ptr ())
     lossFunc' params generator = castPtr <$> lossFunc (castPtr params) (castPtr generator)
 
--- After this function is called, params(TensorList) of input is updated.
--- TensorList of output is the same as input's params(TensorList).
-unsafeStep :: Ptr Optimizer -> Ptr TensorList -> Ptr Tensor -> IO (Ptr TensorList)
-unsafeStep optimizer params loss =
+-- After this function is called, params(TensorList) of optimizer is updated.
+-- TensorList of output is the same as optimizer's params(TensorList).
+unsafeStep :: Ptr Optimizer -> Ptr Tensor -> IO (Ptr TensorList)
+unsafeStep optimizer loss =
   [C.throwBlock| std::vector<at::Tensor>* {
     auto optimizer = $(torch::optim::Optimizer* optimizer);
     auto loss = $(at::Tensor* loss);
-    optimizer->param_groups().at(0).params() = *$(std::vector<at::Tensor>* params);
     optimizer->zero_grad();
     loss->backward();
     optimizer->step();
