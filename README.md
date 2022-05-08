@@ -242,7 +242,7 @@ $ cachix use hasktorch                                     # (Optional) Use hask
 Starting from the top-level directory of the project, run:
 
 ```sh
-$ nix-shell  # Enter the nix shell environment for Hasktorch.
+$ nix develop  # Enter the nix shell environment for Hasktorch.
 ```
 
 To build and test the Hasktorch library, run:
@@ -284,7 +284,13 @@ $ cachix use hasktorch                                     # (Optional) Use hask
 Starting from the top-level directory of the project, run:
 
 ```sh
-$ nix-shell --arg cudaSupport true --argstr cudaMajorVersion 11  # Enter the nix shell environment for Hasktorch.
+$ cat > nix/dev-config.nix
+{
+  profiling = true;
+  cudaSupport = true;
+  cudaMajorVersion = "11";
+}
+$ nix develop  # Enter the nix shell environment for Hasktorch.
 ```
 
 To build and test the Hasktorch library, run:
