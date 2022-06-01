@@ -7,7 +7,7 @@ module Main where
 import Control.Exception.Safe (throw, throwString)
 import Data.Proxy
 import qualified Data.Yaml as Y
-import ParseDeclarations (Declaration)
+import Codegen.ParseDeclarations (Declaration)
 import System.Directory (doesFileExist)
 import Test.Hspec
 

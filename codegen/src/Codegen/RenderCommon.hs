@@ -5,7 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module RenderCommon where
+module Codegen.RenderCommon where
 
 import Data.Char (toLower)
 import qualified Data.List as L
@@ -13,8 +13,8 @@ import Data.String (fromString)
 import Data.String.Conversions (cs)
 import Data.Text (Text)
 import qualified Data.Text as T
-import ParseClass as PC
-import ParseFunctionSig as P
+import Codegen.ParseClass as PC
+import Codegen.ParseFunctionSig as P
 import Text.Shakespeare.Text (st)
 
 bra :: Text

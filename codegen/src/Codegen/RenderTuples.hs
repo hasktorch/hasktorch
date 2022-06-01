@@ -5,7 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module RenderTuples where
+module Codegen.RenderTuples where
 
 import Data.List (nubBy)
 import Data.Maybe (mapMaybe)
@@ -14,10 +14,10 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Yaml (ParseException)
 import qualified Data.Yaml as Y
-import qualified ParseDeclarations as D
-import ParseFunctionSig as P
-import qualified ParseTuples as PT
-import RenderCommon
+import qualified Codegen.ParseDeclarations as D
+import Codegen.ParseFunctionSig as P
+import qualified Codegen.ParseTuples as PT
+import Codegen.RenderCommon
 import System.Directory (createDirectoryIfMissing)
 import Text.Shakespeare.Text (st)
 

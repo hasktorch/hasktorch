@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ParseFunctionSig where
+module Codegen.ParseFunctionSig where
 
 --import Text.Megaparsec.Error as M
 
@@ -15,6 +15,7 @@ import GHC.Generics
 import Text.Megaparsec as M
 import Text.Megaparsec.Char as M
 import Text.Megaparsec.Char.Lexer as L
+import qualified Codegen.Config as C
 
 -- Examples:
 -- - func: log10_(Tensor self) -> Tensor
@@ -142,9 +143,6 @@ data TenType
 
 type Parser = Parsec Void String
 
-cppClassList :: [(String, String, String)]
-cppClassList = [("IntArray", "std::vector<int64_t>", "IntArray")]
-
 defBool :: Parser DefaultValue
 defBool = do
   val' <- string "true" <|> string "false" <|> string "True" <|> string "False"
@@ -182,6 +180,19 @@ rword w = (lexm . try) (string w *> notFollowedBy alphaNumChar)
 
 rws :: [String]
 rws = []
+
+trimConst :: Parser a -> Parser a
+trimConst next =
+  ((try (lexm $ string "const")) >> next) <|> next
+
+trimNoExcept :: Parser a -> Parser a
+trimNoExcept next =
+  ((try (lexm $ string "noexcept")) >> next) <|> next
+
+trimRef :: Parser a -> Parser a
+trimRef next = do
+  a <- next
+  (try (lexm $ string "&") >> pure a) <|> pure a
 
 identStart :: [Char]
 identStart = ['a' .. 'z'] ++ ['A' .. 'Z'] ++ ['_']
@@ -312,7 +323,9 @@ identifier = (lexm . try) (p >>= check)
 -- ArrayRef CDouble
 typ :: Parser Parsable
 typ =
-  tuple
+  trimRef
+    $ trimConst
+    $ tuple
     <|> idxtensor
     <|> booltensorq
     <|> booltensor
@@ -354,11 +367,14 @@ typ =
         <|> ((lexm $ string "ConstQuantizerPtr") >> (pure $ ConstQuantizerPtr))
         <|> ((lexm $ string "IValue") >> (pure $ IValue))
         <|> ((lexm $ try (string "at::Stream") <|> string "Stream") >> (pure $ Stream))
-    cppclass = foldl (<|>) (fail "Can not parse cpptype.") $ map (\(sig, cpptype, hstype) -> ((lexm $ string sig) >> (pure $ CppClass sig cpptype hstype))) cppClassList
+    cppclass = foldl (<|>) (fail "Can not parse cpptype.") $
+      flip map (C.classes C.cppClassList) $ \(C.CppClassSpec sig cpptype hstype) ->
+        (try (lexm $ string cpptype) >> (pure $ CppClass sig cpptype hstype)) <|>
+        (try (lexm $ string sig) >> (pure $ CppClass sig cpptype hstype))
     scalar =
       ((lexm $ string "Scalar?") >> (pure $ TenType ScalarQ))
         <|> ((lexm $ try (string "at::ScalarType") <|> string "ScalarType") >> (pure $ TenType ScalarType))
-        <|> ((lexm $ try (string "const at::Scalar &") <|> string "Scalar") >> (pure $ TenType Scalar))
+        <|> ((lexm $ try (string "const at::Scalar &") <|> try (string "at::Scalar") <|> string "Scalar") >> (pure $ TenType Scalar))
         <|> ((lexm $ string "real") >> (pure $ TenType Scalar))
         <|> ((lexm $ string "accreal") >> (pure $ TenType Scalar))
     idxtensor = do
@@ -379,7 +395,12 @@ typ =
         <|> ((lexm $ try (string "at::TensorList") <|> string "TensorList") >> (pure $ TenType TensorList))
         <|> try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList))
         <|> try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList))
-        <|> try ((lexm $ try (string "const c10::List<c10::optional<at::Tensor>> &") <|> string "const c10::List<c10::optional<Tensor>> &") >> (pure $ TenType C10ListTensor))
+        <|> try ((lexm $
+                  try (string "const c10::List<c10::optional<at::Tensor>> &") <|>
+                  try (string "c10::List<c10::optional<at::Tensor>>") <|>
+                  try (string "const c10::List<c10::optional<Tensor>> &") <|>
+                  string "c10::List<c10::optional<at::Tensor>>"
+                  >> (pure $ TenType C10ListTensor)))
         <|> try ((lexm $ string "Tensor(a)[]") >> (pure $ TenType TensorAVector))
         <|> try ((lexm $ string "Tensor(a)") >> (pure $ TenType TensorA))
         <|> try ((lexm $ string "Tensor(a!)") >> (pure $ TenType TensorA'))
@@ -576,12 +597,12 @@ arg = star <|> param
     param = do
       -- ptype <- lexm $ identifier
       pt <- typ
-      pn <- lexm $ identifier
+      pn <- try (lexm $ identifier) <|> pure ""
       let withDefault = do
             _ <- lexm (string "=")
             v <- defaultValue
             pure (Just v)
-      val' <- withDefault <|> (pure Nothing)
+      val' <- try withDefault <|> (pure Nothing)
       pure $ Parameter pt pn val'
     star = do
       _ <- string "*"
@@ -625,9 +646,9 @@ func = try operator <|> function
       fName <- identifier
       _ <- lexm $ string "("
       -- parse list of parameters
-      args <- (sepBy arg (lexm (string ",")))
+      args <- (sepBy arg (try (lexm (string ","))))
       _ <- lexm $ string ")"
-      _ <- lexm $ string "->"
+      _ <- trimConst $ trimNoExcept $ lexm $ string "->"
       retType' <- rettype
       pure $ Function fName args retType' VFunction
     operator = do
@@ -645,7 +666,7 @@ func = try operator <|> function
           <|> string "[]"
       _ <- lexm $ string "("
       -- parse list of parameters
-      args <- (sepBy arg (lexm (string ",")))
+      args <- (sepBy arg (try (lexm (string ","))))
       _ <- lexm $ string ")"
       _ <- lexm $ string "->"
       retType' <- rettype

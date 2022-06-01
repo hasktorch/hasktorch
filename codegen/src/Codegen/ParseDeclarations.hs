@@ -2,13 +2,13 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module ParseDeclarations where
+module Codegen.ParseDeclarations where
 
 import Data.Aeson.Types (defaultOptions, fieldLabelModifier, genericParseJSON)
 import Data.Yaml
 import GHC.Generics
 -- import Text.Show.Prettyprint (prettyPrint)
-import qualified ParseFunctionSig as S
+import qualified Codegen.ParseFunctionSig as S
 
 {- Declarations.yaml -}
 {- --A example--

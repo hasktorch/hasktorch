@@ -5,7 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module RenderClass where
+module Codegen.RenderClass where
 
 import Control.Monad (forM_)
 import Data.String (fromString)
@@ -13,10 +13,10 @@ import Data.Text (Text, unpack)
 import qualified Data.Text.IO as T
 import Data.Yaml (ParseException)
 import qualified Data.Yaml as Y
-import qualified ParseClass as PC
-import qualified ParseDeclarations as D
-import qualified ParseFunctionSig as P
-import RenderCommon
+import qualified Codegen.ParseClass as PC
+import qualified Codegen.ParseDeclarations as D
+import qualified Codegen.ParseFunctionSig as P
+import Codegen.RenderCommon
 import System.Directory (createDirectoryIfMissing)
 import Text.Shakespeare.Text (st)
 

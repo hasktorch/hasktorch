@@ -1,0 +1,32 @@
+signature: ProcessGroup
+cppname: c10d::ProcessGroup
+hsname: ProcessGroup
+headers:
+- c10d/ProcessGroup.hpp
+functions: []
+constructors:
+- new () -> ProcessGroup
+methods:
+- getRank () const -> int
+- getSize () const -> int
+- getBackendName () const -> const std::string
+- broadcast (std::vector<at::Tensor> &, const c10d::BroadcastOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- allreduce (std::vector<at::Tensor> &, const c10d::AllreduceOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- allreduce_coalesced (std::vector<at::Tensor> &, const c10d::AllreduceCoalescedOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- reduce (std::vector<at::Tensor> &, const c10d::ReduceOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- allgather (std::vector<std::vector<at::Tensor> > &, std::vector<at::Tensor> &, const c10d::AllgatherOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- _allgather_base (at::Tensor &, at::Tensor &, const c10d::AllgatherOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- allgather_coalesced (std::vector<std::vector<at::Tensor> > &, std::vector<at::Tensor> &, const c10d::AllgatherOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- gather (std::vector<std::vector<at::Tensor> > &, std::vector<at::Tensor> &, const c10d::GatherOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- scatter (std::vector<at::Tensor> &, std::vector<std::vector<at::Tensor> > &, const c10d::ScatterOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- reduce_scatter (std::vector<at::Tensor> &, std::vector<std::vector<at::Tensor> > &, const c10d::ReduceScatterOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- _reduce_scatter_base (at::Tensor &, at::Tensor &, const c10d::ReduceScatterOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- alltoall_base (at::Tensor &, at::Tensor &, std::vector<int64_t> &, std::vector<int64_t> &, const c10d::AllToAllOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- alltoall (std::vector<at::Tensor> &, std::vector<at::Tensor> &, const c10d::AllToAllOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
+- monitoredBarrier (const c10d::BarrierOptions &, bool) -> void
+- setSequenceNumberForGroup () -> void
+- getSequenceNumberForGroup () -> uint64_t
+- send (std::vector<at::Tensor> &, int, int) -> c10::intrusive_ptr<ProcessGroup::Work>
+- recv (std::vector<at::Tensor> &, int, int) -> c10::intrusive_ptr<ProcessGroup::Work>
+- recvAnysource (std::vector<at::Tensor> &, int) -> c10::intrusive_ptr<ProcessGroup::Work>
+- barrier (const c10d::BarrierOptions &) -> c10::intrusive_ptr<ProcessGroup::Work>
