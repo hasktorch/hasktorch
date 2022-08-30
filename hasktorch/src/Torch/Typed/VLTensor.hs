@@ -11,7 +11,6 @@
 
 module Torch.Typed.VLTensor where
 
-import Data.Constraint
 import Data.Proxy
 import GHC.TypeLits
 import qualified Torch.DType as D
@@ -63,20 +62,3 @@ unpack input =
       let output = Internal.unbind (toDynamic input') 0
        in map (UnsafeMkTensor @device @dtype @shape) output
 
-forEach :: forall n a. KnownNat n => (forall i. KnownNat i => Proxy i -> a) -> [a]
-forEach func = map (\i -> withNat i func) [0 .. (natValI @n -1)]
-
-unpack' :: forall device dtype shape. VLTensor device dtype shape -> [Tensor device dtype shape]
-unpack' input =
-  case input of
-    (VLTensor (input' :: Tensor device dtype (n : shape))) ->
-      forEachNat @n $ \(Proxy :: Proxy i) -> unsafeConstraint @(InRange (n : shape) 0 i) $ select @0 @i input'
-
-unsafeConstraint :: forall c a. (c => a) -> a
-unsafeConstraint = withDict (dummyDict @c)
-  where
-    dummyDict :: forall b. Dict b
-    dummyDict = unsafeCoerce (Dict :: Dict ())
-
-forEachNat :: forall n a. KnownNat n => (forall i. KnownNat i => Proxy i -> a) -> [a]
-forEachNat func = map (\i -> withNat i func) [0 .. (natValI @n -1)]
