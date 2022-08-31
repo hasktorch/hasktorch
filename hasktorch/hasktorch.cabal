@@ -79,6 +79,7 @@ library
                     , Torch.Typed.Vision
                     , Torch.Typed.Lens
                     , Torch.Typed.NamedTensor
+                    , Torch.Typed.VLTensor
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
                     , Torch.Distributions.Bernoulli
@@ -135,6 +136,7 @@ library
                     , template-haskell
                     , megaparsec
                     , half
+                    , constraints
 
  default-extensions:  Strict
                     , StrictData

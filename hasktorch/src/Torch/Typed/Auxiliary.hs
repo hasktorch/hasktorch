@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Torch.Typed.Auxiliary where
 
@@ -20,6 +21,8 @@ import GHC.TypeLits
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.HList
+import Data.Constraint
+import Unsafe.Coerce (unsafeCoerce)
 
 natValI :: forall n. KnownNat n => Int
 natValI = fromIntegral $ natVal $ Proxy @n
@@ -354,3 +357,33 @@ type family StandardDTypeValidation (device :: (D.DeviceType, Nat)) (dtype :: D.
     )
   StandardDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsNotBool '( 'D.CUDA, deviceIndex) dtype
   StandardDTypeValidation '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
+
+
+--------------------------------------------------------------------------------
+-- An unsafe function to enforce a constraint.
+--------------------------------------------------------------------------------
+
+unsafeConstraint :: forall c a. (c => a) -> a
+unsafeConstraint = withDict (dummyDict @c)
+  where
+    dummyDict :: forall b. Dict b
+    dummyDict = unsafeCoerce (Dict :: Dict ())
+
+--------------------------------------------------------------------------------
+-- Helper functions to handle nat at runtime.
+--------------------------------------------------------------------------------
+
+withNat ::
+  Int ->
+  ( forall n.
+    KnownNat n =>
+    Proxy n ->
+    r
+  ) ->
+  r
+withNat i f = case someNatVal (fromIntegral i) of
+  Nothing -> error "Negative Number in withNat!"
+  (Just (SomeNat p)) -> f p
+
+forEachNat :: forall n a. KnownNat n => (forall i. KnownNat i => Proxy i -> a) -> [a]
+forEachNat func = map (\i -> withNat i func) [0 .. (natValI @n -1)]
