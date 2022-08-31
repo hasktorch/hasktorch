@@ -92,6 +92,7 @@ library
                     , Torch.Data.CsvDatastream
                     , Torch.Tutorial
                     , Torch.Index
+                    , Torch.Jit
 
  other-modules:       Paths_hasktorch
  hs-source-dirs:      src
