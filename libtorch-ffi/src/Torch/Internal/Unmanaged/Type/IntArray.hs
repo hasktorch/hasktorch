@@ -19,6 +19,7 @@ import qualified Data.Map as Map
 import Foreign.C.String
 import Foreign.C.Types
 import Foreign
+import Foreign.Marshal.Array
 import Torch.Internal.Type
 
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
@@ -70,4 +71,17 @@ intArray_push_back_l _obj _v =
   [C.throwBlock| void {  (*$(std::vector<int64_t>* _obj)).push_back(
     $(int64_t _v));
   }|]
+
+intArray_fromList
+  :: Ptr IntArray
+  -> [Int64]
+  -> IO (())
+intArray_fromList _obj _v = do
+  let size = fromIntegral $ length _v
+  ptr <- [C.throwBlock| int64_t* {
+                        (*$(std::vector<int64_t>* _obj)).resize($(int size));
+                        return (int64_t*)((*$(std::vector<int64_t>* _obj)).data());
+                      }|]
+  pokeArray (ptr :: Ptr Int64)  _v
+  
 

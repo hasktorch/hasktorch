@@ -79,17 +79,17 @@ instance Num Tensor where
   (+) = add
   (-) = sub
   (*) = mul
-  negate t = unsafePerformIO $ cast1 ATen.neg_t t
-  abs t = unsafePerformIO $ cast1 ATen.abs_t t
-  signum t = unsafePerformIO $ cast1 ATen.sign_t t
+  negate t = unsafePerformIO $ cast1' ATen.neg_t t
+  abs t = unsafePerformIO $ cast1' ATen.abs_t t
+  signum t = unsafePerformIO $ cast1' ATen.sign_t t
   fromInteger i = asTensor @Int $ fromInteger @Int i
 
 instance Eq Tensor where
   (==) t t' = all (t `eq` t')
 
 instance Fractional Tensor where
-  a / b = unsafePerformIO $ cast2 ATen.div_tt a b
-  recip t = unsafePerformIO $ cast1 ATen.reciprocal_t t
+  a / b = unsafePerformIO $ cast2' ATen.div_tt a b
+  recip t = unsafePerformIO $ cast1' ATen.reciprocal_t t
   fromRational i = asTensor @Float $ fromRational @Float i
 
 -- Return upper or lower triangular matrices
@@ -130,7 +130,7 @@ mean ::
   Tensor ->
   -- | output
   Tensor
-mean t = unsafePerformIO $ cast1 ATen.mean_t t
+mean t = unsafePerformIO $ cast1' ATen.mean_t t
 
 -- | Returns the standard deviation of all elements in the input tensor.
 std ::
@@ -138,7 +138,7 @@ std ::
   Tensor ->
   -- | output
   Tensor
-std t = unsafePerformIO $ cast1 ATen.std_t t
+std t = unsafePerformIO $ cast1' ATen.std_t t
 
 -- | Returns the variance of all elements in the input tensor.
 var ::
@@ -146,7 +146,7 @@ var ::
   Tensor ->
   -- | output
   Tensor
-var t = unsafePerformIO $ cast1 ATen.var_t t
+var t = unsafePerformIO $ cast1' ATen.var_t t
 
 -- | Returns the sum of all elements in the input tensor.
 sumAll ::
@@ -154,7 +154,7 @@ sumAll ::
   Tensor ->
   -- | output
   Tensor
-sumAll t = unsafePerformIO $ cast1 ATen.sum_t t
+sumAll t = unsafePerformIO $ cast1' ATen.sum_t t
 
 -- | Computes the element-wise absolute value of the given input tensor.
 abs ::
@@ -162,7 +162,7 @@ abs ::
   Tensor ->
   -- | output
   Tensor
-abs t = unsafePerformIO $ cast1 ATen.abs_t t
+abs t = unsafePerformIO $ cast1' ATen.abs_t t
 
 -- | Computes the fractional portion of each element in input.
 -- out_i = input_i - (floor . abs) input_i * (sign input_i)
@@ -171,7 +171,7 @@ frac ::
   Tensor ->
   -- | output
   Tensor
-frac _self = unsafePerformIO $ cast1 ATen.frac_t _self
+frac _self = unsafePerformIO $ cast1' ATen.frac_t _self
 
 keepdim KeepDim = True
 keepdim RemoveDim = False
@@ -186,7 +186,7 @@ argmax ::
   Tensor ->
   -- | output
   Tensor
-argmax (Dim d) k t = unsafePerformIO $ cast3 ATen.argmax_tlb t d (keepdim k)
+argmax (Dim d) k t = unsafePerformIO $ cast3' ATen.argmax_tlb t d (keepdim k)
 
 -- | Each element of the tensor other added to each element of the tensor input. The resulting tensor is returned.
 add ::
@@ -196,7 +196,7 @@ add ::
   Tensor ->
   -- | output
   Tensor
-add a b = unsafePerformIO $ cast3 ATen.add_tts a b kOne
+add a b = unsafePerformIO $ cast3' ATen.add_tts a b kOne
 
 -- | Multiplies each element of the tensor other to each element of the input tensor and returns a new resulting tensor.
 mul ::
@@ -206,7 +206,7 @@ mul ::
   Tensor ->
   -- | output
   Tensor
-mul a b = unsafePerformIO $ cast2 ATen.mul_tt a b
+mul a b = unsafePerformIO $ cast2' ATen.mul_tt a b
 
 -- | Element wise subtraction of other tensor from input tensor and returns a new resulting tensor
 sub ::
@@ -216,7 +216,7 @@ sub ::
   Tensor ->
   -- | output
   Tensor
-sub a b = unsafePerformIO $ cast3 ATen.sub_tts a b kOne
+sub a b = unsafePerformIO $ cast3' ATen.sub_tts a b kOne
 
 -- | Element wise division of input tensor by other tensor and returns a new resulting tensor
 div ::
@@ -225,7 +225,7 @@ div ::
   -- | other
   Tensor ->
   Tensor
-div a b = unsafePerformIO $ cast2 ATen.div_tt a b
+div a b = unsafePerformIO $ cast2' ATen.div_tt a b
 
 -- | ceil
 ceil ::
@@ -233,7 +233,7 @@ ceil ::
   Tensor ->
   -- | output
   Tensor
-ceil t = unsafePerformIO $ cast1 ATen.ceil_t t
+ceil t = unsafePerformIO $ cast1' ATen.ceil_t t
 
 -- | floor
 floor ::
@@ -241,7 +241,7 @@ floor ::
   Tensor ->
   -- | output
   Tensor
-floor t = unsafePerformIO $ cast1 ATen.floor_t t
+floor t = unsafePerformIO $ cast1' ATen.floor_t t
 
 -- | min
 min ::
@@ -249,7 +249,7 @@ min ::
   Tensor ->
   -- | output
   Tensor
-min t = unsafePerformIO $ cast1 ATen.min_t t
+min t = unsafePerformIO $ cast1' ATen.min_t t
 
 -- | max
 max ::
@@ -257,7 +257,7 @@ max ::
   Tensor ->
   -- | output
   Tensor
-max t = unsafePerformIO $ cast1 ATen.max_t t
+max t = unsafePerformIO $ cast1' ATen.max_t t
 
 -- | median
 median ::
@@ -265,7 +265,7 @@ median ::
   Tensor ->
   -- | output
   Tensor
-median t = unsafePerformIO $ cast1 ATen.median_t t
+median t = unsafePerformIO $ cast1' ATen.median_t t
 
 -- | Adds each element of the input input with the scalar and returns a new resulting tensor.
 addScalar ::
@@ -276,7 +276,7 @@ addScalar ::
   Tensor ->
   -- | output
   Tensor
-addScalar a t = unsafePerformIO $ cast2 ATen.add_ts t a
+addScalar a t = unsafePerformIO $ cast2' ATen.add_ts t a
 
 -- | Subtracts each element of the input input with the scalar and returns a new resulting tensor.
 subScalar ::
@@ -287,7 +287,7 @@ subScalar ::
   Tensor ->
   -- | output
   Tensor
-subScalar a t = unsafePerformIO $ cast2 ATen.sub_ts t a
+subScalar a t = unsafePerformIO $ cast2' ATen.sub_ts t a
 
 -- | Multiplies each element of the input input with the scalar and returns a new resulting tensor.
 mulScalar ::
@@ -298,7 +298,7 @@ mulScalar ::
   Tensor ->
   -- | output
   Tensor
-mulScalar a t = unsafePerformIO $ cast2 ATen.mul_ts t a
+mulScalar a t = unsafePerformIO $ cast2' ATen.mul_ts t a
 
 -- | Divides each element of the input input with the scalar and returns a new resulting tensor.
 divScalar ::
@@ -309,7 +309,7 @@ divScalar ::
   Tensor ->
   -- | output
   Tensor
-divScalar a t = unsafePerformIO $ cast2 ATen.div_ts t a
+divScalar a t = unsafePerformIO $ cast2' ATen.div_ts t a
 
 -- |  Matrix product of two tensors.
 --
@@ -327,7 +327,7 @@ matmul ::
   Tensor ->
   -- | output
   Tensor
-matmul a b = unsafePerformIO $ cast2 ATen.matmul_tt a b
+matmul a b = unsafePerformIO $ cast2' ATen.matmul_tt a b
 
 -- | A simple lookup table that looks up embeddings in a fixed dictionary and size.
 -- This module is often used to retrieve word embeddings using indices. The input to the module is a list of indices, and the embedding matrix, and the output is the corresponding word embeddings.
@@ -379,7 +379,7 @@ oneHot ::
   -- | input
   Tensor ->
   Tensor
-oneHot numClasses t = unsafePerformIO $ cast2 ATen.one_hot_tl t numClasses
+oneHot numClasses t = unsafePerformIO $ cast2' ATen.one_hot_tl t numClasses
 
 --
 -- element-wise transformations / non-linearities
@@ -391,7 +391,7 @@ erf ::
   Tensor ->
   -- | output
   Tensor
-erf t = unsafePerformIO $ cast1 ATen.erf_t t
+erf t = unsafePerformIO $ cast1' ATen.erf_t t
 
 -- | Computes the complementary error function of each element of input
 erfc ::
@@ -399,7 +399,7 @@ erfc ::
   Tensor ->
   -- | output
   Tensor
-erfc t = unsafePerformIO $ cast1 ATen.erfc_t t
+erfc t = unsafePerformIO $ cast1' ATen.erfc_t t
 
 -- | Computes the inverse error function of each element of input. The inverse error function is defined in the range (-1, 1)(−1,1) as: erfinv(erf(x)) = x
 erfinv ::
@@ -407,7 +407,7 @@ erfinv ::
   Tensor ->
   -- | output
   Tensor
-erfinv t = unsafePerformIO $ cast1 ATen.erfinv_t t
+erfinv t = unsafePerformIO $ cast1' ATen.erfinv_t t
 
 -- | Computes the logarithm of the gamma function on input.
 lgamma ::
@@ -415,7 +415,7 @@ lgamma ::
   Tensor ->
   -- | output
   Tensor
-lgamma t = unsafePerformIO $ cast1 ATen.lgamma_t t
+lgamma t = unsafePerformIO $ cast1' ATen.lgamma_t t
 
 -- | Computes the logarithmic derivative of the gamma function on input.
 digamma ::
@@ -423,7 +423,7 @@ digamma ::
   Tensor ->
   -- | output
   Tensor
-digamma t = unsafePerformIO $ cast1 ATen.digamma_t t
+digamma t = unsafePerformIO $ cast1' ATen.digamma_t t
 
 -- | Computes the nth derivative of the digamma function on input. n \geq 0n≥0 is called the order of the polygamma function.
 polygamma ::
@@ -433,7 +433,7 @@ polygamma ::
   Tensor ->
   -- | output
   Tensor
-polygamma n t = unsafePerformIO $ cast2 ATen.polygamma_lt n t
+polygamma n t = unsafePerformIO $ cast2' ATen.polygamma_lt n t
 
 -- | Computes the multivariate log-gamma function with dimension pp element-wise. All elements must be greater than (p-1)/2, otherwise an error would be thrown.
 mvlgamma ::
@@ -443,7 +443,7 @@ mvlgamma ::
   Tensor ->
   -- | output
   Tensor
-mvlgamma p t = unsafePerformIO $ cast2 ATen.mvlgamma_tl t p
+mvlgamma p t = unsafePerformIO $ cast2' ATen.mvlgamma_tl t p
 
 -- | Returns a new tensor with the exponential of the elements of the input tensor input.
 exp ::
@@ -451,12 +451,12 @@ exp ::
   Tensor ->
   -- | output
   Tensor
-exp t = unsafePerformIO $ cast1 ATen.exp_t t
+exp t = unsafePerformIO $ cast1' ATen.exp_t t
 
 -- | Returns a new tensor with the natural logarithm of (1 + input).
 log1p ::
   Tensor -> Tensor
-log1p t = unsafePerformIO $ cast1 ATen.log1p_t t
+log1p t = unsafePerformIO $ cast1' ATen.log1p_t t
 
 -- | Returns a new tensor with the logarithm to the base 2 of the elements of input.
 log2 ::
@@ -464,7 +464,7 @@ log2 ::
   Tensor ->
   -- | output
   Tensor
-log2 t = unsafePerformIO $ cast1 ATen.log2_t t
+log2 t = unsafePerformIO $ cast1' ATen.log2_t t
 
 -- | Returns a new tensor with the natural logarithm of the elements of input.
 log ::
@@ -472,7 +472,7 @@ log ::
   Tensor ->
   -- | output
   Tensor
-log _self = unsafePerformIO $ cast1 ATen.log_t _self
+log _self = unsafePerformIO $ cast1' ATen.log_t _self
 
 -- | Returns a new tensor with the logarithm to the base 10 of the elements of input.
 log10 ::
@@ -480,7 +480,7 @@ log10 ::
   Tensor ->
   -- | output
   Tensor
-log10 t = unsafePerformIO $ cast1 ATen.log10_t t
+log10 t = unsafePerformIO $ cast1' ATen.log10_t t
 
 -- | Takes the power of each element in input with exponent and returns a tensor with the result.
 pow ::
@@ -491,7 +491,7 @@ pow ::
   Tensor ->
   -- | output
   Tensor
-pow s t = unsafePerformIO $ cast2 ATen.pow_ts t s
+pow s t = unsafePerformIO $ cast2' ATen.pow_ts t s
 
 -- | Takes the power of each element in input with exponent and returns a tensor with the result.
 -- Exponent is a tensor with the same number of elements as input.
@@ -502,7 +502,7 @@ powt ::
   Tensor ->
   -- | output
   Tensor
-powt t t' = unsafePerformIO $ cast2 ATen.pow_tt t t'
+powt t t' = unsafePerformIO $ cast2' ATen.pow_tt t t'
 
 -- | Applies the rectified linear unit function element-wise.
 relu ::
@@ -510,7 +510,7 @@ relu ::
   Tensor ->
   -- | output
   Tensor
-relu t = unsafePerformIO $ cast1 ATen.relu_t t
+relu t = unsafePerformIO $ cast1' ATen.relu_t t
 
 -- | Applies Exponential linear unit function element-wise, with alpha input, \(\text{ELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x) - 1))\)
 elu ::
@@ -521,7 +521,7 @@ elu ::
   Tensor ->
   -- | output
   Tensor
-elu a t = unsafePerformIO $ cast2 ATen.elu_ts t a
+elu a t = unsafePerformIO $ cast2' ATen.elu_ts t a
 
 -- | Applies exponential linear unit function element wise with default alpha value = 1
 elu' ::
@@ -529,7 +529,7 @@ elu' ::
   Tensor ->
   -- | output
   Tensor
-elu' t = unsafePerformIO $ cast1 ATen.elu_t t
+elu' t = unsafePerformIO $ cast1' ATen.elu_t t
 
 -- | Applies element-wise, \(\text{SELU}(x) = scale * (\max(0,x) + \min(0, \alpha * (\exp(x) - 1))\) , with α=1.6732632423543772848170429916717 and scale=1.0507009873554804934193349852946.
 selu ::
@@ -537,7 +537,7 @@ selu ::
   Tensor ->
   -- | output
   Tensor
-selu t = unsafePerformIO $ cast1 ATen.selu_t t
+selu t = unsafePerformIO $ cast1' ATen.selu_t t
 
 -- | Applies element-wise, \(\text{CELU}(x) = \max(0,x) + \min(0, \alpha * (\exp(x/\alpha) - 1))\).
 celu ::
@@ -547,7 +547,7 @@ celu ::
   Tensor ->
   -- | output
   Tensor
-celu _alpha _self = unsafePerformIO $ cast2 ATen.celu_ts _self _alpha
+celu _alpha _self = unsafePerformIO $ cast2' ATen.celu_ts _self _alpha
 
 -- | Applies the element-wise function sigmoid.
 sigmoid ::
@@ -555,7 +555,7 @@ sigmoid ::
   Tensor ->
   -- | output
   Tensor
-sigmoid t = unsafePerformIO $ cast1 ATen.sigmoid_t t
+sigmoid t = unsafePerformIO $ cast1' ATen.sigmoid_t t
 
 -- | Applies a softmax function.
 -- It is applied to all slices along dim, and will re-scale them so that the elements lie in the range [0, 1] and sum to 1.
@@ -568,7 +568,7 @@ softmax ::
   Tensor
 softmax (Dim d) input =
   unsafePerformIO $
-    cast3
+    cast3'
       ATen.softmax_tls
       input
       d
@@ -585,7 +585,7 @@ logSoftmax ::
   Tensor
 logSoftmax (Dim d) input =
   unsafePerformIO $
-    cast3
+    cast3'
       ATen.log_softmax_tls
       input
       d
@@ -602,7 +602,7 @@ threshold ::
   -- | output
   Tensor
 threshold threshold value self =
-  unsafePerformIO $ cast3 ATen.threshold_tss self threshold value
+  unsafePerformIO $ cast3' ATen.threshold_tss self threshold value
 
 -- | Returns a new tensor with the sine of the elements of input.
 sin ::
@@ -610,7 +610,7 @@ sin ::
   Tensor ->
   -- | output
   Tensor
-sin t = unsafePerformIO $ cast1 ATen.sin_t t
+sin t = unsafePerformIO $ cast1' ATen.sin_t t
 
 -- | Returns a new tensor with the cos of the elements of input.
 cos ::
@@ -618,7 +618,7 @@ cos ::
   Tensor ->
   -- | output
   Tensor
-cos t = unsafePerformIO $ cast1 ATen.cos_t t
+cos t = unsafePerformIO $ cast1' ATen.cos_t t
 
 -- | Returns a new tensor with the tangent of the elements of input.
 tan ::
@@ -626,7 +626,7 @@ tan ::
   Tensor ->
   -- | output
   Tensor
-tan t = unsafePerformIO $ cast1 ATen.tan_t t
+tan t = unsafePerformIO $ cast1' ATen.tan_t t
 
 -- | Returns a new tensor with the hyperbolic sine of the elements of input.
 sinh ::
@@ -634,7 +634,7 @@ sinh ::
   Tensor ->
   -- | output
   Tensor
-sinh t = unsafePerformIO $ cast1 ATen.sinh_t t
+sinh t = unsafePerformIO $ cast1' ATen.sinh_t t
 
 -- | Returns a new tensor with the hyperbolic cosine of the elements of input.
 cosh ::
@@ -642,7 +642,7 @@ cosh ::
   Tensor ->
   -- | output
   Tensor
-cosh t = unsafePerformIO $ cast1 ATen.cosh_t t
+cosh t = unsafePerformIO $ cast1' ATen.cosh_t t
 
 -- | Returns a new tensor with the hyperbolic tangent of the elements of input.
 tanh ::
@@ -650,7 +650,7 @@ tanh ::
   Tensor ->
   -- | output
   Tensor
-tanh t = unsafePerformIO $ cast1 ATen.tanh_t t
+tanh t = unsafePerformIO $ cast1' ATen.tanh_t t
 
 -- | Returns a new tensor with the square-root of the elements of input.
 sqrt ::
@@ -658,7 +658,7 @@ sqrt ::
   Tensor ->
   -- | output
   Tensor
-sqrt t = unsafePerformIO $ cast1 ATen.sqrt_t t
+sqrt t = unsafePerformIO $ cast1' ATen.sqrt_t t
 
 --
 -- infix operators
@@ -673,7 +673,7 @@ gt ::
   Tensor ->
   -- | other
   Tensor
-gt a b = unsafePerformIO $ cast2 ATen.gt_tt a b
+gt a b = unsafePerformIO $ cast2' ATen.gt_tt a b
 
 (>.) = gt
 
@@ -686,7 +686,7 @@ lt ::
   Tensor ->
   -- | output
   Tensor
-lt a b = unsafePerformIO $ cast2 ATen.lt_tt a b
+lt a b = unsafePerformIO $ cast2' ATen.lt_tt a b
 
 (<.) = lt
 
@@ -699,7 +699,7 @@ ge ::
   Tensor ->
   -- | output
   Tensor
-ge a b = unsafePerformIO $ cast2 ATen.ge_tt a b
+ge a b = unsafePerformIO $ cast2' ATen.ge_tt a b
 
 (>=.) = ge
 
@@ -712,7 +712,7 @@ le ::
   Tensor ->
   -- | output
   Tensor
-le a b = unsafePerformIO $ cast2 ATen.le_tt a b
+le a b = unsafePerformIO $ cast2' ATen.le_tt a b
 
 (<=.) = le
 
@@ -725,7 +725,7 @@ eq ::
   Tensor ->
   -- | output
   Tensor
-eq a b = unsafePerformIO $ cast2 ATen.eq_tt a b
+eq a b = unsafePerformIO $ cast2' ATen.eq_tt a b
 
 (==.) = eq
 
@@ -737,7 +737,7 @@ take ::
   Tensor ->
   -- | output
   Tensor
-take _index _self = unsafePerformIO $ cast2 ATen.take_tt _self _index
+take _index _self = unsafePerformIO $ cast2' ATen.take_tt _self _index
 
 -- | Returns a new 1-D tensor which indexes the input tensor according to the boolean mask mask which is a BoolTensor.
 -- The shapes of the mask tensor and the input tensor don’t need to match, but they must be broadcastable.
@@ -748,7 +748,7 @@ maskedSelect ::
   Tensor ->
   -- | output
   Tensor
-maskedSelect _mask _self = unsafePerformIO $ cast2 ATen.masked_select_tt _self _mask
+maskedSelect _mask _self = unsafePerformIO $ cast2' ATen.masked_select_tt _self _mask
 
 -- | Returns a tuple of 1-D tensors, one for each dimension in input, each containing the indices (in that dimension) of all non-zero elements of input .
 nonzero ::
@@ -756,7 +756,7 @@ nonzero ::
   Tensor ->
   -- | output
   Tensor
-nonzero _self = unsafePerformIO $ cast1 ATen.nonzero_t _self
+nonzero _self = unsafePerformIO $ cast1' ATen.nonzero_t _self
 
 isclose ::
   -- | rtol
@@ -776,13 +776,13 @@ isnan ::
   -- | self
   Tensor ->
   Tensor -- a new tensor with boolean elements representing if each element is NaN or not.
-isnan t = unsafePerformIO $ cast1 ATen.isnan_t t
+isnan t = unsafePerformIO $ cast1' ATen.isnan_t t
 
 isNonzero ::
   -- | self
   Tensor ->
   Bool
-isNonzero _self = unsafePerformIO $ cast1 ATen.is_nonzero_t _self
+isNonzero _self = unsafePerformIO $ cast1' ATen.is_nonzero_t _self
 
 isSameSize ::
   -- | self
@@ -790,14 +790,14 @@ isSameSize ::
   -- | other
   Tensor ->
   Bool
-isSameSize self other = unsafePerformIO $ cast2 ATen.is_same_size_tt self other
+isSameSize self other = unsafePerformIO $ cast2' ATen.is_same_size_tt self other
 
 isSigned ::
   -- | input
   Tensor ->
   -- | True if the data type of input is a signed type
   Bool
-isSigned t = unsafePerformIO $ cast1 ATen.is_signed_t t
+isSigned t = unsafePerformIO $ cast1' ATen.is_signed_t t
 
 -- | Computes input /= other element-wise.
 -- The second argument can be a number or a tensor whose shape is broadcastable with the first argument.
@@ -808,7 +808,7 @@ ne ::
   Tensor ->
   -- | output
   Tensor
-ne a b = unsafePerformIO $ cast2 ATen.ne_tt a b
+ne a b = unsafePerformIO $ cast2' ATen.ne_tt a b
 
 (/=.) = ne
 
@@ -828,7 +828,7 @@ squeezeAll ::
   Tensor ->
   -- | output
   Tensor
-squeezeAll t = unsafePerformIO $ cast1 ATen.squeeze_t t
+squeezeAll t = unsafePerformIO $ cast1' ATen.squeeze_t t
 
 -- | squeezeDim
 squeezeDim ::
@@ -838,7 +838,7 @@ squeezeDim ::
   Tensor ->
   -- | output
   Tensor
-squeezeDim dim t = unsafePerformIO $ cast2 ATen.squeeze_tl t dim
+squeezeDim dim t = unsafePerformIO $ cast2' ATen.squeeze_tl t dim
 
 --
 -- Cumulative operations
@@ -852,7 +852,7 @@ cummax ::
   Tensor ->
   -- | output (values, indices)
   (Tensor, Tensor)
-cummax _dim _self = unsafePerformIO $ cast2 ATen.cummax_tl _self _dim
+cummax _dim _self = unsafePerformIO $ cast2' ATen.cummax_tl _self _dim
 
 -- | Returns a tuple (values, indices) where values is the cumulative minimum of elements of input in the dimension dim. And indices is the index location of each maximum value found in the dimension dim.
 cummin ::
@@ -862,7 +862,7 @@ cummin ::
   Tensor ->
   -- | output (values, indices)
   (Tensor, Tensor)
-cummin _dim _self = unsafePerformIO $ cast2 ATen.cummin_tl _self _dim
+cummin _dim _self = unsafePerformIO $ cast2' ATen.cummin_tl _self _dim
 
 -- | Returns the cumulative product of elements of input in the dimension dim.
 -- For example, if input is a vector of size N, the result will also be a vector of size N, with elements.
@@ -875,7 +875,7 @@ cumprod ::
   Tensor ->
   -- | output
   Tensor
-cumprod _dim _dtype _self = unsafePerformIO $ cast3 ATen.cumprod_tls _self _dim _dtype
+cumprod _dim _dtype _self = unsafePerformIO $ cast3' ATen.cumprod_tls _self _dim _dtype
 
 -- | Returns the cumulative sum of elements of input in the dimension dim.
 -- For example, if input is a vector of size N, the result will also be a vector of size N, with elements.
@@ -888,7 +888,7 @@ cumsum ::
   Tensor ->
   -- | output
   Tensor
-cumsum _dim _dtype _self = unsafePerformIO $ cast3 ATen.cumsum_tls _self _dim _dtype
+cumsum _dim _dtype _self = unsafePerformIO $ cast3' ATen.cumsum_tls _self _dim _dtype
 
 --
 -- Loss Functions
@@ -942,7 +942,7 @@ mseLoss ::
   Tensor ->
   -- | output
   Tensor
-mseLoss target t = unsafePerformIO $ cast3 ATen.mse_loss_ttl t target ATen.kMean
+mseLoss target t = unsafePerformIO $ cast3' ATen.mse_loss_ttl t target ATen.kMean
 
 -- | The negative log likelihood loss.
 nllLoss' ::
@@ -1039,7 +1039,7 @@ dist ::
   Tensor ->
   -- | output
   Tensor
-dist _p _other _self = unsafePerformIO $ cast3 ATen.dist_tts _self _other _p
+dist _p _other _self = unsafePerformIO $ cast3' ATen.dist_tts _self _other _p
 
 -- | Measures the loss given an input tensor xx and a labels tensor yy (containing 1 or -1).
 -- This is usually used for measuring whether two inputs are similar or dissimilar,
@@ -1107,7 +1107,7 @@ multiLabelMarginLoss ::
   Tensor -> -- input
   Tensor -> -- target
   Tensor -- output
-multiLabelMarginLoss reduction input target = unsafePerformIO $ cast3 ATen.multilabel_margin_loss_ttl input target reduction
+multiLabelMarginLoss reduction input target = unsafePerformIO $ cast3' ATen.multilabel_margin_loss_ttl input target reduction
 
 -- | The Kullback-Leibler divergence Loss
 -- KL divergence is a useful distance measure for continuous distributions and is often useful when performing direct regression over the space of (discretely sampled) continuous output distributions.
@@ -1121,7 +1121,7 @@ klDiv ::
   Tensor ->
   -- | output
   Tensor
-klDiv reduction self target = unsafePerformIO $ cast3 ATen.kl_div_ttl self target reduction
+klDiv reduction self target = unsafePerformIO $ cast3' ATen.kl_div_ttl self target reduction
 
 -- | Creates a criterion that uses a squared term if the absolute element-wise
 --  error falls below 1 and an L1 term otherwise. It is less sensitive to
@@ -1136,7 +1136,7 @@ smoothL1Loss ::
   Tensor ->
   -- | output
   Tensor
-smoothL1Loss reduction self target = unsafePerformIO $ cast3 ATen.smooth_l1_loss_ttl self target reduction
+smoothL1Loss reduction self target = unsafePerformIO $ cast3' ATen.smooth_l1_loss_ttl self target reduction
 
 -- | Creates a criterion that optimizes a two-class classification logistic loss
 --  between input tensor \(x\) and target tensor \(y\) (containing 1 or -1).
@@ -1149,7 +1149,7 @@ softMarginLoss ::
   Tensor ->
   -- | output
   Tensor
-softMarginLoss reduction input target = unsafePerformIO $ cast3 ATen.soft_margin_loss_ttl input target reduction
+softMarginLoss reduction input target = unsafePerformIO $ cast3' ATen.soft_margin_loss_ttl input target reduction
 
 --
 -- Pooling
@@ -1165,7 +1165,7 @@ adaptiveMaxPool1d ::
   (Tensor, Tensor)
 adaptiveMaxPool1d outputSize self =
   unsafePerformIO $
-    cast2
+    cast2'
       ATen.adaptive_max_pool1d_tl
       self
       outputSize
@@ -1180,7 +1180,7 @@ adaptiveMaxPool2d ::
   (Tensor, Tensor)
 adaptiveMaxPool2d outputSize self =
   unsafePerformIO $
-    cast2
+    cast2'
       ATen.adaptive_max_pool2d_tl
       self
       outputSize
@@ -1192,7 +1192,7 @@ adaptiveMaxPool3d ::
   -- | input
   Tensor ->
   (Tensor, Tensor)
-adaptiveMaxPool3d outputSize input = unsafePerformIO $ cast2 ATen.adaptive_max_pool3d_tl input outputSize
+adaptiveMaxPool3d outputSize input = unsafePerformIO $ cast2' ATen.adaptive_max_pool3d_tl input outputSize
 
 -- | maxPool1dWithIndices
 maxPool1dWithIndices ::
@@ -1388,7 +1388,7 @@ adaptiveAvgPool1d ::
   Tensor
 adaptiveAvgPool1d outputSize input =
   unsafePerformIO $
-    cast2 ATen.adaptive_avg_pool1d_tl input outputSize
+    cast2' ATen.adaptive_avg_pool1d_tl input outputSize
 
 -- | Applies a 2D adaptive average pooling over an input signal composed of several input planes.
 adaptiveAvgPool2d ::
@@ -1400,7 +1400,7 @@ adaptiveAvgPool2d ::
   Tensor
 adaptiveAvgPool2d (outputHeight, outputWidth) input =
   unsafePerformIO $
-    cast2
+    cast2'
       ATen.adaptive_avg_pool2d_tl
       input
       ([outputHeight, outputWidth] :: [Int])
@@ -1413,7 +1413,7 @@ adaptiveAvgPool3d ::
   Tensor ->
   -- | output
   Tensor
-adaptiveAvgPool3d _output_size _self = unsafePerformIO $ cast2 ATen.adaptive_avg_pool3d_tl _self _output_size
+adaptiveAvgPool3d _output_size _self = unsafePerformIO $ cast2' ATen.adaptive_avg_pool3d_tl _self _output_size
 
 --
 -- matrix solvers
@@ -1425,7 +1425,7 @@ inverse ::
   Tensor ->
   -- | output
   Tensor
-inverse t = unsafePerformIO $ cast1 ATen.inverse_t t
+inverse t = unsafePerformIO $ cast1' ATen.inverse_t t
 
 -- | Solves a system of equations with a triangular coefficient matrix AA and multiple right-hand sides bb
 triangularSolve ::
@@ -1453,7 +1453,7 @@ symeig ::
   Tensor ->
   -- | output tensors
   (Tensor, Tensor)
-symeig eigenvectors upper t = unsafePerformIO $ cast3 ATen.symeig_tbb t eigenvectors boolUpper
+symeig eigenvectors upper t = unsafePerformIO $ cast3' ATen.symeig_tbb t eigenvectors boolUpper
   where
     boolUpper = isUpper upper
 
@@ -1465,7 +1465,7 @@ eig ::
   Tensor ->
   -- | output tensors
   (Tensor, Tensor)
-eig eigenvectors t = unsafePerformIO $ cast2 ATen.eig_tb t eigenvectors
+eig eigenvectors t = unsafePerformIO $ cast2' ATen.eig_tb t eigenvectors
 
 -- | This function returns a namedtuple (U, S, V) which is the singular value decomposition of a input real matrix or batches of real matrices input such that input = U * diag(S) * V^T
 svd ::
@@ -1477,7 +1477,7 @@ svd ::
   Tensor ->
   -- | output tuple of tensors
   (Tensor, Tensor, Tensor)
-svd some compute_uv t = unsafePerformIO $ cast3 ATen.svd_tbb t some compute_uv
+svd some compute_uv t = unsafePerformIO $ cast3' ATen.svd_tbb t some compute_uv
 
 -- | Computes the Cholesky decomposition of a symmetric positive-definite matrix AA or for batches of symmetric positive-definite matrices.
 cholesky ::
@@ -1487,7 +1487,7 @@ cholesky ::
   Tensor ->
   -- | output
   Tensor
-cholesky upper t = unsafePerformIO $ cast2 ATen.cholesky_tb t boolUpper
+cholesky upper t = unsafePerformIO $ cast2' ATen.cholesky_tb t boolUpper
   where
     boolUpper = isUpper upper
 
@@ -1501,7 +1501,7 @@ choleskySolve ::
   Tensor ->
   -- | output
   Tensor
-choleskySolve upper t1 t2 = unsafePerformIO $ cast3 ATen.cholesky_solve_ttb t1 t2 boolUpper
+choleskySolve upper t1 t2 = unsafePerformIO $ cast3' ATen.cholesky_solve_ttb t1 t2 boolUpper
   where
     boolUpper = isUpper upper
 
@@ -1514,7 +1514,7 @@ solve ::
   Tensor ->
   -- | output tuple with solution and LU
   (Tensor, Tensor)
-solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
+solve b a = unsafePerformIO $ cast2' ATen.solve_tt b a
 
 -- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
 choleskyInverse ::
@@ -1524,15 +1524,15 @@ choleskyInverse ::
   Tensor ->
   -- | solution
   Tensor
-choleskyInverse upper t = unsafePerformIO $ cast2 ATen.cholesky_inverse_tb t boolUpper
+choleskyInverse upper t = unsafePerformIO $ cast2' ATen.cholesky_inverse_tb t boolUpper
   where
     boolUpper = isUpper upper
 
 -- pstrf :: Bool -> Double -> Tensor -> (Tensor, Tensor)
--- pstrf upper tol t = unsafePerformIO $ cast3 ATen.pstrf_tbs t upper tol
+-- pstrf upper tol t = unsafePerformIO $ cast3' ATen.pstrf_tbs t upper tol
 
 -- qr :: Tensor -> (Tensor, Tensor)
--- qr t = unsafePerformIO $ cast1 ATen.qr_t t
+-- qr t = unsafePerformIO $ cast1' ATen.qr_t t
 
 -- | This is a low-level function for calling LAPACK directly. This function returns a namedtuple (a, tau) as defined in LAPACK documentation for geqrf.
 geqrf ::
@@ -1540,7 +1540,7 @@ geqrf ::
   Tensor ->
   -- | a, tau output matrices (see https://software.intel.com/en-us/node/521004)
   (Tensor, Tensor)
-geqrf t = unsafePerformIO $ cast1 ATen.geqrf_t t
+geqrf t = unsafePerformIO $ cast1' ATen.geqrf_t t
 
 -- | Computes the orthogonal matrix Q of a QR factorization, from the @(input, input2)@ tuple returned by 'geqrf' function.
 -- This directly calls the underlying LAPACK function @?orgqr@. See LAPACK documentation for @orgqr@ for further details.
@@ -1551,7 +1551,7 @@ orgqr ::
   Tensor ->
   -- | output
   Tensor
-orgqr b a = unsafePerformIO $ cast2 ATen.orgqr_tt b a
+orgqr b a = unsafePerformIO $ cast2' ATen.orgqr_tt b a
 
 -- | Multiplies mat (given by input3) by the orthogonal Q matrix of the QR factorization formed by torch.geqrf() that is represented by (a, tau) (given by (input, input2)).
 -- This directly calls the underlying LAPACK function ?ormqr. See LAPACK documentation for ormqr for further details.
@@ -1580,7 +1580,7 @@ luSolve ::
   Tensor ->
   -- | output
   Tensor
-luSolve _LU_data _LU_pivots _self = unsafePerformIO $ cast3 ATen.lu_solve_ttt _self _LU_data _LU_pivots
+luSolve _LU_data _LU_pivots _self = unsafePerformIO $ cast3' ATen.lu_solve_ttt _self _LU_data _LU_pivots
 
 --
 -- dropout
@@ -1596,7 +1596,7 @@ dropout ::
   Tensor ->
   -- | output
   IO Tensor
-dropout p train input = cast3 ATen.dropout_tdb input p train
+dropout p train input = cast3' ATen.dropout_tdb input p train
 
 featureDropout ::
   -- | dropout probability
@@ -1608,7 +1608,7 @@ featureDropout ::
   -- | output
   IO Tensor
 featureDropout p train input =
-  cast3 ATen.feature_dropout_tdb input p train
+  cast3' ATen.feature_dropout_tdb input p train
 
 -- | Applies alpha dropout to the input.
 alphaDropout ::
@@ -1621,7 +1621,7 @@ alphaDropout ::
   -- | output
   IO Tensor
 alphaDropout p train input =
-  cast3 ATen.alpha_dropout_tdb input p train
+  cast3' ATen.alpha_dropout_tdb input p train
 
 featureAlphaDropout ::
   -- | dropout probability
@@ -1633,7 +1633,7 @@ featureAlphaDropout ::
   -- | output
   IO Tensor
 featureAlphaDropout p train input =
-  cast3 ATen.feature_alpha_dropout_tdb input p train
+  cast3' ATen.feature_alpha_dropout_tdb input p train
 
 --
 -- Element-wise logical operators
@@ -1645,7 +1645,7 @@ bitwiseNot ::
   Tensor ->
   -- | output
   Tensor
-bitwiseNot input = unsafePerformIO $ cast1 ATen.bitwise_not_t input
+bitwiseNot input = unsafePerformIO $ cast1' ATen.bitwise_not_t input
 
 -- | Computes the element-wise logical NOT of the given input tensor. If not specified, the output tensor will have the bool dtype. If the input tensor is not a bool tensor, zeros are treated as False and non-zeros are treated as True.
 logicalNot ::
@@ -1653,7 +1653,7 @@ logicalNot ::
   Tensor ->
   -- | output
   Tensor
-logicalNot t = unsafePerformIO $ cast1 ATen.logical_not_t t
+logicalNot t = unsafePerformIO $ cast1' ATen.logical_not_t t
 
 logicalXor ::
   -- | self
@@ -1661,7 +1661,7 @@ logicalXor ::
   -- | other
   Tensor ->
   Tensor
-logicalXor self other = unsafePerformIO $ cast2 ATen.logical_xor_tt self other
+logicalXor self other = unsafePerformIO $ cast2' ATen.logical_xor_tt self other
 
 logicalAnd ::
   -- | self
@@ -1669,7 +1669,7 @@ logicalAnd ::
   -- | other
   Tensor ->
   Tensor
-logicalAnd self other = unsafePerformIO $ cast2 ATen.logical_and_tt self other
+logicalAnd self other = unsafePerformIO $ cast2' ATen.logical_and_tt self other
 
 logicalOr ::
   -- | self
@@ -1677,7 +1677,7 @@ logicalOr ::
   -- | other
   Tensor ->
   Tensor
-logicalOr self other = unsafePerformIO $ cast2 ATen.logical_or_tt self other
+logicalOr self other = unsafePerformIO $ cast2' ATen.logical_or_tt self other
 
 -- | Concatenates the given sequence of seq tensors in the given dimension. All tensors must either have the same shape (except in the concatenating dimension) or be empty.
 cat ::
@@ -1687,7 +1687,7 @@ cat ::
   [Tensor] ->
   -- | output tensor
   Tensor
-cat (Dim d) tensors = unsafePerformIO $ cast2 ATen.cat_ll tensors d
+cat (Dim d) tensors = unsafePerformIO $ cast2' ATen.cat_ll tensors d
 
 index ::
   -- | indices
@@ -1696,7 +1696,7 @@ index ::
   Tensor ->
   -- | output
   Tensor
-index _indices _self = unsafePerformIO $ cast2 ATen.index_tl _self _indices
+index _indices _self = unsafePerformIO $ cast2' ATen.index_tl _self _indices
 
 -- Copies the elements of tensor into the self tensor (out-of-place) by selecting the indices in the order given in index.
 -- For example, if dim == 0 and index[i] == j, then the ith row of tensor is copied to the jth row of self.
@@ -1757,7 +1757,7 @@ chunk ::
   [Tensor]
 chunk chunks (Dim d) input =
   unsafePerformIO $
-    cast3 ATen.chunk_tll input chunks d
+    cast3' ATen.chunk_tll input chunks d
 
 -- | Clamp all elements in input into the range [ min, max ] and return a resulting tensor.
 clamp ::
@@ -1769,7 +1769,7 @@ clamp ::
   Tensor ->
   -- | output
   Tensor
-clamp min max input = unsafePerformIO $ cast3 ATen.clamp_tss input min max
+clamp min max input = unsafePerformIO $ cast3' ATen.clamp_tss input min max
 
 -- | Clamps all elements in input to be smaller or equal max.
 clampMax ::
@@ -1779,7 +1779,7 @@ clampMax ::
   Tensor ->
   -- | output
   Tensor
-clampMax max input = unsafePerformIO $ cast2 ATen.clamp_max_ts input max
+clampMax max input = unsafePerformIO $ cast2' ATen.clamp_max_ts input max
 
 -- | Clamps all elements in input to be larger or equal min.
 clampMin ::
@@ -1789,7 +1789,7 @@ clampMin ::
   Tensor ->
   -- | output
   Tensor
-clampMin min input = unsafePerformIO $ cast2 ATen.clamp_min_ts input min
+clampMin min input = unsafePerformIO $ cast2' ATen.clamp_min_ts input min
 
 cudnnIsAcceptable ::
   -- | input
@@ -1797,7 +1797,7 @@ cudnnIsAcceptable ::
   -- | output
   Bool
 cudnnIsAcceptable input =
-  unsafePerformIO $ cast1 ATen.cudnn_is_acceptable_t input
+  unsafePerformIO $ cast1' ATen.cudnn_is_acceptable_t input
 
 -- | Pads the input tensor boundaries with a constant value.
 constantPadNd1d ::
@@ -1811,7 +1811,7 @@ constantPadNd1d ::
   Tensor
 constantPadNd1d padding value input =
   unsafePerformIO $
-    cast3
+    cast3'
       ATen.constant_pad_nd_tls
       input
       padding
@@ -2132,7 +2132,7 @@ sign ::
   Tensor ->
   -- | output
   Tensor
-sign t = unsafePerformIO $ cast1 ATen.sign_t t
+sign t = unsafePerformIO $ cast1' ATen.sign_t t
 
 -- | Returns a tensor that is a transposed version of @input@. The given dimensions @dim0@ and @dim1@ are swapped.
 transpose ::
@@ -2144,7 +2144,7 @@ transpose ::
   Tensor ->
   -- | output
   Tensor
-transpose (Dim d1) (Dim d2) t = unsafePerformIO $ cast3 ATen.transpose_tll t d1 d2
+transpose (Dim d1) (Dim d2) t = unsafePerformIO $ cast3' ATen.transpose_tll t d1 d2
 
 -- | transpose special case for a 2D tensor
 transpose2D ::
@@ -2166,7 +2166,7 @@ diag ::
   Tensor ->
   -- | output
   Tensor
-diag (Diag index) t = unsafePerformIO $ cast2 ATen.tensor_diag_l t index
+diag (Diag index) t = unsafePerformIO $ cast2' ATen.tensor_diag_l t index
 
 --
 diagEmbed ::
@@ -2194,7 +2194,7 @@ diagflat ::
   Tensor ->
   -- | output
   Tensor
-diagflat (Diag offset) t = unsafePerformIO $ cast2 ATen.diagflat_tl t offset
+diagflat (Diag offset) t = unsafePerformIO $ cast2' ATen.diagflat_tl t offset
 
 -- | Returns a partial view of input with the its diagonal elements with respect to dim1 and dim2 appended as a dimension at the end of the shape.
 -- Applying diagEmbed to the output of this function with the same arguments yields a diagonal matrix with the diagonal entries of the input. However, diagEmbed has different default dimensions, so those need to be explicitly specified.
@@ -2217,7 +2217,7 @@ all ::
   Tensor ->
   -- | output
   Bool
-all t = toInt (unsafePerformIO $ cast1 ATen.all_t t) == 1
+all t = toInt (unsafePerformIO $ cast1' ATen.all_t t) == 1
 
 -- | Returns True if any elements in the tensor are True, False otherwise.
 any ::
@@ -2225,7 +2225,7 @@ any ::
   Tensor ->
   -- | output
   Bool
-any t = toInt (unsafePerformIO $ cast1 ATen.any_t t) == 1
+any t = toInt (unsafePerformIO $ cast1' ATen.any_t t) == 1
 
 -- | Returns True if all elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.
@@ -2238,7 +2238,7 @@ allDim ::
   Tensor ->
   -- | output
   Tensor
-allDim (Dim d) keepdim t = unsafePerformIO $ cast3 ATen.all_tlb t d keepdim
+allDim (Dim d) keepdim t = unsafePerformIO $ cast3' ATen.all_tlb t d keepdim
 
 -- | Returns True if any elements in each row of the tensor in the given dimension dim are True, False otherwise.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension dim where it is of size 1. Otherwise, dim is squeezed, resulting in the output tensor having 1 fewer dimension than input.
@@ -2250,7 +2250,7 @@ anyDim ::
   -- | input
   Tensor ->
   Tensor -- output
-anyDim (Dim d) keepdim t = unsafePerformIO $ cast3 ATen.any_tlb t d keepdim
+anyDim (Dim d) keepdim t = unsafePerformIO $ cast3' ATen.any_tlb t d keepdim
 
 -- | Permute the dimensions of this tensor.
 permute ::
@@ -2259,7 +2259,7 @@ permute ::
   -- | input
   Tensor ->
   Tensor -- output
-permute dims t = unsafePerformIO $ cast2 ATen.tensor_permute_l t dims
+permute dims t = unsafePerformIO $ cast2' ATen.tensor_permute_l t dims
 
 -- | expand
 -- TODO: figure out what the `implicit` boolean value does
@@ -2272,7 +2272,7 @@ expand ::
   [Int] ->
   -- | output
   Tensor
-expand t someBool dims = unsafePerformIO $ cast3 ATen.tensor_expand_lb t dims someBool
+expand t someBool dims = unsafePerformIO $ cast3' ATen.tensor_expand_lb t dims someBool
 
 -- | flatten
 flatten ::
@@ -2284,7 +2284,7 @@ flatten ::
   Tensor ->
   -- | output
   Tensor
-flatten (Dim startDim) (Dim endDim) t = unsafePerformIO $ cast3 ATen.flatten_tll t startDim endDim
+flatten (Dim startDim) (Dim endDim) t = unsafePerformIO $ cast3' ATen.flatten_tll t startDim endDim
 
 -- | flattenAll
 flattenAll ::
@@ -2293,7 +2293,7 @@ flattenAll ::
   -- | output
   Tensor
 flattenAll t =
-  unsafePerformIO $ cast3 ATen.flatten_tll t (0 :: Int) (-1 :: Int)
+  unsafePerformIO $ cast3' ATen.flatten_tll t (0 :: Int) (-1 :: Int)
 
 lstm ::
   -- | input
@@ -2726,7 +2726,7 @@ softShrink ::
   Tensor ->
   -- | output
   Tensor
-softShrink lambda input = unsafePerformIO $ cast2 ATen.softshrink_ts input lambda
+softShrink lambda input = unsafePerformIO $ cast2' ATen.softshrink_ts input lambda
 
 -- | Concatenates sequence of tensors along a new dimension.
 -- All tensors need to be of the same size.
@@ -2737,7 +2737,7 @@ stack ::
   [Tensor] ->
   -- | output
   Tensor
-stack (Dim d) tensors = unsafePerformIO $ cast2 ATen.stack_ll tensors d
+stack (Dim d) tensors = unsafePerformIO $ cast2' ATen.stack_ll tensors d
 
 -- | Returns the sum of each row of the input tensor in the given dimension dim.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension(s) dim where it is of size 1.
@@ -2784,7 +2784,7 @@ logsumexp ::
   Tensor ->
   -- | output
   Tensor
-logsumexp keepdim dim t = unsafePerformIO $ cast3 ATen.logsumexp_tlb t dim keepdim
+logsumexp keepdim dim t = unsafePerformIO $ cast3' ATen.logsumexp_tlb t dim keepdim
 
 -- | Returns the upper triangular part of a matrix (2-D tensor) or batch of matrices input, the other elements of the result tensor out are set to 0.
 -- The upper triangular part of the matrix is defined as the elements on and above the diagonal.
@@ -2798,7 +2798,7 @@ triu ::
   Tensor ->
   -- | output
   Tensor
-triu (Diag diagonal) input = unsafePerformIO $ cast2 ATen.triu_tl input diagonal
+triu (Diag diagonal) input = unsafePerformIO $ cast2' ATen.triu_tl input diagonal
 
 -- | Returns the lower triangular part of the matrix (2-D tensor) or batch of matrices input, the other elements of the result tensor out are set to 0.
 -- The lower triangular part of the matrix is defined as the elements on and below the diagonal.
@@ -2812,7 +2812,7 @@ tril ::
   Tensor ->
   -- | output
   Tensor
-tril (Diag diagonal) input = unsafePerformIO $ cast2 ATen.tril_tl input diagonal
+tril (Diag diagonal) input = unsafePerformIO $ cast2' ATen.tril_tl input diagonal
 
 -- | Returns a new tensor with the truncated integer values of the elements of input.
 trunc ::
@@ -2820,7 +2820,7 @@ trunc ::
   Tensor ->
   -- | output
   Tensor
-trunc input = unsafePerformIO $ cast1 ATen.trunc_t input
+trunc input = unsafePerformIO $ cast1' ATen.trunc_t input
 
 -- | Returns the unique elements of the input tensor along a dimension.
 uniqueDim ::
@@ -2878,7 +2878,7 @@ unsqueeze ::
   Tensor ->
   -- | output
   Tensor
-unsqueeze (Dim d) input = unsafePerformIO $ cast2 ATen.unsqueeze_tl input d
+unsqueeze (Dim d) input = unsafePerformIO $ cast2' ATen.unsqueeze_tl input d
 
 -- | Upsamples the input, using bilinear upsampling. Expected inputs are spatial (4 dimensional).
 upsampleBilinear2d ::
@@ -2889,7 +2889,7 @@ upsampleBilinear2d ::
   -- | self
   Tensor ->
   Tensor
-upsampleBilinear2d (outputHeight, outputWidth) alignCorners input = unsafePerformIO $ cast3 ATen.upsample_bilinear2d_tlb input [outputHeight, outputWidth] alignCorners
+upsampleBilinear2d (outputHeight, outputWidth) alignCorners input = unsafePerformIO $ cast3' ATen.upsample_bilinear2d_tlb input [outputHeight, outputWidth] alignCorners
 
 -- | Applies a 2D nearest neighbor upsampling to an input signal composed of several input channels.
 upsampleNearest2d ::
@@ -2913,7 +2913,7 @@ split ::
   -- | self
   Tensor ->
   [Tensor]
-split splitSize (Dim d) input = unsafePerformIO $ cast3 ATen.split_tll input splitSize d
+split splitSize (Dim d) input = unsafePerformIO $ cast3' ATen.split_tll input splitSize d
 
 -- | Creates a criterion that measures the mean absolute error (MAE) between each element in the input \(x\) and target \(y\) .
 l1Loss ::
@@ -2925,7 +2925,7 @@ l1Loss ::
   Tensor ->
   -- | output
   Tensor
-l1Loss reduction input target = unsafePerformIO $ cast3 ATen.l1_loss_ttl input target reduction
+l1Loss reduction input target = unsafePerformIO $ cast3' ATen.l1_loss_ttl input target reduction
 
 -- | Applies the element-wise function:
 -- \(\text{LeakyReLU}(x) = \max(0,x) + \text{negative_slope} ∗ \min(0,x)\)
@@ -2936,7 +2936,7 @@ leakyRelu ::
   Tensor ->
   -- | output
   Tensor
-leakyRelu negSlope input = unsafePerformIO $ cast2 ATen.leaky_relu_ts input negSlope
+leakyRelu negSlope input = unsafePerformIO $ cast2' ATen.leaky_relu_ts input negSlope
 
 -- | Applies the element-wise function:
 -- \(\text{LogSigmoid}(x) = \log(\frac{ 1 }{ 1 + \exp(-x)})\)
@@ -2945,7 +2945,7 @@ logSigmoid ::
   Tensor ->
   -- | output
   Tensor
-logSigmoid input = unsafePerformIO $ cast1 ATen.log_sigmoid_t input
+logSigmoid input = unsafePerformIO $ cast1' ATen.log_sigmoid_t input
 
 -- | Returns a namedtuple (values, indices) where values is the maximum value of each row of the input tensor in the given dimension dim.
 -- And indices is the index location of each maximum value found (argmax).
@@ -2960,7 +2960,7 @@ maxDim ::
   Tensor ->
   -- | output
   (Tensor, Tensor)
-maxDim (Dim d) k input = unsafePerformIO $ cast3 ATen.max_tlb input d (keepdim k)
+maxDim (Dim d) k input = unsafePerformIO $ cast3' ATen.max_tlb input d (keepdim k)
 
 -- | Returns a namedtuple (values, indices) where values is the minimum value of each row of the input tensor in the given dimension dim.
 -- And indices is the index location of each minimum value found (argmin).
@@ -2974,7 +2974,7 @@ minDim ::
   -- | input
   Tensor ->
   (Tensor, Tensor)
-minDim (Dim d) k input = unsafePerformIO $ cast3 ATen.min_tlb input d (keepdim k)
+minDim (Dim d) k input = unsafePerformIO $ cast3' ATen.min_tlb input d (keepdim k)
 
 -- | Returns the mean value of each row of the input tensor in the given dimension dim. If dim is a list of dimensions, reduce over all of them.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension(s) dim where it is of size 1.
@@ -3006,7 +3006,7 @@ medianDim ::
   Tensor ->
   -- | output
   (Tensor, Tensor)
-medianDim (Dim d) k input = unsafePerformIO $ cast3 ATen.median_tlb input d (keepdim k)
+medianDim (Dim d) k input = unsafePerformIO $ cast3' ATen.median_tlb input d (keepdim k)
 
 -- | Returns the matrix product of the NN 2-D tensors.
 -- This product is efficiently computed using the matrix chain order algorithm which selects the order in which incurs the lowest cost in terms of arithmetic operations.
@@ -3017,7 +3017,7 @@ chainMatmul ::
   [Tensor] ->
   -- | output
   Tensor
-chainMatmul tensors = unsafePerformIO $ cast1 ATen.chain_matmul_l tensors
+chainMatmul tensors = unsafePerformIO $ cast1' ATen.chain_matmul_l tensors
 
 -- | Applies element-wise the function \(\text{GELU}(x) = x * \Phi(x)\)
 -- where \(\Phi(x)\) is the Cumulative Distribution Function for Gaussian Distribution.
@@ -3026,7 +3026,7 @@ gelu ::
   Tensor ->
   -- | output
   Tensor
-gelu input = unsafePerformIO $ cast1 ATen.gelu_t input
+gelu input = unsafePerformIO $ cast1' ATen.gelu_t input
 
 -- | The gated linear unit. Computes:
 -- \(\text{GLU}(a, b) = a \otimes \sigma(b)\)
@@ -3038,7 +3038,7 @@ glu ::
   Tensor ->
   -- | output
   Tensor
-glu (Dim d) input = unsafePerformIO $ cast2 ATen.glu_tl input d
+glu (Dim d) input = unsafePerformIO $ cast2' ATen.glu_tl input d
 
 -- | Returns the standard-deviation and mean of all elements in the input tensor.
 -- If unbiased is False, then the standard-deviation will be calculated via the biased estimator. Otherwise, Bessel’s correction will be used.
@@ -3049,7 +3049,7 @@ stdMean ::
   Tensor ->
   -- | output
   (Tensor, Tensor)
-stdMean unbiased input = unsafePerformIO $ cast2 ATen.std_mean_tb input unbiased
+stdMean unbiased input = unsafePerformIO $ cast2' ATen.std_mean_tb input unbiased
 
 -- | Returns the standard-deviation and mean of each row of the input tensor in the dimension dim. If dim is a list of dimensions, reduce over all of them.
 -- If keepdim is True, the output tensor is of the same size as input except in the dimension(s) dim where it is of size 1.
@@ -3075,7 +3075,7 @@ clone ::
   Tensor ->
   -- | output
   IO Tensor
-clone input = cast1 ATen.clone_t input
+clone input = cast1' ATen.clone_t input
 
 -- | Returns a copy of input. Output tensor does not keep a computational graph and a requires_grad value of input tensor.
 detach ::
@@ -3083,7 +3083,7 @@ detach ::
   Tensor ->
   -- | output
   IO Tensor
-detach input = cast1 ATen.detach_t input
+detach input = cast1' ATen.detach_t input
 
 -- | Returns a new tensor with the same data as the input tensor but of a different shape.
 view ::
@@ -3093,7 +3093,7 @@ view ::
   Tensor ->
   -- | output
   Tensor
-view dims t = unsafePerformIO $ (cast2 ATen.tensor_view_l) t dims
+view dims t = unsafePerformIO $ (cast2' ATen.tensor_view_l) t dims
 
 -- | Repeats this tensor along the specified dimensions.
 repeat ::
@@ -3103,7 +3103,7 @@ repeat ::
   Tensor ->
   -- | output
   Tensor
-repeat a t = unsafePerformIO $ (cast2 ATen.tensor_repeat_l) t a
+repeat a t = unsafePerformIO $ (cast2' ATen.tensor_repeat_l) t a
 
 batchNorm ::
   -- | weight
@@ -3175,7 +3175,7 @@ repeatInterleaveRange ::
   -- | repeats
   Tensor ->
   Tensor
-repeatInterleaveRange _repeats = unsafePerformIO $ (cast1 ATen.repeat_interleave_t) _repeats
+repeatInterleaveRange _repeats = unsafePerformIO $ (cast1' ATen.repeat_interleave_t) _repeats
 
 repeatInterleave ::
   -- | self
@@ -3185,7 +3185,7 @@ repeatInterleave ::
   -- | dim
   Int ->
   Tensor
-repeatInterleave _self _repeats _dim = unsafePerformIO $ (cast3 ATen.repeat_interleave_ttl) _self _repeats _dim
+repeatInterleave _self _repeats _dim = unsafePerformIO $ (cast3' ATen.repeat_interleave_ttl) _self _repeats _dim
 
 repeatInterleaveScalar ::
   -- | self
@@ -3195,4 +3195,4 @@ repeatInterleaveScalar ::
   -- | dim
   Int ->
   Tensor
-repeatInterleaveScalar _self _repeats _dim = unsafePerformIO $ (cast3 ATen.repeat_interleave_tll) _self _repeats _dim
+repeatInterleaveScalar _self _repeats _dim = unsafePerformIO $ (cast3' ATen.repeat_interleave_tll) _self _repeats _dim

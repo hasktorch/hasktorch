@@ -50,3 +50,9 @@ intArray_push_back_l
   -> IO (())
 intArray_push_back_l = cast2 Unmanaged.intArray_push_back_l
 
+intArray_fromList
+  :: ForeignPtr IntArray
+  -> [Int64]
+  -> IO (())
+intArray_fromList = cast2 Unmanaged.intArray_fromList
+

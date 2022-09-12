@@ -67,6 +67,7 @@ prettyException func =
         Nothing -> hPutStrLn stderr "Cannot show stacktrace"
       hPutStrLn stderr message
     throwIO a
+{-# INLINE prettyException #-}
 
 retryWithGC' :: Int -> IO a -> IO a
 retryWithGC' count func =
@@ -84,9 +85,11 @@ retryWithGC' count func =
   where
     msgOutOfMemory :: String
     msgOutOfMemory = "Exception: CUDA out of memory."
+{-# INLINE retryWithGC' #-}
 
 retryWithGC :: IO a -> IO a
 retryWithGC func = prettyException $ retryWithGC' 10 func
+{-# INLINE retryWithGC #-}
 
 checkOSMemoryWithGC :: IO ()
 checkOSMemoryWithGC = do

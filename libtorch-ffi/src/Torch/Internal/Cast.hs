@@ -42,71 +42,104 @@ import Torch.Internal.GC
 
 instance Castable a a where
   cast x f = f x
+  {-# INLINE cast #-}
   uncast x f = f x
+  {-# INLINE uncast #-}
+  
 
 instance Castable Bool CBool where
   cast x f = f (if x then 1 else 0)
+  {-# INLINE cast #-}
   uncast x f = f (x /= 0)
+  {-# INLINE uncast #-}
 
 instance Castable Int CInt where
   cast x f = f (fromIntegral x)
+  {-# INLINE cast #-}
   uncast x f = f (fromIntegral x)
+  {-# INLINE uncast #-}
 
 instance Castable Int Int64 where
   cast x f = f (fromIntegral x)
+  {-# INLINE cast #-}
   -- TODO: Int64 might have a wider range than Int
   uncast x f = f (fromIntegral x)
+  {-# INLINE uncast #-}
 
 instance Castable Int16 CShort where
   cast x f = f (fromIntegral x)
+  {-# INLINE cast #-}
   uncast x f = f (fromIntegral x)
+  {-# INLINE uncast #-}
 
 instance Castable Int8 CChar where
   cast x f = f (fromIntegral x)
+  {-# INLINE cast #-}
   uncast x f = f (fromIntegral x)
+  {-# INLINE uncast #-}
 
 instance Castable Word CUInt where
   cast x f = f (fromIntegral x)
+  {-# INLINE cast #-}
   uncast x f = f (fromIntegral x)
+  {-# INLINE uncast #-}
 
 instance Castable Word8 CChar where
   cast x f = f (fromIntegral x)
+  {-# INLINE cast #-}
   uncast x f = f (fromIntegral x)
+  {-# INLINE uncast #-}
 
 instance Castable Double CDouble where
   cast x f = f (realToFrac x)
+  {-# INLINE cast #-}
   uncast x f = f (realToFrac x)
+  {-# INLINE uncast #-}
 
 instance Castable [Double] (Ptr CDouble) where
   cast xs f = newArray (map realToFrac xs) >>= f
+  {-# INLINE cast #-}
   uncast xs f = undefined
+  {-# INLINE uncast #-}
 
 instance Castable [Int] (Ptr CInt) where
   cast xs f = newArray (map fromIntegral xs) >>= f
+  {-# INLINE cast #-}
   uncast xs f = undefined
+  {-# INLINE uncast #-}
 
 instance Castable ByteString CString where
   cast x f = useAsCString x f
+  {-# INLINE cast #-}
   uncast x f = packCString x >>= f
+  {-# INLINE uncast #-}
 
 instance Castable [ByteString] (Ptr CString) where
   cast xs f = do ys <- mapM (\x -> useAsCString x return) xs
                  withArray ys $ \cptr -> f cptr
+  {-# INLINE cast #-}
   uncast xs f = undefined
+  {-# INLINE uncast #-}
 
 instance Castable String CString where
   cast x f = withCString x f
+  {-# INLINE cast #-}
   uncast x f = peekCString x >>= f
+  {-# INLINE uncast #-}
 
 instance (Castable a a') => Castable (Maybe a) (Maybe a') where
   cast Nothing f = f Nothing
   cast (Just v) f = cast v (\v -> f (Just v))
+  {-# INLINE cast #-}
   uncast Nothing f = f Nothing
   uncast (Just v) f = uncast v (\v -> f (Just v)) 
+  {-# INLINE uncast #-}
 
 instance (CppObject a) => Castable (ForeignPtr a) (Ptr a) where
   cast x f = withForeignPtr x f
+  {-# INLINE cast #-}
   uncast x f = fromPtr x >>= f
+  {-# INLINE uncast #-}
 
 --------------------------------------------------------------------------------
 -- Tuples of Castable
@@ -117,10 +150,12 @@ instance (Castable a a', Castable b b') => Castable (a,b) (a',b') where
     t0' <- cast t0 return
     t1' <- cast t1 return
     f (t0',t1')
+  {-# INLINE cast #-}
   uncast (t0,t1) f = do
     t0' <- uncast t0 return
     t1' <- uncast t1 return
     f (t0',t1')
+  {-# INLINE uncast #-}
 
 instance (Castable a a', Castable b b', Castable c c') => Castable (a,b,c) (a',b',c') where
   cast (t0,t1,t2) f = do
@@ -128,11 +163,13 @@ instance (Castable a a', Castable b b', Castable c c') => Castable (a,b,c) (a',b
     t1' <- cast t1 return
     t2' <- cast t2 return
     f (t0',t1',t2')
+  {-# INLINE cast #-}
   uncast (t0,t1,t2) f = do
     t0' <- uncast t0 return
     t1' <- uncast t1 return
     t2' <- uncast t2 return
     f (t0',t1',t2')
+  {-# INLINE uncast #-}
 
 instance (Castable a a', Castable b b', Castable c c', Castable d d') => Castable (a,b,c,d) (a',b',c',d') where
   cast (t0,t1,t2,t3) f = do
@@ -141,12 +178,14 @@ instance (Castable a a', Castable b b', Castable c c', Castable d d') => Castabl
     t2' <- cast t2 return
     t3' <- cast t3 return
     f (t0',t1',t2',t3')
+  {-# INLINE cast #-}
   uncast (t0,t1,t2,t3) f = do
     t0' <- uncast t0 return
     t1' <- uncast t1 return
     t2' <- uncast t2 return
     t3' <- uncast t3 return
     f (t0',t1',t2',t3')
+  {-# INLINE uncast #-}
 
 instance (Castable a a', Castable b b', Castable c c', Castable d d', Castable e e') => Castable (a,b,c,d,e) (a',b',c',d',e') where
   cast (t0,t1,t2,t3,t4) f = do
@@ -156,6 +195,7 @@ instance (Castable a a', Castable b b', Castable c c', Castable d d', Castable e
     t3' <- cast t3 return
     t4' <- cast t4 return
     f (t0',t1',t2',t3',t4')
+  {-# INLINE cast #-}
   uncast (t0,t1,t2,t3,t4) f = do
     t0' <- uncast t0 return
     t1' <- uncast t1 return
@@ -163,6 +203,7 @@ instance (Castable a a', Castable b b', Castable c c', Castable d d', Castable e
     t3' <- uncast t3 return
     t4' <- uncast t4 return
     f (t0',t1',t2',t3',t4')
+  {-# INLINE uncast #-}
 
 instance (Castable a a', Castable b b', Castable c c',
           Castable d d', Castable e e', Castable f f') => Castable (a,b,c,d,e,f) (a',b',c',d',e',f') where
@@ -174,6 +215,7 @@ instance (Castable a a', Castable b b', Castable c c',
     t4' <- cast t4 return
     t5' <- cast t5 return
     f (t0',t1',t2',t3',t4',t5')
+  {-# INLINE cast #-}
   uncast (t0,t1,t2,t3,t4,t5) f = do
     t0' <- uncast t0 return
     t1' <- uncast t1 return
@@ -182,6 +224,7 @@ instance (Castable a a', Castable b b', Castable c c',
     t4' <- uncast t4 return
     t5' <- uncast t5 return
     f (t0',t1',t2',t3',t4',t5')
+  {-# INLINE uncast #-}
 
 --------------------------------------------------------------------------------
 -- These casts convert the value from C++ Tuple(CppTuple) to Haskell Tuple.
@@ -193,12 +236,14 @@ instance (CppTuple2 c, Castable a (A c), Castable b (B c)) => Castable (a,b) c w
     cast t0' $ \t0 -> 
       cast t1' $ \t1 -> 
         makeTuple2 (t0,t1) >>= f
+  {-# INLINE cast #-}
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t
     t0' <- uncast t0 return
     t1' <- uncast t1 return
     f (t0',t1')
+  {-# INLINE uncast #-}
 
 instance (CppTuple3 d, Castable a (A d), Castable b (B d), Castable c (C d)) => Castable (a,b,c) d where
   cast _ _ = error "Attempted to cast a 3-tuple from Haskell to C++, this is not supported."
@@ -210,9 +255,11 @@ instance (CppTuple3 d, Castable a (A d), Castable b (B d), Castable c (C d)) => 
     t1' <- uncast t1 return
     t2' <- uncast t2 return
     f (t0',t1',t2')
+  {-# INLINE uncast #-}
 
 instance (CppTuple4 e, Castable a (A e), Castable b (B e), Castable c (C e), Castable d (D e)) => Castable (a,b,c,d) e where
   cast _ _ = error "Attempted to cast a 4-tuple from Haskell to C++, this is not supported."
+  {-# INLINE cast #-}
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t
@@ -223,9 +270,11 @@ instance (CppTuple4 e, Castable a (A e), Castable b (B e), Castable c (C e), Cas
     t2' <- uncast t2 return
     t3' <- uncast t3 return
     f (t0',t1',t2',t3')
+  {-# INLINE uncast #-}
 
 instance (CppTuple5 f, Castable a (A f), Castable b (B f), Castable c (C f), Castable d (D f), Castable e (E f)) => Castable (a,b,c,d,e) f where
   cast _ _ = error "Attempted to cast a 5-tuple from Haskell to C++, this is not supported."
+  {-# INLINE cast #-}
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t
@@ -238,11 +287,13 @@ instance (CppTuple5 f, Castable a (A f), Castable b (B f), Castable c (C f), Cas
     t3' <- uncast t3 return
     t4' <- uncast t4 return
     f (t0',t1',t2',t3',t4')
+  {-# INLINE uncast #-}
 
 instance (CppTuple6 g,
           Castable a (A g), Castable b (B g), Castable c (C g),
           Castable d (D g), Castable e (E g), Castable f (F g)) => Castable (a,b,c,d,e,f) g where
   cast _ _ = error "Attempted to cast a 6-tuple from Haskell to C++, this is not supported."
+  {-# INLINE cast #-}
   uncast t f = do
     t0 <- get0 t
     t1 <- get1 t
@@ -257,6 +308,7 @@ instance (CppTuple6 g,
     t4' <- uncast t4 return
     t5' <- uncast t5 return
     f (t0',t1',t2',t3',t4',t5')
+  {-# INLINE uncast #-}
 
 --------------------------------------------------------------------------------
 -- Cast functions for various numbers of arguments
@@ -264,16 +316,19 @@ instance (CppTuple6 g,
 
 cast0 :: (Castable a ca) => (IO ca) -> IO a
 cast0 f = retryWithGC (f) >>= \ca -> uncast ca return
+{-# INLINE cast0 #-}
 
 cast1 :: (Castable a ca, Castable y cy)
        => (ca -> IO cy) -> a -> IO y
 cast1 f a = cast a $ \ca -> retryWithGC (f ca) >>= \cy -> uncast cy return
+{-# INLINE cast1 #-}
 
 cast2 :: (Castable a ca, Castable x1 cx1, Castable y cy)
        => (ca -> cx1 -> IO cy) -> a -> x1 -> IO y
 cast2 f a x1 = cast a $ \ca ->
                   cast x1 $ \cx1 ->
                     retryWithGC (f ca cx1) >>= \cy -> uncast cy return
+{-# INLINE cast2 #-}
 
 cast3 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable y cy)
        => (ca -> cx1 -> cx2 -> IO cy) -> a -> x1 -> x2-> IO y
@@ -281,6 +336,7 @@ cast3 f a x1 x2 = cast a $ \ca ->
                      cast x1 $ \cx1 ->
                        cast x2 $ \cx2 ->
                          retryWithGC (f ca cx1 cx2) >>= \cy -> uncast cy return
+{-# INLINE cast3 #-}
 
 cast4 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable y cy)
        => (ca -> cx1 -> cx2 -> cx3 -> IO cy) -> a -> x1 -> x2 -> x3 -> IO y
@@ -289,6 +345,7 @@ cast4 f a x1 x2 x3 = cast a $ \ca ->
                           cast x2 $ \cx2 ->
                             cast x3 $ \cx3 ->
                               retryWithGC (f ca cx1 cx2 cx3) >>= \cy -> uncast cy return
+{-# INLINE cast4 #-}
 
 cast5 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4, Castable y cy)
        => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> IO cy) -> a -> x1 -> x2 -> x3 -> x4 -> IO y
@@ -299,6 +356,7 @@ cast5 f a x1 x2 x3 x4 =
         cast x3 $ \cx3 ->
           cast x4 $ \cx4 ->
             retryWithGC (f ca cx1 cx2 cx3 cx4) >>= \cy -> uncast cy return
+{-# INLINE cast5 #-}
 
 
 cast6 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
@@ -312,6 +370,7 @@ cast6 f a x1 x2 x3 x4 x5 =
           cast x4 $ \cx4 ->
             cast x5 $ \cx5 ->
               retryWithGC (f ca cx1 cx2 cx3 cx4 cx5) >>= \cy -> uncast cy return
+{-# INLINE cast6 #-}
 
 cast7 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
            Castable x5 cx5, Castable x6 cx6, Castable y cy)
@@ -326,6 +385,7 @@ cast7 f a x1 x2 x3 x4 x5 x6 =
             cast x5 $ \cx5 ->
               cast x6 $ \cx6 ->
                 retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6) >>= \cy -> uncast cy return
+{-# INLINE cast7 #-}
 
 cast8 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable y cy)
@@ -341,6 +401,7 @@ cast8 f a x1 x2 x3 x4 x5 x6 x7 =
               cast x6 $ \cx6 ->
                 cast x7 $ \cx7 ->
                   retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7) >>= \cy -> uncast cy return
+{-# INLINE cast8 #-}
 
 
 cast9 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
@@ -358,6 +419,7 @@ cast9 f a x1 x2 x3 x4 x5 x6 x7 x8 =
                 cast x7 $ \cx7 ->
                   cast x8 $ \cx8 ->
                     retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8) >>= \cy -> uncast cy return
+{-# INLINE cast9 #-}
 
 cast10 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
@@ -376,6 +438,7 @@ cast10 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 =
                   cast x8 $ \cx8 ->
                     cast x9 $ \cx9 ->
                       retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9) >>= \cy -> uncast cy return
+{-# INLINE cast10 #-}
 
 cast11 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
             Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
@@ -608,6 +671,366 @@ cast22 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x2
                           cast x20 $ \cx20 ->
                           cast x21 $ \cx21 ->
                             retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9
+                              cx10 cx11 cx12 cx13 cx14 cx15 cx16 cx17 cx18 cx19
+                              cx20 cx21) >>= \cy -> uncast cy return
+
+
+--------------------------------------------------------------------------------
+-- Cast functions for various numbers of arguments
+--------------------------------------------------------------------------------
+
+cast0' :: (Castable a ca) => (IO ca) -> IO a
+cast0' f = (f) >>= \ca -> uncast ca return
+{-# INLINE cast0' #-}
+
+cast1' :: (Castable a ca, Castable y cy)
+       => (ca -> IO cy) -> a -> IO y
+cast1' f a = cast a $ \ca -> (f ca) >>= \cy -> uncast cy return
+{-# INLINE cast1' #-}
+
+cast2' :: (Castable a ca, Castable x1 cx1, Castable y cy)
+       => (ca -> cx1 -> IO cy) -> a -> x1 -> IO y
+cast2' f a x1 = cast a $ \ca ->
+                  cast x1 $ \cx1 ->
+                    (f ca cx1) >>= \cy -> uncast cy return
+{-# INLINE cast2' #-}
+
+cast3' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable y cy)
+       => (ca -> cx1 -> cx2 -> IO cy) -> a -> x1 -> x2-> IO y
+cast3' f a x1 x2 = cast a $ \ca ->
+                     cast x1 $ \cx1 ->
+                       cast x2 $ \cx2 ->
+                         (f ca cx1 cx2) >>= \cy -> uncast cy return
+{-# INLINE cast3' #-}
+
+cast4' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> IO cy) -> a -> x1 -> x2 -> x3 -> IO y
+cast4' f a x1 x2 x3 = cast a $ \ca ->
+                        cast x1 $ \cx1 ->
+                          cast x2 $ \cx2 ->
+                            cast x3 $ \cx3 ->
+                              (f ca cx1 cx2 cx3) >>= \cy -> uncast cy return
+{-# INLINE cast4' #-}
+
+cast5' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> IO cy) -> a -> x1 -> x2 -> x3 -> x4 -> IO y
+cast5' f a x1 x2 x3 x4 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            (f ca cx1 cx2 cx3 cx4) >>= \cy -> uncast cy return
+{-# INLINE cast5' #-}
+
+
+cast6' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> IO cy) -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> IO y
+cast6' f a x1 x2 x3 x4 x5 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              (f ca cx1 cx2 cx3 cx4 cx5) >>= \cy -> uncast cy return
+
+cast7' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable x6 cx6, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> IO y
+cast7' f a x1 x2 x3 x4 x5 x6 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                (f ca cx1 cx2 cx3 cx4 cx5 cx6) >>= \cy -> uncast cy return
+
+cast8' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> IO y
+cast8' f a x1 x2 x3 x4 x5 x6 x7 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7) >>= \cy -> uncast cy return
+
+
+cast9' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> IO y
+cast9' f a x1 x2 x3 x4 x5 x6 x7 x8 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8) >>= \cy -> uncast cy return
+
+cast10' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+           Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+           Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> IO y
+cast10' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9) >>= \cy -> uncast cy return
+
+cast11' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+            Castable x10 cx10, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> IO y
+cast11' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      cast x10 $ \cx10 ->
+                        (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10) >>= \cy -> uncast cy return
+
+cast12' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+            Castable x10 cx10, Castable x11 cx11, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> cx11 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> x11 -> IO y
+cast12' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      cast x10 $ \cx10 ->
+                        cast x11 $ \cx11 ->
+                         (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11) >>= \cy -> uncast cy return
+
+
+cast13' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+            Castable x10 cx10, Castable x11 cx11, Castable x12 cx12, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> cx11 -> cx12 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> x11 -> x12 -> IO y
+cast13' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      cast x10 $ \cx10 ->
+                        cast x11 $ \cx11 ->
+                          cast x12 $ \cx12 ->
+                            (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12) >>= \cy -> uncast cy return
+
+cast14' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+            Castable x10 cx10, Castable x11 cx11, Castable x12 cx12, Castable x13 cx13, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> cx11 -> cx12 -> cx13 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> x11 -> x12 -> x13 -> IO y
+cast14' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      cast x10 $ \cx10 ->
+                        cast x11 $ \cx11 ->
+                          cast x12 $ \cx12 ->
+                          cast x13 $ \cx13 ->
+                            (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13) >>= \cy -> uncast cy return
+
+
+cast15' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+            Castable x10 cx10, Castable x11 cx11, Castable x12 cx12, Castable x13 cx13, Castable x14 cx14, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> cx11 -> cx12 -> cx13 -> cx14 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> x11 -> x12 -> x13 -> x14 -> IO y
+cast15' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      cast x10 $ \cx10 ->
+                        cast x11 $ \cx11 ->
+                          cast x12 $ \cx12 ->
+                          cast x13 $ \cx13 ->
+                          cast x14 $ \cx14 ->
+                            (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14) >>= \cy -> uncast cy return
+
+
+cast16' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+            Castable x10 cx10, Castable x11 cx11, Castable x12 cx12, Castable x13 cx13, Castable x14 cx14, Castable x15 cx15, Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> cx11 -> cx12 -> cx13 -> cx14 -> cx15 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> x11 -> x12 -> x13 -> x14 -> x15 -> IO y
+cast16' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      cast x10 $ \cx10 ->
+                        cast x11 $ \cx11 ->
+                          cast x12 $ \cx12 ->
+                          cast x13 $ \cx13 ->
+                          cast x14 $ \cx14 ->
+                          cast x15 $ \cx15 ->
+                            (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14 cx15) >>= \cy -> uncast cy return
+
+cast17' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+            Castable x10 cx10, Castable x11 cx11, Castable x12 cx12, Castable x13 cx13, Castable x14 cx14,
+            Castable x15 cx15, Castable x16 cx16,
+            Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> cx11 -> cx12 -> cx13 -> cx14 -> cx15 -> cx16 -> IO cy)
+          -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> x11 -> x12 -> x13 -> x14 -> x15 -> x16 -> IO y
+cast17' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      cast x10 $ \cx10 ->
+                        cast x11 $ \cx11 ->
+                          cast x12 $ \cx12 ->
+                          cast x13 $ \cx13 ->
+                          cast x14 $ \cx14 ->
+                          cast x15 $ \cx15 ->
+                          cast x16 $ \cx16 ->
+                            (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14 cx15 cx16) >>= \cy -> uncast cy return
+
+cast21' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+            Castable x10 cx10, Castable x11 cx11, Castable x12 cx12, Castable x13 cx13, Castable x14 cx14, Castable x15 cx15,
+            Castable x16 cx16, Castable x17 cx17, Castable x18 cx18, Castable x19 cx19, Castable x20 cx20,
+            Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 ->
+           cx10 -> cx11 -> cx12 -> cx13 -> cx14 -> cx15 -> cx16 -> cx17 -> cx18 -> cx19 ->
+           cx20 -> IO cy) ->
+          a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 ->
+          x10 -> x11 -> x12 -> x13 -> x14 -> x15 -> x16 -> x17 -> x18 -> x19 -> x20 -> IO y
+cast21' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      cast x10 $ \cx10 ->
+                        cast x11 $ \cx11 ->
+                          cast x12 $ \cx12 ->
+                          cast x13 $ \cx13 ->
+                          cast x14 $ \cx14 ->
+                          cast x15 $ \cx15 ->
+                          cast x16 $ \cx16 ->
+                          cast x17 $ \cx17 ->
+                          cast x18 $ \cx18 ->
+                          cast x19 $ \cx19 ->
+                          cast x20 $ \cx20 ->
+                            (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9
+                              cx10 cx11 cx12 cx13 cx14 cx15 cx16 cx17 cx18 cx19
+                              cx20) >>= \cy -> uncast cy return
+
+
+cast22' :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4,
+            Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9,
+            Castable x10 cx10, Castable x11 cx11, Castable x12 cx12, Castable x13 cx13, Castable x14 cx14,
+            Castable x15 cx15, Castable x16 cx16, Castable x17 cx17, Castable x18 cx18, Castable x19 cx19,
+            Castable x20 cx20, Castable x21 cx21,
+            Castable y cy)
+       => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 ->
+           cx10 -> cx11 -> cx12 -> cx13 -> cx14 -> cx15 -> cx16 -> cx17 -> cx18 -> cx19 ->
+           cx20 -> cx21 -> IO cy) ->
+          a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 ->
+          x10 -> x11 -> x12 -> x13 -> x14 -> x15 -> x16 -> x17 -> x18 -> x19 -> x20 -> x21 -> IO y
+cast22' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 =
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+      cast x2 $ \cx2 ->
+        cast x3 $ \cx3 ->
+          cast x4 $ \cx4 ->
+            cast x5 $ \cx5 ->
+              cast x6 $ \cx6 ->
+                cast x7 $ \cx7 ->
+                  cast x8 $ \cx8 ->
+                    cast x9 $ \cx9 ->
+                      cast x10 $ \cx10 ->
+                        cast x11 $ \cx11 ->
+                          cast x12 $ \cx12 ->
+                          cast x13 $ \cx13 ->
+                          cast x14 $ \cx14 ->
+                          cast x15 $ \cx15 ->
+                          cast x16 $ \cx16 ->
+                          cast x17 $ \cx17 ->
+                          cast x18 $ \cx18 ->
+                          cast x19 $ \cx19 ->
+                          cast x20 $ \cx20 ->
+                          cast x21 $ \cx21 ->
+                            (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9
                               cx10 cx11 cx12 cx13 cx14 cx15 cx16 cx17 cx18 cx19
                               cx20 cx21) >>= \cy -> uncast cy return
 

@@ -33,7 +33,7 @@ instance Castable Int (ForeignPtr IntArray) where
 instance Castable [Int] (ForeignPtr IntArray) where
   cast xs f = do
     arr <- newIntArray
-    forM_ xs $ (intArray_push_back_l arr) . fromIntegral
+    intArray_fromList arr (map fromIntegral xs)
     f arr
   uncast xs f = do
     len <- intArray_size xs

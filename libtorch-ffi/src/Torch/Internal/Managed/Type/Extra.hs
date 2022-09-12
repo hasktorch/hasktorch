@@ -71,3 +71,14 @@ tensor_names
   -> IO (ForeignPtr DimnameList)
 tensor_names = cast1 Unmanaged.tensor_names
 
+tensor_to_device
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_to_device = cast2 Unmanaged.tensor_to_device
+
+new_empty_tensor
+  :: [Int]
+  ->ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+new_empty_tensor = cast2 Unmanaged.new_empty_tensor
