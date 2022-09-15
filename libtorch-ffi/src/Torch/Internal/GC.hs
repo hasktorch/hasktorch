@@ -19,7 +19,7 @@ import Control.Monad (when)
 import Data.List (isPrefixOf)
 import Foreign.C.Types
 import GHC.ExecutionStack
-import Language.C.Inline.Cpp.Exceptions (CppException (..))
+import Language.C.Inline.Cpp.Exceptions
 import System.Environment (lookupEnv)
 import System.IO (hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
@@ -75,7 +75,7 @@ retryWithGC' count func =
     if isPrefixOf msgOutOfMemory message
       then
         if count <= 0
-          then throwIO $ CppStdException $ "Too many calls to performGC, " ++ message
+          then throwIO $ userError $ "Too many calls to performGC, " ++ message
           else do
             performGC
             mallocTrim 0

@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE DataKinds #-}
 
 
 
@@ -39,6 +40,22 @@ import Foreign.Ptr
 import Foreign.Storable
 import Torch.Internal.Class
 import Torch.Internal.GC
+
+import Foreign.C.String
+import Foreign.C.Types
+import Foreign
+
+withForeignPtr' :: ForeignPtr a -> (Ptr a -> IO b) -> IO b
+withForeignPtr' =  withForeignPtr
+{-# INLINE [1] withForeignPtr' #-}
+
+fromPtr' :: (CppObject a) => Ptr a -> IO (ForeignPtr a)
+fromPtr' = fromPtr
+{-# INLINE [1] fromPtr' #-}
+
+deletePtr' :: (CppObject a) => Ptr a -> IO ()
+deletePtr' = deletePtr
+{-# INLINE [1] deletePtr' #-}
 
 instance Castable a a where
   cast x f = f x
@@ -136,9 +153,9 @@ instance (Castable a a') => Castable (Maybe a) (Maybe a') where
   {-# INLINE uncast #-}
 
 instance (CppObject a) => Castable (ForeignPtr a) (Ptr a) where
-  cast x f = withForeignPtr x f
+  cast x f = withForeignPtr' x f
   {-# INLINE cast #-}
-  uncast x f = fromPtr x >>= f
+  uncast x f = fromPtr' x >>= f
   {-# INLINE uncast #-}
 
 --------------------------------------------------------------------------------
@@ -1033,4 +1050,9 @@ cast22' f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x
                             (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9
                               cx10 cx11 cx12 cx13 cx14 cx15 cx16 cx17 cx18 cx19
                               cx20 cx21) >>= \cy -> uncast cy return
+
+
+{-# RULES
+    "remove/foreignptr" [2] forall (p :: CppObject c => Ptr c) f. fromPtr' p >>= \p' -> withForeignPtr' p' f = f p >>= \r -> deletePtr' p >> return r
+  #-}
 
