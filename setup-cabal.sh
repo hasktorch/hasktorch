@@ -2,7 +2,7 @@
 
 set -xe
 
-if ghc --version | grep 9.0.1 ; then
+if ghc --version | grep 9.0.. ; then
 curl https://www.stackage.org/nightly-2022-03-17/cabal.config |\
 sed -e 's/with-compiler: .*$//g' |\
 sed -e 's/.*inline-c-cpp.*//g' > cabal.project.freeze

@@ -236,3 +236,41 @@ test-suite doctests
                     , zlib >= 0.6
                     , inline-c
                     , hasktorch
+
+benchmark runtime
+  type: exitcode-stdio-1.0
+  main-is: Runtime.hs
+  hs-source-dirs: bench
+  build-depends:
+      base >=4.7 && <5
+    , criterion
+    , deepseq
+    , hmatrix
+    , mwc-random
+    , vector
+    , matrix
+    , split
+    , primitive
+    , hasktorch
+    , libtorch-ffi
+  default-language: Haskell2010
+  ghc-options: -Wall -threaded -rtsopts
+
+
+benchmark alloc
+  type: exitcode-stdio-1.0
+  main-is: Alloc.hs
+  hs-source-dirs: bench
+  build-depends:
+      base >=4.7 && <5
+    , deepseq
+    , hmatrix
+    , mwc-random
+    , vector
+    , weigh
+    , split
+    , primitive
+    , hasktorch
+    , libtorch-ffi
+  default-language: Haskell2010
+  ghc-options: -Wall -threaded -rtsopts
