@@ -27,6 +27,7 @@ jobs:
         echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
         curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
         ghcup install ghc 9.0.2
+        ghcup set ghc 9.0.2
         ghcup install cabal
     - name: Cache .cabal
       uses: actions/cache@v2
