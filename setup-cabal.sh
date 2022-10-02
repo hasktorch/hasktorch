@@ -2,8 +2,8 @@
 
 set -xe
 
-if ghc --version | grep 9.0.1 ; then
-curl https://www.stackage.org/nightly-2022-03-17/cabal.config |\
+if ghc --version | grep 9.0.. ; then
+curl https://www.stackage.org/lts-19.25/cabal.config |\
 sed -e 's/with-compiler: .*$//g' |\
 sed -e 's/.*inline-c-cpp.*//g' > cabal.project.freeze
 else
@@ -45,6 +45,9 @@ package libtorch-ffi
     ghc-options: -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEM_GB} -RTS
 
 package hasktorch
+    ghc-options: -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEMX2_GB} -RTS
+
+package vector
     ghc-options: -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEMX2_GB} -RTS
 
 EOF

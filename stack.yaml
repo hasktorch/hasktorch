@@ -1,4 +1,4 @@
-resolver: lts-18.14
+resolver: lts-19.25
 
 #compiler: ghc-8.10.7
 
