@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 
 set -xe
+ghc --version
 
-if ghc --version | grep 9.0.. ; then
 curl https://www.stackage.org/lts-19.25/cabal.config |\
 sed -e 's/with-compiler: .*$//g' |\
 sed -e 's/.*inline-c-cpp.*//g' > cabal.project.freeze
-else
-curl https://www.stackage.org/lts-17.2/cabal.config |\
-sed -e 's/with-compiler: .*$//g' > cabal.project.freeze
-fi
 
 case "$(uname)" in
   "Darwin")
