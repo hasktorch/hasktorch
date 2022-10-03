@@ -19,7 +19,7 @@ import Control.Monad (when)
 import Data.List (isPrefixOf)
 import Foreign.C.Types
 import GHC.ExecutionStack
-import Language.C.Inline.Cpp.Exceptions (CppException (..))
+import Language.C.Inline.Cpp.Exceptions
 import System.Environment (lookupEnv)
 import System.IO (hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
@@ -67,6 +67,7 @@ prettyException func =
         Nothing -> hPutStrLn stderr "Cannot show stacktrace"
       hPutStrLn stderr message
     throwIO a
+{-# INLINE prettyException #-}
 
 retryWithGC' :: Int -> IO a -> IO a
 retryWithGC' count func =
@@ -74,7 +75,7 @@ retryWithGC' count func =
     if isPrefixOf msgOutOfMemory message
       then
         if count <= 0
-          then throwIO $ CppStdException $ "Too many calls to performGC, " ++ message
+          then throwIO $ userError $ "Too many calls to performGC, " ++ message
           else do
             performGC
             mallocTrim 0
@@ -84,9 +85,11 @@ retryWithGC' count func =
   where
     msgOutOfMemory :: String
     msgOutOfMemory = "Exception: CUDA out of memory."
+{-# INLINE retryWithGC' #-}
 
 retryWithGC :: IO a -> IO a
 retryWithGC func = prettyException $ retryWithGC' 10 func
+{-# INLINE retryWithGC #-}
 
 checkOSMemoryWithGC :: IO ()
 checkOSMemoryWithGC = do
