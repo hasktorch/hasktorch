@@ -4,7 +4,7 @@
   nixConfig = {
     substituters = [
       https://cache.nixos.org
-      https://hydra.iohk.io
+      https://cache.iog.io
       https://hasktorch.cachix.org
     ];
     trusted-public-keys = [
@@ -15,11 +15,10 @@
   };
 
   inputs = {
-    nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
     haskell-nix = {
-      url = "github:input-output-hk/haskell.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:input-output-hk/haskell.nix?rev=ec0c59e2de05053c21301bc959a27df92fe93376";
     };
+    nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
     utils.follows = "haskell-nix/flake-utils";
     iohkNix = {
       url = "github:input-output-hk/iohk-nix";
@@ -33,6 +32,7 @@
     tokenizers = {
       url = "github:hasktorch/tokenizers/flakes";
       inputs.utils.follows = "haskell-nix/flake-utils";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
   };
