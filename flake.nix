@@ -24,11 +24,6 @@
       url = "github:input-output-hk/iohk-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    libtorch-nix = {
-      url = "github:hasktorch/libtorch-nix";
-      inputs.utils.follows = "haskell-nix/flake-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     tokenizers = {
       url = "github:hasktorch/tokenizers/flakes";
       inputs.utils.follows = "haskell-nix/flake-utils";
@@ -40,7 +35,6 @@
   outputs = { self
             , nixpkgs
             , haskell-nix
-            , libtorch-nix
             , utils
             , iohkNix
             , tokenizers
@@ -57,9 +51,9 @@
       build-config.cuda-11 = { profiling = true; cudaSupport = true;  cudaMajorVersion = "11"; };
 
       hasktorch.overlays = {
-        cpu-config     = final: prev: { hasktorch-config = build-config.cpu; }     // (libtorch-nix.overlays.cpu final prev);
-        cuda-10-config = final: prev: { hasktorch-config = build-config.cuda-10; } // (libtorch-nix.overlays.cudatoolkit_10_2 final prev);
-        cuda-11-config = final: prev: { hasktorch-config = build-config.cuda-11; } // (libtorch-nix.overlays.cudatoolkit_11_3 final prev);
+        cpu-config     = final: prev: { hasktorch-config = build-config.cpu; };
+        cuda-10-config = final: prev: { hasktorch-config = build-config.cuda-10; };
+        cuda-11-config = final: prev: { hasktorch-config = build-config.cuda-11; };
 
         dev-tools = final: prev: {
           haskell-nix = prev.haskell-nix // {
@@ -67,14 +61,28 @@
           };
         };
 
-        hasktorch-project = final: prev: {
-          hasktorchProject = import ./nix/haskell.nix ({
-            pkgs = prev;
-            compiler-nix-name = "ghc902";
-            inherit (prev) lib;
-            inherit (prev.hasktorch-config) profiling cudaSupport;
-          });
-        };
+        hasktorch-project = ty: final: prev:
+          let libtorch = prev.pkgs.callPackage ./nix/libtorch.nix {
+                cudaSupport = build-config."${ty}".cudaSupport;
+                device = ty;
+              };
+              libtorch-libs = {
+                torch = libtorch;
+                c10 = libtorch;
+                torch_cpu = libtorch;
+              } // (if build-config."${ty}".cudaSupport then {
+                torch_cuda = libtorch;
+              } else {
+              });
+          in {
+            hasktorchProject = import ./nix/haskell.nix ({
+              pkgs = prev // libtorch-libs;
+              compiler-nix-name = "ghc902";
+              inherit (prev) lib;
+              profiling = build-config."${ty}".profiling;
+              cudaSupport = build-config."${ty}".cudaSupport;
+            });
+          } // libtorch-libs;
       };
 
       generic-pkgset = system: ty:
@@ -83,10 +91,8 @@
             haskell-nix.overlay
             iohkNix.overlays.haskell-nix-extra
             tokenizers.overlay
-
-            hasktorch.overlays."${ty}-config"
             hasktorch.overlays.dev-tools
-            hasktorch.overlays.hasktorch-project
+            (hasktorch.overlays.hasktorch-project ty)
           ];
         in
           { pkgs = import nixpkgs { inherit system overlays; };
