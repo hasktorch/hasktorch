@@ -11,14 +11,14 @@ version : builtins.getAttr version {
       hash = "sha256-zC3lyeQrZJAkwingIbbjTkLXngsEaVv6VCl3QbAjOMQ=";
     };
     x86_64-linux-cuda-10 = {
-      name = "libtorch-cxx11-abi-shared-with-deps-1.11.0-cu113.zip";
-      url = "https://download.pytorch.org/libtorch/cu113/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcu102.zip";
-      hash = "1qznvi3yjlpf0vxf9hnr59ajin17xfz85w3axrsc9xnmpkyhi6p8";
+      name = "libtorch-cxx11-abi-shared-with-deps-1.11.0-cu102.zip";
+      url = "https://download.pytorch.org/libtorch/cu102/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcu102.zip";
+      hash = "sha256-0IYyWOOuDuzl15YOE6zoXK8fvhKcS+RRPJHvm1V9s58=";
     };
     x86_64-linux-cuda-11 = {
       name = "libtorch-cxx11-abi-shared-with-deps-1.11.0-cu113.zip";
       url = "https://download.pytorch.org/libtorch/cu113/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcu113.zip";
-      hash = "11zjggaw2qi4fh7v36ygb0pqlbphihq46yfvbgrv93a7x6f857ld";
+      hash = "sha256-0J2X76XeWaDn0SaptehYsFVInMTwyzgYxAdshn4wZXM=";
     };
   };
 }
