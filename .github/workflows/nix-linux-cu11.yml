@@ -5,6 +5,9 @@ on:
     branches:
       - master
 
+env:
+  NIX_OPTIONS: -L -j 1 --impure
+
 jobs:
   # tests:
   #   runs-on: ubuntu-latest
@@ -57,49 +60,49 @@ jobs:
           free
           export NIX_BUILD_CORES=1
 
-          nix build '.#codegen:test:doctests' -L -j 1
-          nix build '.#checks.x86_64-linux.codegen:test:spec' -L -j 1
-          nix build '.#hasktorch-cuda-11:test:doctests' -L -j 1
-          nix build '.#checks.x86_64-linux.hasktorch-cuda-11:test:spec' -L -j 1
-          nix build '.#hasktorch-gradually-typed-cuda-11:test:doctests' -L -j 1
-          nix build '.#checks.x86_64-linux.hasktorch-gradually-typed-cuda-11:test:spec' -L -j 1
-          nix build '.#libtorch-ffi-cuda-11:test:spec' -L -j 1
-          nix build '.#checks.x86_64-linux.libtorch-ffi-cuda-11:test:spec' -L -j 1
+          nix build '.#codegen:test:doctests' $NIX_OPTIONS
+          nix build '.#checks.x86_64-linux.codegen:test:spec' $NIX_OPTIONS
+          nix build '.#hasktorch-cuda-11:test:doctests' $NIX_OPTIONS
+          nix build '.#checks.x86_64-linux.hasktorch-cuda-11:test:spec' $NIX_OPTIONS
+          nix build '.#hasktorch-gradually-typed-cuda-11:test:doctests' $NIX_OPTIONS
+          nix build '.#checks.x86_64-linux.hasktorch-gradually-typed-cuda-11:test:spec' $NIX_OPTIONS
+          nix build '.#libtorch-ffi-cuda-11:test:spec' $NIX_OPTIONS
+          nix build '.#checks.x86_64-linux.libtorch-ffi-cuda-11:test:spec' $NIX_OPTIONS
 
       - run: |
           ps -aux
           free
           export NIX_BUILD_CORES=1
 
-          nix build '.#bounding-box-cuda-11:exe:bounding-box' -L -j 1
-          nix build '.#codegen:exe:codegen-exe' -L -j 1
-          nix build '.#dataloader-cifar10-cuda-11:exe:dataloader-cifar10' -L -j 1
-          nix build '.#examples-cuda-11:exe:alexNet' -L -j 1
-          nix build '.#examples-cuda-11:exe:autograd' -L -j 1
-          nix build '.#examples-cuda-11:exe:distill' -L -j 1
-          nix build '.#examples-cuda-11:exe:gaussian-process' -L -j 1
-          nix build '.#examples-cuda-11:exe:gd-field' -L -j 1
-          nix build '.#examples-cuda-11:exe:image-processing' -L -j 1
-          nix build '.#examples-cuda-11:exe:iris-classification' -L -j 1
-          nix build '.#examples-cuda-11:exe:load-torchscript' -L -j 1
-          nix build '.#examples-cuda-11:exe:matrix-factorization' -L -j 1
-          nix build '.#examples-cuda-11:exe:minimal-text-example' -L -j 1
-          nix build '.#examples-cuda-11:exe:mnist-mixed-precision' -L -j 1
-          nix build '.#examples-cuda-11:exe:mnist-mlp' -L -j 1
-          nix build '.#examples-cuda-11:exe:optimizers' -L -j 1
-          nix build '.#examples-cuda-11:exe:optimizers-cpp' -L -j 1
-          nix build '.#examples-cuda-11:exe:optimizers-cpp-typed' -L -j 1
-          nix build '.#examples-cuda-11:exe:regression' -L -j 1
-          nix build '.#examples-cuda-11:exe:regularization' -L -j 1
-          nix build '.#examples-cuda-11:exe:rnn' -L -j 1
-          nix build '.#examples-cuda-11:exe:serialization' -L -j 1
-          nix build '.#examples-cuda-11:exe:static-mnist-cnn' -L -j 1
-          nix build '.#examples-cuda-11:exe:static-mnist-mlp' -L -j 1
-          nix build '.#examples-cuda-11:exe:static-xor-mlp' -L -j 1
-          nix build '.#examples-cuda-11:exe:typed-transformer' -L -j 1
-          nix build '.#examples-cuda-11:exe:vae' -L -j 1
-          nix build '.#examples-cuda-11:exe:xor-mlp' -L -j 1
-          nix build '.#hasktorch-gradually-typed-cuda-11:exe:linear-regression' -L -j 1
-          nix build '.#hasktorch-gradually-typed-cuda-11:exe:neural-interpreter' -L -j 1
-          nix build '.#hasktorch-gradually-typed-cuda-11:exe:two-layer-network' -L -j 1
-          nix build '.#untyped-nlp-cuda-11:exe:untyped-nlp' -L -j 1
+          nix build '.#bounding-box-cuda-11:exe:bounding-box' $NIX_OPTIONS
+          nix build '.#codegen:exe:codegen-exe' $NIX_OPTIONS
+          nix build '.#dataloader-cifar10-cuda-11:exe:dataloader-cifar10' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:alexNet' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:autograd' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:distill' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:gaussian-process' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:gd-field' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:image-processing' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:iris-classification' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:load-torchscript' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:matrix-factorization' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:minimal-text-example' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:mnist-mixed-precision' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:mnist-mlp' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:optimizers' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:optimizers-cpp' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:optimizers-cpp-typed' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:regression' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:regularization' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:rnn' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:serialization' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:static-mnist-cnn' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:static-mnist-mlp' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:static-xor-mlp' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:typed-transformer' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:vae' $NIX_OPTIONS
+          nix build '.#examples-cuda-11:exe:xor-mlp' $NIX_OPTIONS
+          nix build '.#hasktorch-gradually-typed-cuda-11:exe:linear-regression' $NIX_OPTIONS
+          nix build '.#hasktorch-gradually-typed-cuda-11:exe:neural-interpreter' $NIX_OPTIONS
+          nix build '.#hasktorch-gradually-typed-cuda-11:exe:two-layer-network' $NIX_OPTIONS
+          nix build '.#untyped-nlp-cuda-11:exe:untyped-nlp' $NIX_OPTIONS

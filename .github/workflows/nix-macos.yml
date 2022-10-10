@@ -2,6 +2,9 @@ name: nix-macos
 
 on: [push, pull_request]
 
+env:
+  NIX_OPTIONS: -L -j 1 --impure
+
 jobs:
   # tests:
   #   runs-on: macOS-latest
@@ -31,15 +34,15 @@ jobs:
           #sed -i -e 's/"x86_64-linux"//g' flake.nix
           #nix flake show
       - run: |
-          nix build '.#codegen:test:doctests' -L -j 1
-          nix build '.#checks.x86_64-darwin.codegen:test:spec' -L -j 1
-          nix build '.#checks.x86_64-darwin.hasktorch-cpu:test:spec' -L -j 1
-          nix build '.#checks.x86_64-darwin.hasktorch-gradually-typed-cpu:test:spec' -L -j 1
-          nix build '.#libtorch-ffi-cpu:test:spec' -L -j 1
-          nix build '.#checks.x86_64-darwin.libtorch-ffi-cpu:test:spec' -L -j 1
+          nix build '.#codegen:test:doctests' $NIX_OPTIONS
+          nix build '.#checks.x86_64-darwin.codegen:test:spec' $NIX_OPTIONS
+          nix build '.#checks.x86_64-darwin.hasktorch-cpu:test:spec' $NIX_OPTIONS
+          nix build '.#checks.x86_64-darwin.hasktorch-gradually-typed-cpu:test:spec' $NIX_OPTIONS
+          nix build '.#libtorch-ffi-cpu:test:spec' $NIX_OPTIONS
+          nix build '.#checks.x86_64-darwin.libtorch-ffi-cpu:test:spec' $NIX_OPTIONS
 
           run-nix-build () {
-            nix build $@ --derivation && nix build $@ -L
+            nix build $@ --derivation && nix build $@ $NIX_OPTIONS
           }
           run-nix-build '.#bounding-box-cpu:exe:bounding-box'
           run-nix-build '.#codegen:exe:codegen-exe'

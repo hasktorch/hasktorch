@@ -5,6 +5,9 @@ name: nix-haddock-linux
 
 on: [push, pull_request]
 
+env:
+  NIX_OPTIONS: -L -j 1 --impure
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,7 +32,7 @@ jobs:
     - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
     - run: cachix use hasktorch
     - run: |
-        nix build .#haddocks-join -L -j 1
+        nix build .#haddocks-join $NIX_OPTIONS
         pwd
         find result/ |head
         mkdir public
