@@ -35,7 +35,7 @@ extra-deps:
 - term-rewriting-0.4.0.2@sha256:5412f6aa29c5756634ee30e8df923c83ab9f012a4b8797c460af3d7078466764,2740
 - type-errors-pretty-0.0.1.2@sha256:9042b64d1ac2f69aa55690576504a2397ebea8a6a55332242c88f54027c7eb57,2781
 - git: https://github.com/hasktorch/tintin
-  commit: 3bbe6a3797e43c92e61a2a4bdc26d5732cd5e7fd
+  commit: 0d5afba586da01e0a54e598745676c5c56189178
 - git: https://github.com/hasktorch/tokenizers
   commit: 9d25f0ba303193e97f8b22b9c93cbc84725886c3
   subdirs:
@@ -52,6 +52,7 @@ allow-newer: true
 
 nix:
   shell-file: nix/stack-shell.nix
+  pure: false
 
 # ghc-options:
 #   libtorch-ffi: -j +RTS -A128m -n2m -RTS
