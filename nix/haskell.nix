@@ -80,9 +80,9 @@ let
         packages.libtorch-ffi = {
           preConfigure = setupNumCores "libtorch-ffi";
           configureFlags = [
-            "--extra-lib-dirs=${pkgs.torch}/lib"
-            "--extra-include-dirs=${pkgs.torch}/include"
-            "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
+            "--extra-lib-dirs=${pkgs.torch.out}/lib"
+            "--extra-include-dirs=${pkgs.torch.dev}/include"
+            "--extra-include-dirs=${pkgs.torch.dev}/include/torch/csrc/api/include"
           ];
           flags = {
             cuda = cudaSupport;
