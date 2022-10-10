@@ -27,8 +27,6 @@ jobs:
           experimental-features = nix-command flakes
         nix_path: nixpkgs=channel:nixos-unstable
     - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
-    - run: |
-        .github/workflows/setup-iohk-cache.sh
     - run: cachix use hasktorch
     - run: |
         nix build .#haddocks-join -L -j 1
