@@ -3,14 +3,17 @@
 
   nixConfig = {
     substituters = [
-      https://cache.nixos.org
-      https://cache.iog.io
-      https://hasktorch.cachix.org
+      "https://cache.nixos.org"
     ];
-    trusted-public-keys = [
-      hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ=
-      hasktorch.cachix.org-1:wLjNS6HuFVpmzbmv01lxwjdCOtWRD8pQVR3Zr/wVoQc=
+    extra-substituters = [
+      "https://cache.iog.io"
+      "https://hasktorch.cachix.org"
     ];
+    extra-trusted-public-keys = [
+      "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
+      "hasktorch.cachix.org-1:wLjNS6HuFVpmzbmv01lxwjdCOtWRD8pQVR3Zr/wVoQc="
+    ];
+    allow-import-from-derivation = "true";
     bash-prompt = "\\[\\033[1m\\][dev-hasktorch$(__git_ps1 \" (%s)\")]\\[\\033\[m\\]\\040\\w$\\040";
     
   };
@@ -96,7 +99,7 @@
             (hasktorch.overlays.hasktorch-project ty)
           ];
         in
-          { pkgs = import nixpkgs { inherit system overlays; };
+          { pkgs = import nixpkgs { inherit system overlays; inherit (haskell-nix) config;};
             legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
           };
 
