@@ -34,7 +34,7 @@ jobs:
           #sed -i -e 's/"x86_64-linux"//g' flake.nix
           #nix flake show
       - uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 15
+#        timeout-minutes: 15
       - run: |
           nix build '.#codegen:test:doctests' $NIX_OPTIONS
           nix build '.#checks.x86_64-darwin.codegen:test:spec' $NIX_OPTIONS
