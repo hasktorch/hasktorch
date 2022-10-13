@@ -33,7 +33,7 @@ jobs:
           nix --version
           #sed -i -e 's/"x86_64-linux"//g' flake.nix
           #nix flake show
-      - uses: mxschmitt/action-tmate@v3
+#      - uses: mxschmitt/action-tmate@v3
 #        timeout-minutes: 15
       - run: |
           nix build '.#codegen:test:doctests' $NIX_OPTIONS
