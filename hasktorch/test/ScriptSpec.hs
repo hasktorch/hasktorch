@@ -7,19 +7,12 @@ module ScriptSpec (spec) where
 
 import Control.Exception.Safe (catch, throwIO)
 import GHC.Generics
-import Language.C.Inline.Cpp.Exceptions (CppException (..))
 import Test.Hspec
 import Torch hiding (forward)
 import Torch.Autograd
 import Torch.NN
 import Torch.Script
 import Prelude hiding (abs, exp, floor, log, max, min)
-
-prettyException :: IO a -> IO a
-prettyException func =
-  func `catch` \a@(CppStdException message) -> do
-    putStrLn message
-    throwIO (CppStdException "")
 
 data MLPSpec = MLPSpec
   { inputFeatures :: Int,

@@ -1,15 +1,11 @@
 #!/usr/bin/env bash
 
 set -xe
+ghc --version
 
-if ghc --version | grep 9.0.. ; then
-curl https://www.stackage.org/nightly-2022-03-17/cabal.config |\
+curl https://www.stackage.org/lts-19.25/cabal.config |\
 sed -e 's/with-compiler: .*$//g' |\
 sed -e 's/.*inline-c-cpp.*//g' > cabal.project.freeze
-else
-curl https://www.stackage.org/lts-17.2/cabal.config |\
-sed -e 's/with-compiler: .*$//g' > cabal.project.freeze
-fi
 
 case "$(uname)" in
   "Darwin")
@@ -45,6 +41,9 @@ package libtorch-ffi
     ghc-options: -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEM_GB} -RTS
 
 package hasktorch
+    ghc-options: -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEMX2_GB} -RTS
+
+package vector
     ghc-options: -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEMX2_GB} -RTS
 
 EOF

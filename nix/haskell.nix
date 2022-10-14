@@ -47,8 +47,8 @@ let
       # Enable profiling
       (lib.optionalAttrs profiling {
         enableLibraryProfiling = true;
-        packages.examples.enableExecutableProfiling = true;
-        packages.hasktorch-gradually-typed.enableExecutableProfiling = true;
+#        packages.examples.enableExecutableProfiling = true;
+#        packages.hasktorch-gradually-typed.enableExecutableProfiling = true;
       })
 
       # Fix for "exceptions" build problem with ghc 9.0.1 (https://github.com/input-output-hk/haskell.nix/issues/1177)
@@ -80,9 +80,9 @@ let
         packages.libtorch-ffi = {
           preConfigure = setupNumCores "libtorch-ffi";
           configureFlags = [
-            "--extra-lib-dirs=${pkgs.torch}/lib"
-            "--extra-include-dirs=${pkgs.torch}/include"
-            "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
+            "--extra-lib-dirs=${pkgs.torch.out}/lib"
+            "--extra-include-dirs=${pkgs.torch.dev}/include"
+            "--extra-include-dirs=${pkgs.torch.dev}/include/torch/csrc/api/include"
           ];
           flags = {
             cuda = cudaSupport;
