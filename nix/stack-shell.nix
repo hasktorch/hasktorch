@@ -37,7 +37,7 @@ let
     name = "hasktorch-stack-dev-shell";
 
     extraArgs = [
-      "--extra-include-dirs=${pkgs.torch}/include/torch/csrc/api/include"
+      "--extra-include-dirs=${pkgs.torch.dev}/include/torch/csrc/api/include"
     ];
 
     inherit buildInputs;

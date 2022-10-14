@@ -12,25 +12,32 @@ jobs:
         git submodule init && git submodule update
     - name: Setup tool-chains
       run: |
-        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         brew install libomp || true
         pip3 install pyyaml || true
-        brew install ghc@8.10 || true
-        brew install cabal-install || true
+        #brew install ghc@9.02 || true
+        #brew install cabal-install || true
         brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
         brew install libtorch-prebuild@1.11 || true
         brew tap hasktorch/tokenizers https://github.com/hasktorch/tokenizers || true
         brew install libtokenizers || true
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
+
+        echo "$HOME/.cabal/bin" >> $GITHUB_PATH
+        echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
+        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+        ghcup install ghc 9.0.2
+        ghcup set ghc 9.0.2
+        ghcup install cabal
     - name: Cache .cabal
       uses: actions/cache@v2
       with:
         path: |
           ~/.cabal/store
           dist-newstyle
-        key: ${{ runner.os }}-cabal-ghc8107-${{ hashFiles('**/fallible.cabal') }}
+        key: ${{ runner.os }}-cabal-ghc902-${{ hashFiles('**/fallible.cabal') }}
         restore-keys: |
-          ${{ runner.os }}-cabal-ghc8107-
+          ${{ runner.os }}-cabal-ghc902-
     - name: Build
       run: |
         #. setenv
