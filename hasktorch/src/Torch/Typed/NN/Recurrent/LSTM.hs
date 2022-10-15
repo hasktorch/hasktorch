@@ -330,7 +330,8 @@ instance
   lstmLayerStackSample _ _ = LSTMLayer1 <$> (sample $ LSTMLayerSpec @inputSize @hiddenSize @directionality @dtype @device)
 
 instance
-  ( A.Randomizable
+  ( 1 <= numLayers,
+    A.Randomizable
       (LSTMLayerSpec (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
       (LSTMLayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device),
     A.Randomizable

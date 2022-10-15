@@ -279,7 +279,8 @@ instance
   gruLayerStackSample _ _ = GRULayer1 <$> (sample $ GRULayerSpec @inputSize @hiddenSize @directionality @dtype @device)
 
 instance
-  ( A.Randomizable
+  ( 1 <= numLayers,
+    A.Randomizable
       (GRULayerSpec (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
       (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device),
     A.Randomizable

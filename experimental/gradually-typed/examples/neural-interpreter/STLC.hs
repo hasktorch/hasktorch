@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -58,7 +59,6 @@ data Exp a
   | -- | Sign of a number.
     Sign {exp :: Exp a}
   deriving stock (Functor, Foldable, Traversable, Generic, Generic1)
-  deriving anyclass (Hashable, Hashable1)
 
 instance Applicative Exp where
   pure = Var
@@ -102,6 +102,10 @@ instance Eq a => Eq (Exp a) where (==) = eq1
 instance Ord a => Ord (Exp a) where compare = compare1
 
 instance Show a => Show (Exp a) where showsPrec = showsPrec1
+
+instance (Eq a, Hashable a) => Hashable (Exp a)
+
+instance Hashable1 Exp
 
 -- | Smart constructor for lambda terms
 lam :: forall a. Eq a => Ty -> a -> Exp a -> Exp a

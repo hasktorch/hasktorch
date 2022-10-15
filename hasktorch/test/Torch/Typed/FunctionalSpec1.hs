@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
 module Torch.Typed.FunctionalSpec1

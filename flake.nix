@@ -81,7 +81,7 @@
           in {
             hasktorchProject = import ./nix/haskell.nix ({
               pkgs = prev // libtorch-libs;
-              compiler-nix-name = "ghc902";
+              compiler-nix-name = "ghc924";
               inherit (prev) lib;
               profiling = build-config."${ty}".profiling;
               cudaSupport = build-config."${ty}".cudaSupport;

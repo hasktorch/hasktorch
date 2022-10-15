@@ -34,7 +34,7 @@ data family HList (xs :: [k])
 
 data instance HList '[] = HNil
 
-newtype instance HList (x ': xs) = HCons (x, HList xs)
+newtype instance HList ((x :: Type) ': xs) = HCons (x, HList xs)
 
 pattern (:.) :: forall x (xs :: [Type]). x -> HList xs -> HList (x : xs)
 pattern (:.) x xs = HCons (x, xs)

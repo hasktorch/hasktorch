@@ -83,7 +83,6 @@ train ::
     (device :: (DeviceType, Nat))
     model
     optim
-    gradients
     parameters
     tensors.
   ( KnownNat batchSize,
@@ -92,13 +91,12 @@ train ::
     ComparisonDTypeIsValid device 'Int64,
     StandardDTypeValidation device 'Float,
     KnownDevice device,
-    HasGrad (HList parameters) (HList gradients),
-    tensors ~ gradients,
+    HasGrad (HList parameters) (HList tensors),
     HMap' ToDependent parameters tensors,
-    Castable (HList gradients) [ATenTensor],
+    Castable (HList tensors) [ATenTensor],
     parameters ~ Parameters model,
     Parameterized model,
-    Optimizer optim gradients tensors 'Float device,
+    Optimizer optim tensors tensors 'Float device,
     HMapM' IO MakeIndependent tensors parameters,
     _
   ) =>
