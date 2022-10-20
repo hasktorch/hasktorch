@@ -41,6 +41,7 @@ import Data.Type.Equality (type (==))
 import Data.Void (Void)
 import Foreign (fromBool)
 import GHC.TypeLits (Div, ErrorMessage (..), Nat, Symbol, type (+), type (-), type (<=?))
+import GHC.Natural (Natural)
 import qualified Language.Haskell.TH as TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import Text.Megaparsec as M
@@ -90,13 +91,13 @@ type StepZeroErrorMessage = 'Text "Slice step cannot be zero"
 -- | Calculate the size of the dimension with step.
 --
 -- >>> :kind! Stepped 8 1
--- Stepped 8 1 :: Nat
+-- Stepped 8 1 :: Natural
 -- = 8
 -- >>> :kind! Stepped 5 2
--- Stepped 5 2 :: Nat
+-- Stepped 5 2 :: Natural
 -- = 3
 -- >>> :kind! Stepped 6 3
--- Stepped 6 3 :: Nat
+-- Stepped 6 3 :: Natural
 -- = 2
 type Stepped :: Nat -> Nat -> Nat
 type family Stepped length step where

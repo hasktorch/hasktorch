@@ -34,7 +34,7 @@ import Type.Errors.Pretty (type (%), type (<>))
 -- >>> type InputShape = 'Shape '[BatchDim, InputDim]
 -- >>> :kind! LinearWithBiasF WeightShape BiasShape InputShape
 -- LinearWithBiasF WeightShape BiasShape InputShape :: Shape
---                                                       [Dim (Name Symbol) (Size Nat)]
+--                                                       [Dim (Name Symbol) (Size Natural)]
 -- = 'Shape
 --     '[ 'Dim ('Name "batch") ('Size 20),
 --        'Dim ('Name "output") ('Size 10)]

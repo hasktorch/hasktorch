@@ -313,14 +313,14 @@ type TransposeBy1Message by1 dims =
 -- >>> type Dims = '[ 'Dim ('Name "batch") ('Size 10), 'Dim ('Name "feature") ('Size 8), 'Dim ('Name "anotherFeature") ('Size 12)]
 -- >>> :kind! TransposeF SelectBatch SelectFeature ('Shape Dims)
 -- TransposeF SelectBatch SelectFeature ('Shape Dims) :: Shape
---                                                         [Dim (Name Symbol) (Size Nat)]
+--                                                         [Dim (Name Symbol) (Size Natural)]
 -- = 'Shape
 --     '[ 'Dim ('Name "feature") ('Size 8),
 --        'Dim ('Name "batch") ('Size 10),
 --        'Dim ('Name "anotherFeature") ('Size 12)]
 -- >>> :kind! TransposeF SelectFeature SelectBatch ('Shape Dims)
 -- TransposeF SelectFeature SelectBatch ('Shape Dims) :: Shape
---                                                         [Dim (Name Symbol) (Size Nat)]
+--                                                         [Dim (Name Symbol) (Size Natural)]
 -- = 'Shape
 --     '[ 'Dim ('Name "feature") ('Size 8),
 --        'Dim ('Name "batch") ('Size 10),
