@@ -16,8 +16,8 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/hasktorch/typelevel-rewrite-rules
-    --sha256: 070rf0dhkqsnpapz2i8j5z6nqxy7c4zcf99w4qsvhadp0b9zbcx1
-    tag: 1a1e489c31ab21c0f1a9796cb4961e098d4dfe71
+    --sha256: 0nfs6qyrhc2hxskdnlhsr6rrqdqa1kw5a18d2fiybiygxy75z140
+    tag: 4176e10d4de2d1310506c0fcf6a74956d81d59b6
 
 source-repository-package
     type: git

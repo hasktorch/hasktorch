@@ -33,7 +33,6 @@ extra-deps:
 - indexed-extras-0.2@sha256:e7e498023e33016fe45467dfee3c1379862e7e6654a806a965958fa1adc00304,1349
 - normaldistribution-1.1.0.3@sha256:2615b784c4112cbf6ffa0e2b55b76790290a9b9dff18a05d8c89aa374b213477,2160
 - term-rewriting-0.4.0.2@sha256:5412f6aa29c5756634ee30e8df923c83ab9f012a4b8797c460af3d7078466764,2740
-- type-errors-pretty-0.0.1.2@sha256:9042b64d1ac2f69aa55690576504a2397ebea8a6a55332242c88f54027c7eb57,2781
 - git: https://github.com/hasktorch/tintin
   commit: 0d5afba586da01e0a54e598745676c5c56189178
 - git: https://github.com/hasktorch/tokenizers
@@ -41,7 +40,9 @@ extra-deps:
   subdirs:
   - bindings/haskell/tokenizers-haskell
 - git: https://github.com/hasktorch/typelevel-rewrite-rules
-  commit: 1262d69e7e16705c1a85832125ce0b5b82a41278
+  commit: 4176e10d4de2d1310506c0fcf6a74956d81d59b6
+- git: https://github.com/hasktorch/type-errors-pretty
+  commit: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
 - git: https://github.com/hasktorch/pipes-text
   commit: d4805e84327e266daa730d23982db3172f226cac
 - exceptions-0.10.4@sha256:d2546046d7ba4b460d3bc7fd269cd2c52d0b7fb3cfecc038715dd0881b78a484,2796

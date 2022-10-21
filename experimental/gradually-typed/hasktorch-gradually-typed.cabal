@@ -311,7 +311,6 @@ test-suite doctests
                      , parsers
                      , HUnit-approx
                      , tokenizers
-                     , hasktorch-gradually-typed
   if impl(ghc >= 9.0)
     build-depends:     singletons == 3.*
                      , singletons-base
