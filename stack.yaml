@@ -25,11 +25,7 @@ extra-lib-dirs:
 
 extra-deps:
 - datasets-0.4.0@sha256:9bfd5b54c6c5e1e72384a890cf29bf85a02007e0a31c98753f7d225be3c7fa6a,4929
-- streaming-cassava-0.1.0.1@sha256:2d1dfeb09af62009e88311fe92f44d06dafb5cdd38879b437ea6adb3bc40acfe,1739
-- streaming-bytestring-0.1.7@sha256:5b53960c1c5f8352d46a4f1a604d04340a08dcf7ff27ca3ed31253e02c01fd03,2968
-- stm-2.5.0.0@sha256:c238075f9f0711cd6a78eab6001b3e218cdaa745d6377bf83cc21e58ceec2ea1,2100
 - require-0.4.10@sha256:41b096daaca0d6be49239add1149af9f34c84640d09a7ffa9b45c55f089b5dac,3759
-- generic-lens-2.2.0.0@sha256:4008a39f464e377130346e46062e2ac1211f9d2e256bbb1857216e889c7196be,3867
 - indexed-extras-0.2@sha256:e7e498023e33016fe45467dfee3c1379862e7e6654a806a965958fa1adc00304,1349
 - normaldistribution-1.1.0.3@sha256:2615b784c4112cbf6ffa0e2b55b76790290a9b9dff18a05d8c89aa374b213477,2160
 - term-rewriting-0.4.0.2@sha256:5412f6aa29c5756634ee30e8df923c83ab9f012a4b8797c460af3d7078466764,2740
@@ -43,10 +39,6 @@ extra-deps:
   commit: 4176e10d4de2d1310506c0fcf6a74956d81d59b6
 - git: https://github.com/hasktorch/type-errors-pretty
   commit: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
-- git: https://github.com/hasktorch/pipes-text
-  commit: d4805e84327e266daa730d23982db3172f226cac
-- exceptions-0.10.4@sha256:d2546046d7ba4b460d3bc7fd269cd2c52d0b7fb3cfecc038715dd0881b78a484,2796
-- generic-lens-core-2.2.0.0@sha256:b6b69e992f15fa80001de737f41f2123059011a1163d6c8941ce2e3ab44f8c03,2913
 - union-find-array-0.1.0.3@sha256:242e066ec516d61f262947e5794edc7bbc11fd538a0415c03ac0c01b028cfa8a,1372
 
 allow-newer: true
