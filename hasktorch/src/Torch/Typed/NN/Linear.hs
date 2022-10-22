@@ -8,6 +8,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.NN.Linear where
@@ -40,8 +42,8 @@ data
   where
   Linear ::
     forall inputFeatures outputFeatures dtype device.
-    { linearWeight :: Parameter device dtype '[outputFeatures, inputFeatures],
-      linearBias :: Parameter device dtype '[outputFeatures]
+    { weight :: Parameter device dtype '[outputFeatures, inputFeatures],
+      bias :: Parameter device dtype '[outputFeatures]
     } ->
     Linear inputFeatures outputFeatures dtype device
   deriving (Show, Generic, Parameterized)
@@ -54,7 +56,7 @@ linearForward ::
   Linear _ _ _ _ ->
   Tensor _ _ _ ->
   Tensor _ _ _
-linearForward Linear {..} input = linear' (toDependent linearWeight) (toDependent linearBias) input
+linearForward Linear {..} input = linear' (toDependent weight) (toDependent bias) input
 
 instance
   ( shape'' ~ MatMul shape '[inputFeatures, outputFeatures],

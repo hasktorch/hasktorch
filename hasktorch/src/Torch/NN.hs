@@ -11,6 +11,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Torch.NN where
 
@@ -221,8 +223,8 @@ linear :: Linear -> Tensor -> Tensor
 linear layer input = linear' input w b
   where
     linear' input weight bias = unsafePerformIO $ cast3 ATen.linear_ttt input weight bias
-    w = toDependent (weight layer)
-    b = toDependent (bias layer)
+    w = toDependent (layer.weight)
+    b = toDependent (layer.bias)
 
 linearForward :: Linear -> Tensor -> Tensor
 linearForward = linear -- temporary alias until dependencies are updated
@@ -270,8 +272,8 @@ data Conv1dSpec = Conv1dSpec
   deriving (Show, Eq)
 
 data Conv1d = Conv1d
-  { conv1dWeight :: Parameter,
-    conv1dBias :: Parameter
+  { weight :: Parameter,
+    bias :: Parameter
   }
   deriving (Show, Generic, Parameterized)
 
@@ -288,8 +290,8 @@ conv1dForward ::
   Tensor
 conv1dForward layer = Torch.Functional.conv1d' w b
   where
-    w = toDependent (conv1dWeight layer)
-    b = toDependent (conv1dBias layer)
+    w = toDependent (layer.weight)
+    b = toDependent (layer.bias)
 
 instance Randomizable Conv1dSpec Conv1d where
   sample Conv1dSpec {..} = do
@@ -336,8 +338,8 @@ data Conv2dSpec = Conv2dSpec
   deriving (Show, Eq)
 
 data Conv2d = Conv2d
-  { conv2dWeight :: Parameter,
-    conv2dBias :: Parameter
+  { weight :: Parameter,
+    bias :: Parameter
   }
   deriving (Show, Generic, Parameterized)
 
@@ -354,8 +356,8 @@ conv2dForward ::
   Tensor
 conv2dForward layer = Torch.Functional.conv2d' w b
   where
-    w = toDependent (conv2dWeight layer)
-    b = toDependent (conv2dBias layer)
+    w = toDependent (layer.weight)
+    b = toDependent (layer.bias)
 
 instance Randomizable Conv2dSpec Conv2d where
   sample Conv2dSpec {..} = do
@@ -405,8 +407,8 @@ data Conv3dSpec = Conv3dSpec
   deriving (Show, Eq)
 
 data Conv3d = Conv3d
-  { conv3dWeight :: Parameter,
-    conv3dBias :: Parameter
+  { weight :: Parameter,
+    bias :: Parameter
   }
   deriving (Show, Generic, Parameterized)
 
@@ -423,8 +425,8 @@ conv3dForward ::
   Tensor
 conv3dForward layer = Torch.Functional.conv3d' w b
   where
-    w = toDependent (conv3dWeight layer)
-    b = toDependent (conv3dBias layer)
+    w = toDependent (layer.weight)
+    b = toDependent (layer.bias)
 
 instance Randomizable Conv3dSpec Conv3d where
   sample Conv3dSpec {..} = do
@@ -474,8 +476,8 @@ data ConvTranspose1dSpec = ConvTranspose1dSpec
   deriving (Show, Eq)
 
 data ConvTranspose1d = ConvTranspose1d
-  { convTranspose1dWeight :: Parameter,
-    convTranspose1dBias :: Parameter
+  { weight :: Parameter,
+    bias :: Parameter
   }
   deriving (Show, Generic, Parameterized)
 
@@ -492,8 +494,8 @@ convTranspose1dForward ::
   Tensor
 convTranspose1dForward layer = convTranspose1d' w b
   where
-    w = toDependent (convTranspose1dWeight layer)
-    b = toDependent (convTranspose1dBias layer)
+    w = toDependent (layer.weight)
+    b = toDependent (layer.bias)
 
 instance Randomizable ConvTranspose1dSpec ConvTranspose1d where
   sample ConvTranspose1dSpec {..} = do
@@ -540,8 +542,8 @@ data ConvTranspose2dSpec = ConvTranspose2dSpec
   deriving (Show, Eq)
 
 data ConvTranspose2d = ConvTranspose2d
-  { convTranspose2dWeight :: Parameter,
-    convTranspose2dBias :: Parameter
+  { weight :: Parameter,
+    bias :: Parameter
   }
   deriving (Show, Generic, Parameterized)
 
@@ -558,8 +560,8 @@ convTranspose2dForward ::
   Tensor
 convTranspose2dForward layer = convTranspose2d' w b
   where
-    w = toDependent (convTranspose2dWeight layer)
-    b = toDependent (convTranspose2dBias layer)
+    w = toDependent (layer.weight)
+    b = toDependent (layer.bias)
 
 instance Randomizable ConvTranspose2dSpec ConvTranspose2d where
   sample ConvTranspose2dSpec {..} = do
@@ -609,8 +611,8 @@ data ConvTranspose3dSpec = ConvTranspose3dSpec
   deriving (Show, Eq)
 
 data ConvTranspose3d = ConvTranspose3d
-  { convTranspose3dWeight :: Parameter,
-    convTranspose3dBias :: Parameter
+  { weight :: Parameter,
+    bias :: Parameter
   }
   deriving (Show, Generic, Parameterized)
 
@@ -627,8 +629,8 @@ convTranspose3dForward ::
   Tensor
 convTranspose3dForward layer = convTranspose3d' w b
   where
-    w = toDependent (convTranspose3dWeight layer)
-    b = toDependent (convTranspose3dBias layer)
+    w = toDependent (layer.weight)
+    b = toDependent (layer.bias)
 
 instance Randomizable ConvTranspose3dSpec ConvTranspose3d where
   sample ConvTranspose3dSpec {..} = do
@@ -672,20 +674,20 @@ data BatchNormSpec = BatchNormSpec
   deriving (Show, Eq)
 
 data BatchNorm = BatchNorm
-  { batchNormWeight :: Parameter,
-    batchNormBias :: Parameter,
+  { weight :: Parameter,
+    bias :: Parameter,
     runningMean :: Tensor,
     runningVar :: Tensor
   }
   deriving (Show, Generic)
 
 batchNormForward :: BatchNorm -> Bool -> Double -> Double -> Tensor -> Tensor
-batchNormForward BatchNorm {..} train momentum eps input =
+batchNormForward params train momentum eps input =
   Torch.Functional.batchNorm
-    (toDependent batchNormWeight)
-    (toDependent batchNormBias)
-    runningMean
-    runningVar
+    (toDependent params.weight)
+    (toDependent params.bias)
+    params.runningMean
+    params.runningVar
     train
     momentum
     eps
@@ -705,20 +707,20 @@ data InstanceNormSpec = InstanceNormSpec
   deriving (Show, Eq)
 
 data InstanceNorm = InstanceNorm
-  { instanceNormWeight :: Parameter,
-    instanceNormBias :: Parameter,
+  { weight :: Parameter,
+    bias :: Parameter,
     iRunningMean :: Tensor,
     iRunningVar :: Tensor
   }
   deriving (Show, Generic)
 
 instanceNormForward :: InstanceNorm -> Bool -> Double -> Double -> Tensor -> Tensor
-instanceNormForward InstanceNorm {..} train momentum eps input =
+instanceNormForward params train momentum eps input =
   Torch.Functional.instanceNorm
-    (toDependent instanceNormWeight)
-    (toDependent instanceNormBias)
-    iRunningMean
-    iRunningVar
+    (toDependent params.weight)
+    (toDependent params.bias)
+    params.iRunningMean
+    params.iRunningVar
     train
     momentum
     eps

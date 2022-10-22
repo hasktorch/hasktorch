@@ -2,6 +2,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Main where
 
@@ -53,8 +55,8 @@ regularizationTest mnistData = do
   let pruneSpec =
         PruneSpec
           { selectWeights = \m ->
-              [ toDependent . weight . cnnFC0 $ m,
-                toDependent . weight . cnnFC1 $ m
+              [ toDependent $ m.cnnFC0.weight,
+                toDependent $ m.cnnFC1.weight
               ],
             pruneWeights = undefined
           }
@@ -82,15 +84,15 @@ regularizationTest mnistData = do
       mnistData
       initRefL2
 
-  plt <- strip (toDependent . weight . cnnFC0 $ initRef)
+  plt <- strip (toDependent initRef.cnnFC0.weight)
   toHtmlFile "plotInit.html" plt
   system "open plotInit.html"
   print "weights0 l1"
-  plt <- strip (toDependent . weight . cnnFC0 $ l1Model)
+  plt <- strip (toDependent l1Model.cnnFC0.weight)
   toHtmlFile "plot0l1.html" plt
   system "open plot0l1.html"
   print "weights0 l2"
-  plt <- strip (toDependent . weight . cnnFC0 $ l2Model)
+  plt <- strip (toDependent l2Model.cnnFC0.weight)
   toHtmlFile "plot0l2.html" plt
   system "open plot0l2.html"
 

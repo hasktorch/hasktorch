@@ -5,6 +5,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Main where
 
@@ -43,8 +45,8 @@ asFloats = (asValue :: Tensor -> [Float]) . toDependent
 
 areSame :: Linear -> Linear -> Bool
 areSame trained trained' =
-  (asFloats (bias trained) == asFloats (bias trained'))
-    && (asFloats (weight trained) == asFloats (weight trained'))
+  (asFloats (trained.bias) == asFloats (trained'.bias))
+    && (asFloats (trained.weight) == asFloats (trained'.weight))
 
 main :: IO ()
 main = do
