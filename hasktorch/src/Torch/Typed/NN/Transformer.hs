@@ -614,6 +614,7 @@ sinusoidal =
 instance
   ( paddingIdx <= numEmbeds,
     1 <= numEmbeds - paddingIdx,
+    1 <= Div embedDim 2,
     (((numEmbeds - paddingIdx) - 1) + (1 + paddingIdx)) ~ numEmbeds,
     (Div embedDim 2 * 2) ~ embedDim,
     All KnownNat '[ffnDim, paddingIdx, numEmbeds, embedDim],

@@ -795,10 +795,10 @@ tanh input = unsafePerformIO $ ATen.cast1 ATen.Managed.tanh_t input
 -- | ConditionalReduction
 --
 -- >>> :kind! ConditionalReduction '[3,2] ReduceNone
--- ConditionalReduction '[3,2] ReduceNone :: [Nat]
+-- ConditionalReduction '[3,2] ReduceNone :: [Natural]
 -- = '[3, 2]
 -- >>> :kind! ConditionalReduction '[3,2] ReduceMean
--- ConditionalReduction '[3,2] ReduceMean :: [Nat]
+-- ConditionalReduction '[3,2] ReduceMean :: [Natural]
 -- = '[]
 type family ConditionalReduction (shape :: [Nat]) (reduction :: Reduction) :: [Nat] where
   ConditionalReduction shape ReduceNone = shape
@@ -1464,10 +1464,10 @@ type family GetValue (shape :: [Nat]) (i :: Nat) :: Nat where
 -- | Transpose
 --
 -- >>> :kind! Transpose '[3,2] 0 1
--- Transpose '[3,2] 0 1 :: [Nat]
+-- Transpose '[3,2] 0 1 :: [Natural]
 -- = '[2, 3]
 -- >>> :kind! Transpose '[3,2,1] 1 2
--- Transpose '[3,2,1] 1 2 :: [Nat]
+-- Transpose '[3,2,1] 1 2 :: [Natural]
 -- = '[3, 1, 2]
 type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] where
   Transpose s d0 d1 = (SetValue (SetValue s d0 (GetValue s d1)) d1 (GetValue s d0))
@@ -2096,19 +2096,19 @@ bmm input other = unsafePerformIO $ ATen.cast2 ATen.Managed.bmm_tt input other
 --
 -- >>> type Ty = BroadcastTensorsImpl '[] 'Nothing
 -- >>> :kind! Ty
--- Ty :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: Maybe ([Natural], D.DType, (D.DeviceType, Natural))
 -- = 'Nothing
 -- >>> type Ty = BroadcastTensorsImpl '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 3], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]] 'Nothing
 -- >>> :kind! Ty
--- Ty :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: Maybe ([Natural], D.DType, (D.DeviceType, Natural))
 -- = 'Just '( '[2, 3], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = BroadcastTensorsImpl '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 3], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1], Tensor '( 'D.CPU, 0) 'D.Float '[5, 1, 1]] 'Nothing
 -- >>> :kind! Ty
--- Ty :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: Maybe ([Natural], D.DType, (D.DeviceType, Natural))
 -- = 'Just '( '[5, 2, 3], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = BroadcastTensorsImpl '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 3], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1], Tensor '( 'D.CPU, 0) 'D.Float '[1, 5, 1]] 'Nothing
 -- >>> :kind! Ty
--- Ty :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: Maybe ([Natural], D.DType, (D.DeviceType, Natural))
 -- = 'Nothing
 type family BroadcastTensorsImpl (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
   BroadcastTensorsImpl '[] 'Nothing = 'Nothing
@@ -2187,23 +2187,23 @@ type family CatCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: ([N
 --
 -- >>> type Ty = Cat 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[1]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[1], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = Cat 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[1], Tensor '( 'D.CPU, 0) 'D.Float '[2]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[3], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = Cat 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 3], Tensor '( 'D.CPU, 0) 'D.Float '[2, 3]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[3, 3], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = Cat 1 '[Tensor '( 'D.CPU, 0) 'D.Float '[3, 1], Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[3, 3], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = Cat 1 '[Tensor '( 'D.CPU, 0) 'D.Float '[2, 5, 4, 2], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1, 4, 2], Tensor '( 'D.CPU, 0) 'D.Float '[2, 3, 4, 2], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1, 4, 2]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[2, 10, 4, 2], 'D.Float, '( 'D.CPU, 0))
 type Cat dim tensors = CatCheck (CatImpl dim tensors Nothing)
 
@@ -2442,7 +2442,7 @@ type ConvSideCheck (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat) (paddi
 -- | ConvOutputSize
 --
 -- >>> :kind! ConvOutputSize 4 1 1 0
--- ConvOutputSize 4 1 1 0 :: Nat
+-- ConvOutputSize 4 1 1 0 :: Natural
 -- = 4
 type family ConvOutputSize (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat) (padding :: Nat) :: Nat where
   ConvOutputSize inputSize kernelSize stride padding = (Div ((inputSize + (2 * padding)) - kernelSize) stride) + 1
@@ -2867,10 +2867,10 @@ cosh input = unsafePerformIO $ ATen.cast1 ATen.Managed.cosh_t input
 -- | Det
 --
 -- >>> :kind! Det '[2,2]
--- Det '[2,2] :: [Nat]
+-- Det '[2,2] :: [Natural]
 -- = '[]
 -- >>> :kind! Det '[3,2,2]
--- Det '[3,2,2] :: [Nat]
+-- Det '[3,2,2] :: [Natural]
 -- = '[3]
 type family Det (shape :: [Nat]) :: [Nat] where
   Det (n : n : '[]) = '[]
@@ -4260,23 +4260,23 @@ type family StackCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: (
 --
 -- >>> type Ty = Stack 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[1], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = Stack 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[2,2]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[1, 2, 2], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = Stack 1 '[Tensor '( 'D.CPU, 0) 'D.Float '[2,2]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[2, 1, 2], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = Stack 2 '[Tensor '( 'D.CPU, 0) 'D.Float '[2,2]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[2, 2, 1], 'D.Float, '( 'D.CPU, 0))
 -- >>> type Ty = Stack 2 '[Tensor '( 'D.CPU, 0) 'D.Float '[2,2], Tensor '( 'D.CPU, 0) 'D.Float '[2,2], Tensor '( 'D.CPU, 0) 'D.Float '[2,2]]
 -- >>> :kind! Ty
--- Ty :: ([Nat], D.DType, (D.DeviceType, Nat))
+-- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
 -- = '( '[2, 2, 3], 'D.Float, '( 'D.CPU, 0))
 type Stack dim tensors = StackCheck (StackImpl dim tensors 1)
 
@@ -4408,13 +4408,13 @@ trunc input = unsafePerformIO $ ATen.cast1 ATen.Managed.trunc_t input
 -- | UnsqueezeImpl
 --
 -- >>> :kind! UnsqueezeImpl '[4] 0
--- UnsqueezeImpl '[4] 0 :: Maybe [Nat]
+-- UnsqueezeImpl '[4] 0 :: Maybe [Natural]
 -- = 'Just '[1, 4]
 -- >>> :kind! UnsqueezeImpl '[4] 1
--- UnsqueezeImpl '[4] 1 :: Maybe [Nat]
+-- UnsqueezeImpl '[4] 1 :: Maybe [Natural]
 -- = 'Just '[4, 1]
 -- >>> :kind! UnsqueezeImpl '[4] 2
--- UnsqueezeImpl '[4] 2 :: Maybe [Nat]
+-- UnsqueezeImpl '[4] 2 :: Maybe [Natural]
 -- = 'Nothing
 type family UnsqueezeImpl (shape :: [a]) (dim :: Nat) :: Maybe [a] where
   UnsqueezeImpl xs 0 = Just (1 ': xs)
@@ -4492,7 +4492,7 @@ type family SqueezeDimCheck (shape :: [a]) (dim :: Nat) (result :: Maybe [a]) ::
 -- | Calculate the output shape of a squeeze along a given dimension
 --
 -- >>> :kind! SqueezeDim '[2,1,2] 1
--- SqueezeDim '[2,1,2] 1 :: [Nat]
+-- SqueezeDim '[2,1,2] 1 :: [Natural]
 -- = '[2, 2]
 type SqueezeDim shape dim = SqueezeDimCheck shape dim (SqueezeDimImpl shape dim)
 
@@ -5062,19 +5062,19 @@ nonzero _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.nonzero_t) _input
 -- | GatherDimImpl
 --
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 4, 1] 1
--- GatherDimImpl '[2, 1, 1] '[2, 4, 1] 1 :: Maybe [Nat]
+-- GatherDimImpl '[2, 1, 1] '[2, 4, 1] 1 :: Maybe [Natural]
 -- = 'Just '[2, 4, 1]
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 4, 2] 1
--- GatherDimImpl '[2, 1, 1] '[2, 4, 2] 1 :: Maybe [Nat]
+-- GatherDimImpl '[2, 1, 1] '[2, 4, 2] 1 :: Maybe [Natural]
 -- = 'Nothing
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 0, 1] 1
--- GatherDimImpl '[2, 1, 1] '[2, 0, 1] 1 :: Maybe [Nat]
+-- GatherDimImpl '[2, 1, 1] '[2, 0, 1] 1 :: Maybe [Natural]
 -- = 'Nothing
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 1] 1
--- GatherDimImpl '[2, 1, 1] '[2, 1] 1 :: Maybe [Nat]
+-- GatherDimImpl '[2, 1, 1] '[2, 1] 1 :: Maybe [Natural]
 -- = 'Nothing
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2
--- GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2 :: Maybe [Nat]
+-- GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2 :: Maybe [Natural]
 -- = 'Just '[2, 1, 3]
 type family GatherDimImpl (shape :: [Nat]) (shape' :: [Nat]) (dim :: Nat) :: Maybe [Nat] where
   GatherDimImpl (x ': xs) (y ': xs) 0 = If (1 <=? y) (Just (y ': xs)) Nothing
@@ -5094,7 +5094,7 @@ type family GatherDimCheck (shape :: [a]) (shape' :: [a]) (dim :: Nat) (result :
 -- | Calculate the output shape of a gather operation for a given index shape along a given axis
 --
 -- >>> :kind! GatherDim '[2, 1, 1] '[2, 1, 3] 2
--- GatherDim '[2, 1, 1] '[2, 1, 3] 2 :: [Nat]
+-- GatherDim '[2, 1, 1] '[2, 1, 3] 2 :: [Natural]
 -- = '[2, 1, 3]
 type GatherDim shape shape' dim = GatherDimCheck shape shape' dim (GatherDimImpl shape shape' dim)
 

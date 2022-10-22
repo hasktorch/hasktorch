@@ -136,8 +136,8 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen =
     liftIO . print . size $ vocab
     let vocabLen = GHC.TypeNats.someNatVal . fromIntegral . size $ vocab
     case vocabLen of
-      (SomeNat proxy) -> case mkNumEmbedsProof proxy of
-        Just dict -> go dict vocab
+      (SomeNat (proxy :: Data.Proxy.Proxy numEmbeds)) -> case mkNumEmbedsProof @numEmbeds proxy of
+        Just dict -> go @numEmbeds dict vocab
         Nothing -> pure ()
   where
     go ::
@@ -192,7 +192,7 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen =
 
 mkNumEmbedsProof ::
   forall (numEmbeds :: Nat).
-  KnownNat numEmbeds =>
+  KnownNat numEmbeds  =>
   Data.Proxy.Proxy numEmbeds ->
   Maybe (Dict ((1 <=? numEmbeds) ~ 'True))
 mkNumEmbedsProof Proxy =

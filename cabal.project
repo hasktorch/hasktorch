@@ -16,14 +16,14 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/hasktorch/typelevel-rewrite-rules
-    --sha256: 122fy4d2wsy7lbbgqzmwgjq1nvl32bkjda1m3sml0avy3dslncg3
-    tag: 1262d69e7e16705c1a85832125ce0b5b82a41278
+    --sha256: 0nfs6qyrhc2hxskdnlhsr6rrqdqa1kw5a18d2fiybiygxy75z140
+    tag: 4176e10d4de2d1310506c0fcf6a74956d81d59b6
 
 source-repository-package
     type: git
-    location: https://github.com/hasktorch/pipes-text
-    --sha256: 0yp3zr4hlswqzl8axkgnfapclx764q402dv5qmcvpm6aphzkavyx
-    tag: d4805e84327e266daa730d23982db3172f226cac
+    location: https://github.com/hasktorch/type-errors-pretty
+    --sha256: 0sdw3ga7gbffyywpyx7xn8ghdw9gzsy4l68cas41hwfbkrwxwdg6
+    tag: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
 
 write-ghc-environment-files: always
 tests: true
