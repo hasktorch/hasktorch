@@ -681,9 +681,9 @@ data BatchNorm = BatchNorm
   }
   deriving (Show, Generic)
 
-batchNormForward :: BatchNorm -> Bool -> Double -> Double -> Tensor -> Tensor
-batchNormForward params train momentum eps input =
-  Torch.Functional.batchNorm
+batchNormForwardIO :: BatchNorm -> Bool -> Double -> Double -> Tensor -> IO Tensor
+batchNormForwardIO params train momentum eps input =
+  Torch.Functional.batchNormIO
     (toDependent params.weight)
     (toDependent params.bias)
     params.runningMean
@@ -709,18 +709,18 @@ data InstanceNormSpec = InstanceNormSpec
 data InstanceNorm = InstanceNorm
   { weight :: Parameter,
     bias :: Parameter,
-    iRunningMean :: Tensor,
-    iRunningVar :: Tensor
+    runningMean :: Tensor,
+    runningVar :: Tensor
   }
   deriving (Show, Generic)
 
-instanceNormForward :: InstanceNorm -> Bool -> Double -> Double -> Tensor -> Tensor
-instanceNormForward params train momentum eps input =
-  Torch.Functional.instanceNorm
+instanceNormForwardIO :: InstanceNorm -> Bool -> Double -> Double -> Tensor -> IO Tensor
+instanceNormForwardIO params train momentum eps input =
+  Torch.Functional.instanceNormIO
     (toDependent params.weight)
     (toDependent params.bias)
-    params.iRunningMean
-    params.iRunningVar
+    params.runningMean
+    params.runningVar
     train
     momentum
     eps

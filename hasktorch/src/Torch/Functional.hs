@@ -3105,7 +3105,7 @@ repeat ::
   Tensor
 repeat a t = unsafePerformIO $ (cast2 ATen.tensor_repeat_l) t a
 
-batchNorm ::
+batchNormIO ::
   -- | weight
   Tensor ->
   -- | bias
@@ -3123,22 +3123,21 @@ batchNorm ::
   -- | input
   Tensor ->
   -- | output
-  Tensor
-batchNorm weight bias running_mean running_var training momentum eps input =
-  unsafePerformIO $
-    cast9
-      ATen.batch_norm_tttttbddb
-      input
-      weight
-      bias
-      running_mean
-      running_var
-      training
-      momentum
-      eps
-      True
+  IO Tensor
+batchNormIO weight bias running_mean running_var training momentum eps input =
+  cast9
+    ATen.batch_norm_tttttbddb
+    input
+    weight
+    bias
+    running_mean
+    running_var
+    training
+    momentum
+    eps
+    True
 
-instanceNorm ::
+instanceNormIO ::
   -- | weight
   Tensor ->
   -- | bias
@@ -3156,20 +3155,19 @@ instanceNorm ::
   -- | input
   Tensor ->
   -- | output
-  Tensor
-instanceNorm weight bias running_mean running_var training momentum eps input =
-  unsafePerformIO $
-    cast9
-      ATen.instance_norm_tttttbddb
-      input
-      weight
-      bias
-      running_mean
-      running_var
-      training
-      momentum
-      eps
-      True
+  IO Tensor
+instanceNormIO weight bias running_mean running_var training momentum eps input =
+  cast9
+    ATen.instance_norm_tttttbddb
+    input
+    weight
+    bias
+    running_mean
+    running_var
+    training
+    momentum
+    eps
+    True
 
 repeatInterleaveRange ::
   -- | repeats
