@@ -1,5 +1,7 @@
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Main where
 
@@ -17,8 +19,8 @@ groundTruth t = squeezeAll $ matmul t weight + bias
 
 printParams :: Linear -> IO ()
 printParams trained = do
-  putStrLn $ "Parameters:\n" ++ (show $ toDependent $ weight trained)
-  putStrLn $ "Bias:\n" ++ (show $ toDependent $ bias trained)
+  putStrLn $ "Parameters:\n" ++ (show $ toDependent $ trained.weight)
+  putStrLn $ "Bias:\n" ++ (show $ toDependent $ trained.bias)
 
 main :: IO ()
 main = do

@@ -4,6 +4,8 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Model where
 
@@ -127,7 +129,7 @@ instance HasForward CNN Tensor Tensor where
       . reshape [batchSize, 1, 28, 28]
       $ input
     where
-      channels = (shape (toDependent . conv2dWeight $ cnnConv0)) !! 0
+      channels = (shape (toDependent cnnConv0.weight)) !! 0
       batchSize = Prelude.div (product (shape input)) 784
   forwardStoch = (pure .) . forward
 

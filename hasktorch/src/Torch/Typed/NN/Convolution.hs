@@ -14,6 +14,8 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeInType #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module Torch.Typed.NN.Convolution where
@@ -50,8 +52,8 @@ data
   where
   Conv1d ::
     forall inputChannelSize outputChannelSize kernelSize dtype device.
-    { conv1dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize],
-      conv1dBias :: Parameter device dtype '[outputChannelSize]
+    { weight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize],
+      bias :: Parameter device dtype '[outputChannelSize]
     } ->
     Conv1d
       inputChannelSize
@@ -72,8 +74,8 @@ conv1dForward ::
   Tensor _ _ _
 conv1dForward Conv1d {..} input =
   conv1d @stride @padding
-    (toDependent conv1dWeight)
-    (toDependent conv1dBias)
+    (toDependent weight)
+    (toDependent bias)
     input
 
 instance
@@ -132,8 +134,8 @@ data
   where
   Conv2d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device.
-    { conv2dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1],
-      conv2dBias :: Parameter device dtype '[outputChannelSize]
+    { weight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1],
+      bias :: Parameter device dtype '[outputChannelSize]
     } ->
     Conv2d
       inputChannelSize
@@ -155,8 +157,8 @@ conv2dForward ::
   Tensor _ _ _
 conv2dForward Conv2d {..} input =
   conv2d @stride @padding
-    (toDependent conv2dWeight)
-    (toDependent conv2dBias)
+    (toDependent weight)
+    (toDependent bias)
     input
 
 instance
@@ -224,8 +226,8 @@ data
   where
   Conv3d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device.
-    { conv3dWeight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2],
-      conv3dBias :: Parameter device dtype '[outputChannelSize]
+    { weight :: Parameter device dtype '[outputChannelSize, inputChannelSize, kernelSize0, kernelSize1, kernelSize2],
+      bias :: Parameter device dtype '[outputChannelSize]
     } ->
     Conv3d
       inputChannelSize
@@ -248,8 +250,8 @@ conv3dForward ::
   Tensor _ _ _
 conv3dForward Conv3d {..} input =
   conv3d @stride @padding
-    (toDependent conv3dWeight)
-    (toDependent conv3dBias)
+    (toDependent weight)
+    (toDependent bias)
     input
 
 instance
@@ -317,8 +319,8 @@ data
   where
   ConvTranspose1d ::
     forall inputChannelSize outputChannelSize kernelSize dtype device.
-    { convTranspose1dWeight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize],
-      convTranspose1dBias :: Parameter device dtype '[outputChannelSize]
+    { weight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize],
+      bias :: Parameter device dtype '[outputChannelSize]
     } ->
     ConvTranspose1d
       inputChannelSize
@@ -339,8 +341,8 @@ convTranspose1dForward ::
   Tensor _ _ _
 convTranspose1dForward ConvTranspose1d {..} input =
   convTranspose1d @stride @padding
-    (toDependent convTranspose1dWeight)
-    (toDependent convTranspose1dBias)
+    (toDependent weight)
+    (toDependent bias)
     input
 
 instance
@@ -399,8 +401,8 @@ data
   where
   ConvTranspose2d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 dtype device.
-    { convTranspose2dWeight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize0, kernelSize1],
-      convTranspose2dBias :: Parameter device dtype '[outputChannelSize]
+    { weight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize0, kernelSize1],
+      bias :: Parameter device dtype '[outputChannelSize]
     } ->
     ConvTranspose2d
       inputChannelSize
@@ -422,8 +424,8 @@ convTranspose2dForward ::
   Tensor _ _ _
 convTranspose2dForward ConvTranspose2d {..} input =
   convTranspose2d @stride @padding
-    (toDependent convTranspose2dWeight)
-    (toDependent convTranspose2dBias)
+    (toDependent weight)
+    (toDependent bias)
     input
 
 instance
@@ -491,8 +493,8 @@ data
   where
   ConvTranspose3d ::
     forall inputChannelSize outputChannelSize kernelSize0 kernelSize1 kernelSize2 dtype device.
-    { convTranspose3dWeight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize0, kernelSize1, kernelSize2],
-      convTranspose3dBias :: Parameter device dtype '[outputChannelSize]
+    { weight :: Parameter device dtype '[inputChannelSize, outputChannelSize, kernelSize0, kernelSize1, kernelSize2],
+      bias :: Parameter device dtype '[outputChannelSize]
     } ->
     ConvTranspose3d
       inputChannelSize
@@ -515,8 +517,8 @@ convTranspose3dForward ::
   Tensor _ _ _
 convTranspose3dForward ConvTranspose3d {..} input =
   convTranspose3d @stride @padding
-    (toDependent convTranspose3dWeight)
-    (toDependent convTranspose3dBias)
+    (toDependent weight)
+    (toDependent bias)
     input
 
 instance
