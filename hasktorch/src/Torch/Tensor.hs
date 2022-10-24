@@ -97,6 +97,22 @@ dim ::
   Int
 dim t = unsafePerformIO $ (cast1 ATen.tensor_dim) t
 
+-- | Returns the dimensions of the input tensor
+dimUnsafe ::
+  -- | input
+  Tensor ->
+  -- | output
+  Int
+dimUnsafe t = unsafePerformIO $ (cast1 ATen.tensor_dim_unsafe) t
+
+-- | Returns the dimensions of the input tensor
+dimCUnsafe ::
+  -- | input
+  Tensor ->
+  -- | output
+  Int
+dimCUnsafe t = unsafePerformIO $ (cast1 ATen.tensor_dim_c_unsafe) t
+
 -- | Returns the device on which the tensor is currently allocated
 device ::
   -- | input

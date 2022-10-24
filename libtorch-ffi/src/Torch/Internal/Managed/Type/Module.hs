@@ -30,37 +30,37 @@ import Control.Concurrent.MVar (MVar(..), newEmptyMVar, putMVar, takeMVar)
 import qualified Torch.Internal.Unmanaged.Type.Module as Unmanaged
 
 newModule :: ForeignPtr StdString -> IO (ForeignPtr Module)
-newModule = cast1 Unmanaged.newModule
+newModule = _cast1 Unmanaged.newModule
 
 save :: ForeignPtr Module -> FilePath -> IO ()
-save = cast2 Unmanaged.save
+save = _cast2 Unmanaged.save
 
 load :: FilePath -> IO (ForeignPtr Module)
-load = cast1 Unmanaged.load
+load = _cast1 Unmanaged.load
 
 forward :: ForeignPtr Module -> (ForeignPtr (StdVector IValue)) -> IO (ForeignPtr IValue)
-forward = cast2 Unmanaged.forward
+forward = _cast2 Unmanaged.forward
 
 registerParameter :: ForeignPtr Module -> ForeignPtr StdString -> ForeignPtr Tensor -> CBool -> IO ()
-registerParameter = cast4 Unmanaged.registerParameter
+registerParameter = _cast4 Unmanaged.registerParameter
 
 registerModule :: ForeignPtr Module -> ForeignPtr StdString -> ForeignPtr Module -> IO ()
-registerModule = cast3 Unmanaged.registerModule
+registerModule = _cast3 Unmanaged.registerModule
 
 train :: ForeignPtr Module -> CBool -> IO ()
-train = cast2 Unmanaged.train
+train = _cast2 Unmanaged.train
 
 runMethod :: ForeignPtr Module -> ForeignPtr StdString -> ForeignPtr (C10List IValue) -> IO (Ptr IValue)
-runMethod = cast3 Unmanaged.runMethod
+runMethod = _cast3 Unmanaged.runMethod
 
 runMethod1 :: ForeignPtr Module -> ForeignPtr StdString -> ForeignPtr IValue -> IO (Ptr IValue)
-runMethod1 = cast3 Unmanaged.runMethod1
+runMethod1 = _cast3 Unmanaged.runMethod1
 
 getParameters :: ForeignPtr Module -> IO (ForeignPtr TensorList)
-getParameters = cast1 Unmanaged.getParameters
+getParameters = _cast1 Unmanaged.getParameters
 
 setParameters :: ForeignPtr Module -> ForeignPtr TensorList -> IO ()
-setParameters = cast2 Unmanaged.setParameters
+setParameters = _cast2 Unmanaged.setParameters
 
 getNamedParameters :: ForeignPtr Module -> IO [(ForeignPtr StdString,ForeignPtr Tensor)]
 getNamedParameters obj = withForeignPtr obj $ \obj' -> do
@@ -103,13 +103,13 @@ getNamedChildren obj = withForeignPtr obj $ \obj' -> do
     return (a',b')
 
 toDevice :: ForeignPtr Module -> DeviceType -> Int16 -> IO ()
-toDevice = cast3 Unmanaged.toDevice
+toDevice = _cast3 Unmanaged.toDevice
 
 clone :: ForeignPtr Module -> IO (ForeignPtr Module)
-clone = cast1 Unmanaged.clone
+clone = _cast1 Unmanaged.clone
 
 define :: ForeignPtr Module -> ForeignPtr StdString -> IO ()
-define = cast2 Unmanaged.define
+define = _cast2 Unmanaged.define
 
 
 -- Note: Not to release "ForeignPtr TensorList" before calling trace, put the pointer to MVar, and touch the reference.
@@ -145,10 +145,10 @@ traceAsGraph func inputs = do
       return $ unsafeForeignPtrToPtr ret
 
 printGraph :: ForeignPtr (SharedPtr JitGraph) -> IO (ForeignPtr StdString)
-printGraph graph = cast1 Unmanaged.printGraph graph
+printGraph graph = _cast1 Unmanaged.printGraph graph
 
 printOnnx :: ForeignPtr (SharedPtr JitGraph) -> IO (ForeignPtr StdString)
-printOnnx graph = cast1 Unmanaged.printOnnx graph
+printOnnx graph = _cast1 Unmanaged.printOnnx graph
 
 dumpToStr
   :: ForeignPtr Module
@@ -156,4 +156,4 @@ dumpToStr
   -> CBool
   -> CBool
   -> IO (ForeignPtr StdString)
-dumpToStr = cast4 Unmanaged.dumpToStr
+dumpToStr = _cast4 Unmanaged.dumpToStr

@@ -23,37 +23,37 @@ import qualified Torch.Internal.Unmanaged.Type.TensorIndex as Unmanaged
 
 
 newTensorIndexList :: IO (ForeignPtr (StdVector TensorIndex))
-newTensorIndexList = cast0 Unmanaged.newTensorIndexList
+newTensorIndexList = _cast0 Unmanaged.newTensorIndexList
 
 newTensorIndexWithInt :: CInt -> IO (ForeignPtr TensorIndex)
-newTensorIndexWithInt = cast1 Unmanaged.newTensorIndexWithInt
+newTensorIndexWithInt = _cast1 Unmanaged.newTensorIndexWithInt
 
 newTensorIndexWithBool :: CBool -> IO (ForeignPtr TensorIndex)
-newTensorIndexWithBool = cast1 Unmanaged.newTensorIndexWithBool
+newTensorIndexWithBool = _cast1 Unmanaged.newTensorIndexWithBool
 
 newTensorIndexWithSlice :: CInt -> CInt -> CInt -> IO (ForeignPtr TensorIndex)
-newTensorIndexWithSlice = cast3 Unmanaged.newTensorIndexWithSlice
+newTensorIndexWithSlice = _cast3 Unmanaged.newTensorIndexWithSlice
 
 newTensorIndexWithTensor :: ForeignPtr Tensor -> IO (ForeignPtr TensorIndex)
-newTensorIndexWithTensor = cast1 Unmanaged.newTensorIndexWithTensor
+newTensorIndexWithTensor = _cast1 Unmanaged.newTensorIndexWithTensor
 
 newTensorIndexWithEllipsis :: IO (ForeignPtr TensorIndex)
-newTensorIndexWithEllipsis = cast0 Unmanaged.newTensorIndexWithEllipsis
+newTensorIndexWithEllipsis = _cast0 Unmanaged.newTensorIndexWithEllipsis
 
 newTensorIndexWithNone :: IO (ForeignPtr TensorIndex)
-newTensorIndexWithNone = cast0 Unmanaged.newTensorIndexWithNone
+newTensorIndexWithNone = _cast0 Unmanaged.newTensorIndexWithNone
 
 tensorIndexList_empty :: ForeignPtr (StdVector TensorIndex) -> IO (CBool)
-tensorIndexList_empty = cast1 Unmanaged.tensorIndexList_empty
+tensorIndexList_empty = _cast1 Unmanaged.tensorIndexList_empty
 
 tensorIndexList_size :: ForeignPtr (StdVector TensorIndex) -> IO (CSize)
-tensorIndexList_size = cast1 Unmanaged.tensorIndexList_size
+tensorIndexList_size = _cast1 Unmanaged.tensorIndexList_size
 
 tensorIndexList_push_back :: ForeignPtr (StdVector TensorIndex) -> ForeignPtr TensorIndex -> IO ()
-tensorIndexList_push_back = cast2 Unmanaged.tensorIndexList_push_back
+tensorIndexList_push_back = _cast2 Unmanaged.tensorIndexList_push_back
 
 index :: ForeignPtr Tensor -> ForeignPtr (StdVector TensorIndex) -> IO (ForeignPtr Tensor)
-index = cast2 Unmanaged.index
+index = _cast2 Unmanaged.index
 
 index_put_ :: ForeignPtr Tensor -> ForeignPtr (StdVector TensorIndex) -> ForeignPtr Tensor -> IO (ForeignPtr Tensor)
-index_put_ = cast3 Unmanaged.index_put_
+index_put_ = _cast3 Unmanaged.index_put_

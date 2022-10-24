@@ -23,7 +23,7 @@ import Control.Concurrent.MVar (MVar(..), newEmptyMVar, putMVar, takeMVar)
 --   -> (ForeignPtr TensorList -> IO (ForeignPtr Tensor))
 --   -> Int
 --   -> IO (ForeignPtr TensorList)
--- optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams loss numIter = cast2 (\i n -> Unmanaged.optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad i (trans loss) n) initParams numIter
+-- optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad initParams loss numIter = _cast2 (\i n -> Unmanaged.optimizerWithAdam adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad i (trans loss) n) initParams numIter
 --   where
 --     trans :: (ForeignPtr TensorList -> IO (ForeignPtr Tensor)) -> Ptr TensorList -> IO (Ptr Tensor)
 --     trans func inputs = do
@@ -39,7 +39,7 @@ adagrad
   -> CDouble
   -> ForeignPtr TensorList
   -> IO (ForeignPtr Optimizer)
-adagrad = cast6 Unmanaged.adagrad
+adagrad = _cast6 Unmanaged.adagrad
 
 rmsprop
   :: CDouble
@@ -50,7 +50,7 @@ rmsprop
   -> CBool
   -> ForeignPtr TensorList
   -> IO (ForeignPtr Optimizer)
-rmsprop = cast7 Unmanaged.rmsprop
+rmsprop = _cast7 Unmanaged.rmsprop
 
 sgd
   :: CDouble
@@ -60,7 +60,7 @@ sgd
   -> CBool
   -> ForeignPtr TensorList
   -> IO (ForeignPtr Optimizer)
-sgd = cast6 Unmanaged.sgd
+sgd = _cast6 Unmanaged.sgd
 
 adam
   :: CDouble
@@ -71,7 +71,7 @@ adam
   -> CBool
   -> ForeignPtr TensorList
   -> IO (ForeignPtr Optimizer)
-adam = cast7 Unmanaged.adam
+adam = _cast7 Unmanaged.adam
 
 adamw
   :: CDouble
@@ -82,7 +82,7 @@ adamw
   -> CBool
   -> ForeignPtr TensorList
   -> IO (ForeignPtr Optimizer)
-adamw = cast7 Unmanaged.adamw
+adamw = _cast7 Unmanaged.adamw
 
 lbfgs
   :: CDouble
@@ -94,10 +94,10 @@ lbfgs
   -> Maybe (ForeignPtr StdString)
   -> ForeignPtr TensorList
   -> IO (ForeignPtr Optimizer)
-lbfgs = cast8 Unmanaged.lbfgs
+lbfgs = _cast8 Unmanaged.lbfgs
 
 getParams :: ForeignPtr Optimizer -> IO (ForeignPtr TensorList) 
-getParams = cast1 Unmanaged.getParams
+getParams = _cast1 Unmanaged.getParams
 
 step :: ForeignPtr Optimizer -> (ForeignPtr TensorList -> IO (ForeignPtr Tensor)) -> IO (ForeignPtr Tensor)
 step optimizer loss = do
@@ -141,10 +141,10 @@ stepWithGenerator optimizer generator loss = do
 
 
 unsafeStep :: ForeignPtr Optimizer -> ForeignPtr Tensor -> IO (ForeignPtr TensorList)
-unsafeStep = cast2 Unmanaged.unsafeStep
+unsafeStep = _cast2 Unmanaged.unsafeStep
 
 save :: ForeignPtr Optimizer -> ForeignPtr StdString -> IO ()
-save = cast2 Unmanaged.save
+save = _cast2 Unmanaged.save
 
 load :: ForeignPtr Optimizer -> ForeignPtr StdString -> IO ()
-load = cast2 Unmanaged.load
+load = _cast2 Unmanaged.load

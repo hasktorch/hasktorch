@@ -26,133 +26,133 @@ nextafter_out_ttt
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-nextafter_out_ttt = cast3 Unmanaged.nextafter_out_ttt
+nextafter_out_ttt = _cast3 Unmanaged.nextafter_out_ttt
 
 nextafter_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-nextafter_tt = cast2 Unmanaged.nextafter_tt
+nextafter_tt = _cast2 Unmanaged.nextafter_tt
 
 remainder_out_tts
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
-remainder_out_tts = cast3 Unmanaged.remainder_out_tts
+remainder_out_tts = _cast3 Unmanaged.remainder_out_tts
 
 remainder_ts
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
-remainder_ts = cast2 Unmanaged.remainder_ts
+remainder_ts = _cast2 Unmanaged.remainder_ts
 
 remainder_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-remainder_out_ttt = cast3 Unmanaged.remainder_out_ttt
+remainder_out_ttt = _cast3 Unmanaged.remainder_out_ttt
 
 remainder_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-remainder_tt = cast2 Unmanaged.remainder_tt
+remainder_tt = _cast2 Unmanaged.remainder_tt
 
 remainder_st
   :: ForeignPtr Scalar
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-remainder_st = cast2 Unmanaged.remainder_st
+remainder_st = _cast2 Unmanaged.remainder_st
 
 min_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-min_t = cast1 Unmanaged.min_t
+min_t = _cast1 Unmanaged.min_t
 
 fmin_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-fmin_tt = cast2 Unmanaged.fmin_tt
+fmin_tt = _cast2 Unmanaged.fmin_tt
 
 fmin_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-fmin_out_ttt = cast3 Unmanaged.fmin_out_ttt
+fmin_out_ttt = _cast3 Unmanaged.fmin_out_ttt
 
 max_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-max_t = cast1 Unmanaged.max_t
+max_t = _cast1 Unmanaged.max_t
 
 fmax_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-fmax_tt = cast2 Unmanaged.fmax_tt
+fmax_tt = _cast2 Unmanaged.fmax_tt
 
 fmax_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-fmax_out_ttt = cast3 Unmanaged.fmax_out_ttt
+fmax_out_ttt = _cast3 Unmanaged.fmax_out_ttt
 
 maximum_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-maximum_tt = cast2 Unmanaged.maximum_tt
+maximum_tt = _cast2 Unmanaged.maximum_tt
 
 maximum_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-maximum_out_ttt = cast3 Unmanaged.maximum_out_ttt
+maximum_out_ttt = _cast3 Unmanaged.maximum_out_ttt
 
 max_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-max_tt = cast2 Unmanaged.max_tt
+max_tt = _cast2 Unmanaged.max_tt
 
 max_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-max_out_ttt = cast3 Unmanaged.max_out_ttt
+max_out_ttt = _cast3 Unmanaged.max_out_ttt
 
 minimum_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-minimum_tt = cast2 Unmanaged.minimum_tt
+minimum_tt = _cast2 Unmanaged.minimum_tt
 
 minimum_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-minimum_out_ttt = cast3 Unmanaged.minimum_out_ttt
+minimum_out_ttt = _cast3 Unmanaged.minimum_out_ttt
 
 min_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-min_out_ttt = cast3 Unmanaged.min_out_ttt
+min_out_ttt = _cast3 Unmanaged.min_out_ttt
 
 min_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-min_tt = cast2 Unmanaged.min_tt
+min_tt = _cast2 Unmanaged.min_tt
 
 quantile_ttlbs
   :: ForeignPtr Tensor
@@ -161,7 +161,7 @@ quantile_ttlbs
   -> CBool
   -> ForeignPtr StdString
   -> IO (ForeignPtr Tensor)
-quantile_ttlbs = cast5 Unmanaged.quantile_ttlbs
+quantile_ttlbs = _cast5 Unmanaged.quantile_ttlbs
 
 quantile_ttlb
   :: ForeignPtr Tensor
@@ -169,20 +169,20 @@ quantile_ttlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-quantile_ttlb = cast4 Unmanaged.quantile_ttlb
+quantile_ttlb = _cast4 Unmanaged.quantile_ttlb
 
 quantile_ttl
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr Tensor)
-quantile_ttl = cast3 Unmanaged.quantile_ttl
+quantile_ttl = _cast3 Unmanaged.quantile_ttl
 
 quantile_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-quantile_tt = cast2 Unmanaged.quantile_tt
+quantile_tt = _cast2 Unmanaged.quantile_tt
 
 quantile_out_tttlbs
   :: ForeignPtr Tensor
@@ -192,7 +192,7 @@ quantile_out_tttlbs
   -> CBool
   -> ForeignPtr StdString
   -> IO (ForeignPtr Tensor)
-quantile_out_tttlbs = cast6 Unmanaged.quantile_out_tttlbs
+quantile_out_tttlbs = _cast6 Unmanaged.quantile_out_tttlbs
 
 quantile_out_tttlb
   :: ForeignPtr Tensor
@@ -201,7 +201,7 @@ quantile_out_tttlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-quantile_out_tttlb = cast5 Unmanaged.quantile_out_tttlb
+quantile_out_tttlb = _cast5 Unmanaged.quantile_out_tttlb
 
 quantile_out_tttl
   :: ForeignPtr Tensor
@@ -209,14 +209,14 @@ quantile_out_tttl
   -> ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr Tensor)
-quantile_out_tttl = cast4 Unmanaged.quantile_out_tttl
+quantile_out_tttl = _cast4 Unmanaged.quantile_out_tttl
 
 quantile_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-quantile_out_ttt = cast3 Unmanaged.quantile_out_ttt
+quantile_out_ttt = _cast3 Unmanaged.quantile_out_ttt
 
 quantile_tdlbs
   :: ForeignPtr Tensor
@@ -225,7 +225,7 @@ quantile_tdlbs
   -> CBool
   -> ForeignPtr StdString
   -> IO (ForeignPtr Tensor)
-quantile_tdlbs = cast5 Unmanaged.quantile_tdlbs
+quantile_tdlbs = _cast5 Unmanaged.quantile_tdlbs
 
 quantile_tdlb
   :: ForeignPtr Tensor
@@ -233,20 +233,20 @@ quantile_tdlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-quantile_tdlb = cast4 Unmanaged.quantile_tdlb
+quantile_tdlb = _cast4 Unmanaged.quantile_tdlb
 
 quantile_tdl
   :: ForeignPtr Tensor
   -> CDouble
   -> Int64
   -> IO (ForeignPtr Tensor)
-quantile_tdl = cast3 Unmanaged.quantile_tdl
+quantile_tdl = _cast3 Unmanaged.quantile_tdl
 
 quantile_td
   :: ForeignPtr Tensor
   -> CDouble
   -> IO (ForeignPtr Tensor)
-quantile_td = cast2 Unmanaged.quantile_td
+quantile_td = _cast2 Unmanaged.quantile_td
 
 quantile_out_ttdlbs
   :: ForeignPtr Tensor
@@ -256,7 +256,7 @@ quantile_out_ttdlbs
   -> CBool
   -> ForeignPtr StdString
   -> IO (ForeignPtr Tensor)
-quantile_out_ttdlbs = cast6 Unmanaged.quantile_out_ttdlbs
+quantile_out_ttdlbs = _cast6 Unmanaged.quantile_out_ttdlbs
 
 quantile_out_ttdlb
   :: ForeignPtr Tensor
@@ -265,7 +265,7 @@ quantile_out_ttdlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-quantile_out_ttdlb = cast5 Unmanaged.quantile_out_ttdlb
+quantile_out_ttdlb = _cast5 Unmanaged.quantile_out_ttdlb
 
 quantile_out_ttdl
   :: ForeignPtr Tensor
@@ -273,14 +273,14 @@ quantile_out_ttdl
   -> CDouble
   -> Int64
   -> IO (ForeignPtr Tensor)
-quantile_out_ttdl = cast4 Unmanaged.quantile_out_ttdl
+quantile_out_ttdl = _cast4 Unmanaged.quantile_out_ttdl
 
 quantile_out_ttd
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> CDouble
   -> IO (ForeignPtr Tensor)
-quantile_out_ttd = cast3 Unmanaged.quantile_out_ttd
+quantile_out_ttd = _cast3 Unmanaged.quantile_out_ttd
 
 nanquantile_ttlbs
   :: ForeignPtr Tensor
@@ -289,7 +289,7 @@ nanquantile_ttlbs
   -> CBool
   -> ForeignPtr StdString
   -> IO (ForeignPtr Tensor)
-nanquantile_ttlbs = cast5 Unmanaged.nanquantile_ttlbs
+nanquantile_ttlbs = _cast5 Unmanaged.nanquantile_ttlbs
 
 nanquantile_ttlb
   :: ForeignPtr Tensor
@@ -297,20 +297,20 @@ nanquantile_ttlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-nanquantile_ttlb = cast4 Unmanaged.nanquantile_ttlb
+nanquantile_ttlb = _cast4 Unmanaged.nanquantile_ttlb
 
 nanquantile_ttl
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr Tensor)
-nanquantile_ttl = cast3 Unmanaged.nanquantile_ttl
+nanquantile_ttl = _cast3 Unmanaged.nanquantile_ttl
 
 nanquantile_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-nanquantile_tt = cast2 Unmanaged.nanquantile_tt
+nanquantile_tt = _cast2 Unmanaged.nanquantile_tt
 
 nanquantile_out_tttlbs
   :: ForeignPtr Tensor
@@ -320,7 +320,7 @@ nanquantile_out_tttlbs
   -> CBool
   -> ForeignPtr StdString
   -> IO (ForeignPtr Tensor)
-nanquantile_out_tttlbs = cast6 Unmanaged.nanquantile_out_tttlbs
+nanquantile_out_tttlbs = _cast6 Unmanaged.nanquantile_out_tttlbs
 
 nanquantile_out_tttlb
   :: ForeignPtr Tensor
@@ -329,7 +329,7 @@ nanquantile_out_tttlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-nanquantile_out_tttlb = cast5 Unmanaged.nanquantile_out_tttlb
+nanquantile_out_tttlb = _cast5 Unmanaged.nanquantile_out_tttlb
 
 nanquantile_out_tttl
   :: ForeignPtr Tensor
@@ -337,14 +337,14 @@ nanquantile_out_tttl
   -> ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr Tensor)
-nanquantile_out_tttl = cast4 Unmanaged.nanquantile_out_tttl
+nanquantile_out_tttl = _cast4 Unmanaged.nanquantile_out_tttl
 
 nanquantile_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-nanquantile_out_ttt = cast3 Unmanaged.nanquantile_out_ttt
+nanquantile_out_ttt = _cast3 Unmanaged.nanquantile_out_ttt
 
 nanquantile_tdlbs
   :: ForeignPtr Tensor
@@ -353,7 +353,7 @@ nanquantile_tdlbs
   -> CBool
   -> ForeignPtr StdString
   -> IO (ForeignPtr Tensor)
-nanquantile_tdlbs = cast5 Unmanaged.nanquantile_tdlbs
+nanquantile_tdlbs = _cast5 Unmanaged.nanquantile_tdlbs
 
 nanquantile_tdlb
   :: ForeignPtr Tensor
@@ -361,20 +361,20 @@ nanquantile_tdlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-nanquantile_tdlb = cast4 Unmanaged.nanquantile_tdlb
+nanquantile_tdlb = _cast4 Unmanaged.nanquantile_tdlb
 
 nanquantile_tdl
   :: ForeignPtr Tensor
   -> CDouble
   -> Int64
   -> IO (ForeignPtr Tensor)
-nanquantile_tdl = cast3 Unmanaged.nanquantile_tdl
+nanquantile_tdl = _cast3 Unmanaged.nanquantile_tdl
 
 nanquantile_td
   :: ForeignPtr Tensor
   -> CDouble
   -> IO (ForeignPtr Tensor)
-nanquantile_td = cast2 Unmanaged.nanquantile_td
+nanquantile_td = _cast2 Unmanaged.nanquantile_td
 
 nanquantile_out_ttdlbs
   :: ForeignPtr Tensor
@@ -384,7 +384,7 @@ nanquantile_out_ttdlbs
   -> CBool
   -> ForeignPtr StdString
   -> IO (ForeignPtr Tensor)
-nanquantile_out_ttdlbs = cast6 Unmanaged.nanquantile_out_ttdlbs
+nanquantile_out_ttdlbs = _cast6 Unmanaged.nanquantile_out_ttdlbs
 
 nanquantile_out_ttdlb
   :: ForeignPtr Tensor
@@ -393,7 +393,7 @@ nanquantile_out_ttdlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-nanquantile_out_ttdlb = cast5 Unmanaged.nanquantile_out_ttdlb
+nanquantile_out_ttdlb = _cast5 Unmanaged.nanquantile_out_ttdlb
 
 nanquantile_out_ttdl
   :: ForeignPtr Tensor
@@ -401,14 +401,14 @@ nanquantile_out_ttdl
   -> CDouble
   -> Int64
   -> IO (ForeignPtr Tensor)
-nanquantile_out_ttdl = cast4 Unmanaged.nanquantile_out_ttdl
+nanquantile_out_ttdl = _cast4 Unmanaged.nanquantile_out_ttdl
 
 nanquantile_out_ttd
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> CDouble
   -> IO (ForeignPtr Tensor)
-nanquantile_out_ttd = cast3 Unmanaged.nanquantile_out_ttd
+nanquantile_out_ttd = _cast3 Unmanaged.nanquantile_out_ttd
 
 sort_out_tttlb
   :: ForeignPtr Tensor
@@ -417,7 +417,7 @@ sort_out_tttlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttlb = cast5 Unmanaged.sort_out_tttlb
+sort_out_tttlb = _cast5 Unmanaged.sort_out_tttlb
 
 sort_out_tttl
   :: ForeignPtr Tensor
@@ -425,14 +425,14 @@ sort_out_tttl
   -> ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttl = cast4 Unmanaged.sort_out_tttl
+sort_out_tttl = _cast4 Unmanaged.sort_out_tttl
 
 sort_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_ttt = cast3 Unmanaged.sort_out_ttt
+sort_out_ttt = _cast3 Unmanaged.sort_out_ttt
 
 sort_out_tttblb
   :: ForeignPtr Tensor
@@ -442,7 +442,7 @@ sort_out_tttblb
   -> Int64
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttblb = cast6 Unmanaged.sort_out_tttblb
+sort_out_tttblb = _cast6 Unmanaged.sort_out_tttblb
 
 sort_out_tttb
   :: ForeignPtr Tensor
@@ -450,25 +450,25 @@ sort_out_tttb
   -> ForeignPtr Tensor
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttb = cast4 Unmanaged.sort_out_tttb
+sort_out_tttb = _cast4 Unmanaged.sort_out_tttb
 
 sort_tlb
   :: ForeignPtr Tensor
   -> Int64
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_tlb = cast3 Unmanaged.sort_tlb
+sort_tlb = _cast3 Unmanaged.sort_tlb
 
 sort_tl
   :: ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_tl = cast2 Unmanaged.sort_tl
+sort_tl = _cast2 Unmanaged.sort_tl
 
 sort_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_t = cast1 Unmanaged.sort_t
+sort_t = _cast1 Unmanaged.sort_t
 
 sort_tblb
   :: ForeignPtr Tensor
@@ -476,20 +476,20 @@ sort_tblb
   -> Int64
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_tblb = cast4 Unmanaged.sort_tblb
+sort_tblb = _cast4 Unmanaged.sort_tblb
 
 -- sort_tbl
 --   :: ForeignPtr Tensor
 --   -> CBool
 --   -> Int64
 --   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
--- sort_tbl = cast3 Unmanaged.sort_tbl
+-- sort_tbl = _cast3 Unmanaged.sort_tbl
 
 sort_tb
   :: ForeignPtr Tensor
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_tb = cast2 Unmanaged.sort_tb
+sort_tb = _cast2 Unmanaged.sort_tb
 
 sort_out_tttnb
   :: ForeignPtr Tensor
@@ -498,7 +498,7 @@ sort_out_tttnb
   -> ForeignPtr Dimname
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttnb = cast5 Unmanaged.sort_out_tttnb
+sort_out_tttnb = _cast5 Unmanaged.sort_out_tttnb
 
 sort_out_tttn
   :: ForeignPtr Tensor
@@ -506,7 +506,7 @@ sort_out_tttn
   -> ForeignPtr Tensor
   -> ForeignPtr Dimname
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttn = cast4 Unmanaged.sort_out_tttn
+sort_out_tttn = _cast4 Unmanaged.sort_out_tttn
 
 sort_out_tttbnb
   :: ForeignPtr Tensor
@@ -516,7 +516,7 @@ sort_out_tttbnb
   -> ForeignPtr Dimname
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttbnb = cast6 Unmanaged.sort_out_tttbnb
+sort_out_tttbnb = _cast6 Unmanaged.sort_out_tttbnb
 
 sort_out_tttbn
   :: ForeignPtr Tensor
@@ -525,20 +525,20 @@ sort_out_tttbn
   -> CBool
   -> ForeignPtr Dimname
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttbn = cast5 Unmanaged.sort_out_tttbn
+sort_out_tttbn = _cast5 Unmanaged.sort_out_tttbn
 
 sort_tnb
   :: ForeignPtr Tensor
   -> ForeignPtr Dimname
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_tnb = cast3 Unmanaged.sort_tnb
+sort_tnb = _cast3 Unmanaged.sort_tnb
 
 sort_tn
   :: ForeignPtr Tensor
   -> ForeignPtr Dimname
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_tn = cast2 Unmanaged.sort_tn
+sort_tn = _cast2 Unmanaged.sort_tn
 
 sort_tbnb
   :: ForeignPtr Tensor
@@ -546,56 +546,56 @@ sort_tbnb
   -> ForeignPtr Dimname
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_tbnb = cast4 Unmanaged.sort_tbnb
+sort_tbnb = _cast4 Unmanaged.sort_tbnb
 
 sort_tbn
   :: ForeignPtr Tensor
   -> CBool
   -> ForeignPtr Dimname
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_tbn = cast3 Unmanaged.sort_tbn
+sort_tbn = _cast3 Unmanaged.sort_tbn
 
 msort_out_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-msort_out_tt = cast2 Unmanaged.msort_out_tt
+msort_out_tt = _cast2 Unmanaged.msort_out_tt
 
 msort_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-msort_t = cast1 Unmanaged.msort_t
+msort_t = _cast1 Unmanaged.msort_t
 
 argsort_tlb
   :: ForeignPtr Tensor
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-argsort_tlb = cast3 Unmanaged.argsort_tlb
+argsort_tlb = _cast3 Unmanaged.argsort_tlb
 
 argsort_tl
   :: ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr Tensor)
-argsort_tl = cast2 Unmanaged.argsort_tl
+argsort_tl = _cast2 Unmanaged.argsort_tl
 
 argsort_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-argsort_t = cast1 Unmanaged.argsort_t
+argsort_t = _cast1 Unmanaged.argsort_t
 
 argsort_tnb
   :: ForeignPtr Tensor
   -> ForeignPtr Dimname
   -> CBool
   -> IO (ForeignPtr Tensor)
-argsort_tnb = cast3 Unmanaged.argsort_tnb
+argsort_tnb = _cast3 Unmanaged.argsort_tnb
 
 argsort_tn
   :: ForeignPtr Tensor
   -> ForeignPtr Dimname
   -> IO (ForeignPtr Tensor)
-argsort_tn = cast2 Unmanaged.argsort_tn
+argsort_tn = _cast2 Unmanaged.argsort_tn
 
 topk_out_tttllbb
   :: ForeignPtr Tensor
@@ -606,7 +606,7 @@ topk_out_tttllbb
   -> CBool
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-topk_out_tttllbb = cast7 Unmanaged.topk_out_tttllbb
+topk_out_tttllbb = _cast7 Unmanaged.topk_out_tttllbb
 
 topk_out_tttllb
   :: ForeignPtr Tensor
@@ -616,7 +616,7 @@ topk_out_tttllb
   -> Int64
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-topk_out_tttllb = cast6 Unmanaged.topk_out_tttllb
+topk_out_tttllb = _cast6 Unmanaged.topk_out_tttllb
 
 topk_out_tttll
   :: ForeignPtr Tensor
@@ -625,7 +625,7 @@ topk_out_tttll
   -> Int64
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-topk_out_tttll = cast5 Unmanaged.topk_out_tttll
+topk_out_tttll = _cast5 Unmanaged.topk_out_tttll
 
 topk_out_tttl
   :: ForeignPtr Tensor
@@ -633,7 +633,7 @@ topk_out_tttl
   -> ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-topk_out_tttl = cast4 Unmanaged.topk_out_tttl
+topk_out_tttl = _cast4 Unmanaged.topk_out_tttl
 
 topk_tllbb
   :: ForeignPtr Tensor
@@ -642,7 +642,7 @@ topk_tllbb
   -> CBool
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-topk_tllbb = cast5 Unmanaged.topk_tllbb
+topk_tllbb = _cast5 Unmanaged.topk_tllbb
 
 topk_tllb
   :: ForeignPtr Tensor
@@ -650,42 +650,42 @@ topk_tllb
   -> Int64
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-topk_tllb = cast4 Unmanaged.topk_tllb
+topk_tllb = _cast4 Unmanaged.topk_tllb
 
 topk_tll
   :: ForeignPtr Tensor
   -> Int64
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-topk_tll = cast3 Unmanaged.topk_tll
+topk_tll = _cast3 Unmanaged.topk_tll
 
 topk_tl
   :: ForeignPtr Tensor
   -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-topk_tl = cast2 Unmanaged.topk_tl
+topk_tl = _cast2 Unmanaged.topk_tl
 
 all_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-all_t = cast1 Unmanaged.all_t
+all_t = _cast1 Unmanaged.all_t
 
 all_out_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-all_out_tt = cast2 Unmanaged.all_out_tt
+all_out_tt = _cast2 Unmanaged.all_out_tt
 
 any_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-any_t = cast1 Unmanaged.any_t
+any_t = _cast1 Unmanaged.any_t
 
 any_out_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-any_out_tt = cast2 Unmanaged.any_out_tt
+any_out_tt = _cast2 Unmanaged.any_out_tt
 
 renorm_out_ttsls
   :: ForeignPtr Tensor
@@ -694,7 +694,7 @@ renorm_out_ttsls
   -> Int64
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
-renorm_out_ttsls = cast5 Unmanaged.renorm_out_ttsls
+renorm_out_ttsls = _cast5 Unmanaged.renorm_out_ttsls
 
 renorm_tsls
   :: ForeignPtr Tensor
@@ -702,7 +702,7 @@ renorm_tsls
   -> Int64
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
-renorm_tsls = cast4 Unmanaged.renorm_tsls
+renorm_tsls = _cast4 Unmanaged.renorm_tsls
 
 unfold_backward_tllll
   :: ForeignPtr Tensor
@@ -711,91 +711,91 @@ unfold_backward_tllll
   -> Int64
   -> Int64
   -> IO (ForeignPtr Tensor)
-unfold_backward_tllll = cast5 Unmanaged.unfold_backward_tllll
+unfold_backward_tllll = _cast5 Unmanaged.unfold_backward_tllll
 
 equal_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (CBool)
-equal_tt = cast2 Unmanaged.equal_tt
+equal_tt = _cast2 Unmanaged.equal_tt
 
 pow_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-pow_out_ttt = cast3 Unmanaged.pow_out_ttt
+pow_out_ttt = _cast3 Unmanaged.pow_out_ttt
 
 pow_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-pow_tt = cast2 Unmanaged.pow_tt
+pow_tt = _cast2 Unmanaged.pow_tt
 
 pow_out_tst
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-pow_out_tst = cast3 Unmanaged.pow_out_tst
+pow_out_tst = _cast3 Unmanaged.pow_out_tst
 
 pow_st
   :: ForeignPtr Scalar
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-pow_st = cast2 Unmanaged.pow_st
+pow_st = _cast2 Unmanaged.pow_st
 
 pow_out_tts
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
-pow_out_tts = cast3 Unmanaged.pow_out_tts
+pow_out_tts = _cast3 Unmanaged.pow_out_tts
 
 pow_ts
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
-pow_ts = cast2 Unmanaged.pow_ts
+pow_ts = _cast2 Unmanaged.pow_ts
 
 float_power_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-float_power_out_ttt = cast3 Unmanaged.float_power_out_ttt
+float_power_out_ttt = _cast3 Unmanaged.float_power_out_ttt
 
 float_power_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-float_power_tt = cast2 Unmanaged.float_power_tt
+float_power_tt = _cast2 Unmanaged.float_power_tt
 
 float_power_out_tst
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-float_power_out_tst = cast3 Unmanaged.float_power_out_tst
+float_power_out_tst = _cast3 Unmanaged.float_power_out_tst
 
 float_power_st
   :: ForeignPtr Scalar
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-float_power_st = cast2 Unmanaged.float_power_st
+float_power_st = _cast2 Unmanaged.float_power_st
 
 float_power_out_tts
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
-float_power_out_tts = cast3 Unmanaged.float_power_out_tts
+float_power_out_tts = _cast3 Unmanaged.float_power_out_tts
 
 float_power_ts
   :: ForeignPtr Tensor
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
-float_power_ts = cast2 Unmanaged.float_power_ts
+float_power_ts = _cast2 Unmanaged.float_power_ts
 
 normal_out_ttdG
   :: ForeignPtr Tensor
@@ -803,38 +803,38 @@ normal_out_ttdG
   -> CDouble
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-normal_out_ttdG = cast4 Unmanaged.normal_out_ttdG
+normal_out_ttdG = _cast4 Unmanaged.normal_out_ttdG
 
 normal_out_ttd
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> CDouble
   -> IO (ForeignPtr Tensor)
-normal_out_ttd = cast3 Unmanaged.normal_out_ttd
+normal_out_ttd = _cast3 Unmanaged.normal_out_ttd
 
 normal_out_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-normal_out_tt = cast2 Unmanaged.normal_out_tt
+normal_out_tt = _cast2 Unmanaged.normal_out_tt
 
 normal_tdG
   :: ForeignPtr Tensor
   -> CDouble
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-normal_tdG = cast3 Unmanaged.normal_tdG
+normal_tdG = _cast3 Unmanaged.normal_tdG
 
 normal_td
   :: ForeignPtr Tensor
   -> CDouble
   -> IO (ForeignPtr Tensor)
-normal_td = cast2 Unmanaged.normal_td
+normal_td = _cast2 Unmanaged.normal_td
 
 normal_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-normal_t = cast1 Unmanaged.normal_t
+normal_t = _cast1 Unmanaged.normal_t
 
 normal_out_tdtG
   :: ForeignPtr Tensor
@@ -842,27 +842,27 @@ normal_out_tdtG
   -> ForeignPtr Tensor
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-normal_out_tdtG = cast4 Unmanaged.normal_out_tdtG
+normal_out_tdtG = _cast4 Unmanaged.normal_out_tdtG
 
 normal_out_tdt
   :: ForeignPtr Tensor
   -> CDouble
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-normal_out_tdt = cast3 Unmanaged.normal_out_tdt
+normal_out_tdt = _cast3 Unmanaged.normal_out_tdt
 
 normal_dtG
   :: CDouble
   -> ForeignPtr Tensor
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-normal_dtG = cast3 Unmanaged.normal_dtG
+normal_dtG = _cast3 Unmanaged.normal_dtG
 
 normal_dt
   :: CDouble
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-normal_dt = cast2 Unmanaged.normal_dt
+normal_dt = _cast2 Unmanaged.normal_dt
 
 normal_out_tttG
   :: ForeignPtr Tensor
@@ -870,27 +870,27 @@ normal_out_tttG
   -> ForeignPtr Tensor
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-normal_out_tttG = cast4 Unmanaged.normal_out_tttG
+normal_out_tttG = _cast4 Unmanaged.normal_out_tttG
 
 normal_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-normal_out_ttt = cast3 Unmanaged.normal_out_ttt
+normal_out_ttt = _cast3 Unmanaged.normal_out_ttt
 
 normal_ttG
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-normal_ttG = cast3 Unmanaged.normal_ttG
+normal_ttG = _cast3 Unmanaged.normal_ttG
 
 normal_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-normal_tt = cast2 Unmanaged.normal_tt
+normal_tt = _cast2 Unmanaged.normal_tt
 
 normal_ddlGo
   :: CDouble
@@ -899,7 +899,7 @@ normal_ddlGo
   -> ForeignPtr Generator
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
-normal_ddlGo = cast5 Unmanaged.normal_ddlGo
+normal_ddlGo = _cast5 Unmanaged.normal_ddlGo
 
 normal_ddlG
   :: CDouble
@@ -907,14 +907,14 @@ normal_ddlG
   -> ForeignPtr IntArray
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-normal_ddlG = cast4 Unmanaged.normal_ddlG
+normal_ddlG = _cast4 Unmanaged.normal_ddlG
 
 normal_ddl
   :: CDouble
   -> CDouble
   -> ForeignPtr IntArray
   -> IO (ForeignPtr Tensor)
-normal_ddl = cast3 Unmanaged.normal_ddl
+normal_ddl = _cast3 Unmanaged.normal_ddl
 
 normal_out_tddlG
   :: ForeignPtr Tensor
@@ -923,7 +923,7 @@ normal_out_tddlG
   -> ForeignPtr IntArray
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
-normal_out_tddlG = cast5 Unmanaged.normal_out_tddlG
+normal_out_tddlG = _cast5 Unmanaged.normal_out_tddlG
 
 normal_out_tddl
   :: ForeignPtr Tensor
@@ -931,12 +931,12 @@ normal_out_tddl
   -> CDouble
   -> ForeignPtr IntArray
   -> IO (ForeignPtr Tensor)
-normal_out_tddl = cast4 Unmanaged.normal_out_tddl
+normal_out_tddl = _cast4 Unmanaged.normal_out_tddl
 
 alias_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-alias_t = cast1 Unmanaged.alias_t
+alias_t = _cast1 Unmanaged.alias_t
 
 _index_copy__tltt
   :: ForeignPtr Tensor
@@ -944,14 +944,14 @@ _index_copy__tltt
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
-_index_copy__tltt = cast4 Unmanaged._index_copy__tltt
+_index_copy__tltt = _cast4 Unmanaged._index_copy__tltt
 
 _amp_foreach_non_finite_check_and_unscale__ltt
   :: ForeignPtr TensorList
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> IO (())
-_amp_foreach_non_finite_check_and_unscale__ltt = cast3 Unmanaged._amp_foreach_non_finite_check_and_unscale__ltt
+_amp_foreach_non_finite_check_and_unscale__ltt = _cast3 Unmanaged._amp_foreach_non_finite_check_and_unscale__ltt
 
 _amp_update_scale__tttddl
   :: ForeignPtr Tensor
@@ -961,456 +961,456 @@ _amp_update_scale__tttddl
   -> CDouble
   -> Int64
   -> IO (ForeignPtr Tensor)
-_amp_update_scale__tttddl = cast6 Unmanaged._amp_update_scale__tttddl
+_amp_update_scale__tttddl = _cast6 Unmanaged._amp_update_scale__tttddl
 
 _cat_ll
   :: ForeignPtr TensorList
   -> Int64
   -> IO (ForeignPtr Tensor)
-_cat_ll = cast2 Unmanaged._cat_ll
+_cat_ll = _cast2 Unmanaged._cat_ll
 
 _cat_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr Tensor)
-_cat_l = cast1 Unmanaged._cat_l
+_cat_l = _cast1 Unmanaged._cat_l
 
 _cat_out_tll
   :: ForeignPtr Tensor
   -> ForeignPtr TensorList
   -> Int64
   -> IO (ForeignPtr Tensor)
-_cat_out_tll = cast3 Unmanaged._cat_out_tll
+_cat_out_tll = _cast3 Unmanaged._cat_out_tll
 
 _cat_out_tl
   :: ForeignPtr Tensor
   -> ForeignPtr TensorList
   -> IO (ForeignPtr Tensor)
-_cat_out_tl = cast2 Unmanaged._cat_out_tl
+_cat_out_tl = _cast2 Unmanaged._cat_out_tl
 
 _foreach_add_ls
   :: ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (ForeignPtr TensorList)
-_foreach_add_ls = cast2 Unmanaged._foreach_add_ls
+_foreach_add_ls = _cast2 Unmanaged._foreach_add_ls
 
 _foreach_add__ls
   :: ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (())
-_foreach_add__ls = cast2 Unmanaged._foreach_add__ls
+_foreach_add__ls = _cast2 Unmanaged._foreach_add__ls
 
 _foreach_sub_ls
   :: ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (ForeignPtr TensorList)
-_foreach_sub_ls = cast2 Unmanaged._foreach_sub_ls
+_foreach_sub_ls = _cast2 Unmanaged._foreach_sub_ls
 
 _foreach_sub__ls
   :: ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (())
-_foreach_sub__ls = cast2 Unmanaged._foreach_sub__ls
+_foreach_sub__ls = _cast2 Unmanaged._foreach_sub__ls
 
 _foreach_mul_ls
   :: ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (ForeignPtr TensorList)
-_foreach_mul_ls = cast2 Unmanaged._foreach_mul_ls
+_foreach_mul_ls = _cast2 Unmanaged._foreach_mul_ls
 
 _foreach_mul__ls
   :: ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (())
-_foreach_mul__ls = cast2 Unmanaged._foreach_mul__ls
+_foreach_mul__ls = _cast2 Unmanaged._foreach_mul__ls
 
 _foreach_div_ls
   :: ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (ForeignPtr TensorList)
-_foreach_div_ls = cast2 Unmanaged._foreach_div_ls
+_foreach_div_ls = _cast2 Unmanaged._foreach_div_ls
 
 _foreach_div__ls
   :: ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (())
-_foreach_div__ls = cast2 Unmanaged._foreach_div__ls
+_foreach_div__ls = _cast2 Unmanaged._foreach_div__ls
 
 _foreach_add_lls
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (ForeignPtr TensorList)
-_foreach_add_lls = cast3 Unmanaged._foreach_add_lls
+_foreach_add_lls = _cast3 Unmanaged._foreach_add_lls
 
 _foreach_add_ll
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_add_ll = cast2 Unmanaged._foreach_add_ll
+_foreach_add_ll = _cast2 Unmanaged._foreach_add_ll
 
 _foreach_add__lls
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (())
-_foreach_add__lls = cast3 Unmanaged._foreach_add__lls
+_foreach_add__lls = _cast3 Unmanaged._foreach_add__lls
 
 _foreach_add__ll
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> IO (())
-_foreach_add__ll = cast2 Unmanaged._foreach_add__ll
+_foreach_add__ll = _cast2 Unmanaged._foreach_add__ll
 
 _foreach_sub_lls
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (ForeignPtr TensorList)
-_foreach_sub_lls = cast3 Unmanaged._foreach_sub_lls
+_foreach_sub_lls = _cast3 Unmanaged._foreach_sub_lls
 
 _foreach_sub_ll
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_sub_ll = cast2 Unmanaged._foreach_sub_ll
+_foreach_sub_ll = _cast2 Unmanaged._foreach_sub_ll
 
 _foreach_sub__lls
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> ForeignPtr Scalar
   -> IO (())
-_foreach_sub__lls = cast3 Unmanaged._foreach_sub__lls
+_foreach_sub__lls = _cast3 Unmanaged._foreach_sub__lls
 
 _foreach_sub__ll
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> IO (())
-_foreach_sub__ll = cast2 Unmanaged._foreach_sub__ll
+_foreach_sub__ll = _cast2 Unmanaged._foreach_sub__ll
 
 _foreach_mul_ll
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_mul_ll = cast2 Unmanaged._foreach_mul_ll
+_foreach_mul_ll = _cast2 Unmanaged._foreach_mul_ll
 
 _foreach_mul__ll
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> IO (())
-_foreach_mul__ll = cast2 Unmanaged._foreach_mul__ll
+_foreach_mul__ll = _cast2 Unmanaged._foreach_mul__ll
 
 _foreach_div_ll
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_div_ll = cast2 Unmanaged._foreach_div_ll
+_foreach_div_ll = _cast2 Unmanaged._foreach_div_ll
 
 _foreach_div__ll
   :: ForeignPtr TensorList
   -> ForeignPtr TensorList
   -> IO (())
-_foreach_div__ll = cast2 Unmanaged._foreach_div__ll
+_foreach_div__ll = _cast2 Unmanaged._foreach_div__ll
 
 _foreach_add_lA
   :: ForeignPtr TensorList
   -> ForeignPtr (StdVector Scalar)
   -> IO (ForeignPtr TensorList)
-_foreach_add_lA = cast2 Unmanaged._foreach_add_lA
+_foreach_add_lA = _cast2 Unmanaged._foreach_add_lA
 
 _foreach_add__lA
   :: ForeignPtr TensorList
   -> ForeignPtr (StdVector Scalar)
   -> IO (())
-_foreach_add__lA = cast2 Unmanaged._foreach_add__lA
+_foreach_add__lA = _cast2 Unmanaged._foreach_add__lA
 
 _foreach_sub_lA
   :: ForeignPtr TensorList
   -> ForeignPtr (StdVector Scalar)
   -> IO (ForeignPtr TensorList)
-_foreach_sub_lA = cast2 Unmanaged._foreach_sub_lA
+_foreach_sub_lA = _cast2 Unmanaged._foreach_sub_lA
 
 _foreach_sub__lA
   :: ForeignPtr TensorList
   -> ForeignPtr (StdVector Scalar)
   -> IO (())
-_foreach_sub__lA = cast2 Unmanaged._foreach_sub__lA
+_foreach_sub__lA = _cast2 Unmanaged._foreach_sub__lA
 
 _foreach_div_lA
   :: ForeignPtr TensorList
   -> ForeignPtr (StdVector Scalar)
   -> IO (ForeignPtr TensorList)
-_foreach_div_lA = cast2 Unmanaged._foreach_div_lA
+_foreach_div_lA = _cast2 Unmanaged._foreach_div_lA
 
 _foreach_div__lA
   :: ForeignPtr TensorList
   -> ForeignPtr (StdVector Scalar)
   -> IO (())
-_foreach_div__lA = cast2 Unmanaged._foreach_div__lA
+_foreach_div__lA = _cast2 Unmanaged._foreach_div__lA
 
 _foreach_mul_lA
   :: ForeignPtr TensorList
   -> ForeignPtr (StdVector Scalar)
   -> IO (ForeignPtr TensorList)
-_foreach_mul_lA = cast2 Unmanaged._foreach_mul_lA
+_foreach_mul_lA = _cast2 Unmanaged._foreach_mul_lA
 
 _foreach_mul__lA
   :: ForeignPtr TensorList
   -> ForeignPtr (StdVector Scalar)
   -> IO (())
-_foreach_mul__lA = cast2 Unmanaged._foreach_mul__lA
+_foreach_mul__lA = _cast2 Unmanaged._foreach_mul__lA
 
 _foreach_exp_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_exp_l = cast1 Unmanaged._foreach_exp_l
+_foreach_exp_l = _cast1 Unmanaged._foreach_exp_l
 
 _foreach_zero__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_zero__l = cast1 Unmanaged._foreach_zero__l
+_foreach_zero__l = _cast1 Unmanaged._foreach_zero__l
 
 _foreach_exp__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_exp__l = cast1 Unmanaged._foreach_exp__l
+_foreach_exp__l = _cast1 Unmanaged._foreach_exp__l
 
 _foreach_sqrt_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_sqrt_l = cast1 Unmanaged._foreach_sqrt_l
+_foreach_sqrt_l = _cast1 Unmanaged._foreach_sqrt_l
 
 _foreach_sqrt__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_sqrt__l = cast1 Unmanaged._foreach_sqrt__l
+_foreach_sqrt__l = _cast1 Unmanaged._foreach_sqrt__l
 
 _foreach_abs_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_abs_l = cast1 Unmanaged._foreach_abs_l
+_foreach_abs_l = _cast1 Unmanaged._foreach_abs_l
 
 _foreach_abs__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_abs__l = cast1 Unmanaged._foreach_abs__l
+_foreach_abs__l = _cast1 Unmanaged._foreach_abs__l
 
 _foreach_acos_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_acos_l = cast1 Unmanaged._foreach_acos_l
+_foreach_acos_l = _cast1 Unmanaged._foreach_acos_l
 
 _foreach_acos__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_acos__l = cast1 Unmanaged._foreach_acos__l
+_foreach_acos__l = _cast1 Unmanaged._foreach_acos__l
 
 _foreach_asin_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_asin_l = cast1 Unmanaged._foreach_asin_l
+_foreach_asin_l = _cast1 Unmanaged._foreach_asin_l
 
 _foreach_asin__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_asin__l = cast1 Unmanaged._foreach_asin__l
+_foreach_asin__l = _cast1 Unmanaged._foreach_asin__l
 
 _foreach_atan_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_atan_l = cast1 Unmanaged._foreach_atan_l
+_foreach_atan_l = _cast1 Unmanaged._foreach_atan_l
 
 _foreach_atan__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_atan__l = cast1 Unmanaged._foreach_atan__l
+_foreach_atan__l = _cast1 Unmanaged._foreach_atan__l
 
 _foreach_ceil_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_ceil_l = cast1 Unmanaged._foreach_ceil_l
+_foreach_ceil_l = _cast1 Unmanaged._foreach_ceil_l
 
 _foreach_ceil__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_ceil__l = cast1 Unmanaged._foreach_ceil__l
+_foreach_ceil__l = _cast1 Unmanaged._foreach_ceil__l
 
 _foreach_cos_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_cos_l = cast1 Unmanaged._foreach_cos_l
+_foreach_cos_l = _cast1 Unmanaged._foreach_cos_l
 
 _foreach_cos__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_cos__l = cast1 Unmanaged._foreach_cos__l
+_foreach_cos__l = _cast1 Unmanaged._foreach_cos__l
 
 _foreach_cosh_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_cosh_l = cast1 Unmanaged._foreach_cosh_l
+_foreach_cosh_l = _cast1 Unmanaged._foreach_cosh_l
 
 _foreach_cosh__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_cosh__l = cast1 Unmanaged._foreach_cosh__l
+_foreach_cosh__l = _cast1 Unmanaged._foreach_cosh__l
 
 _foreach_erf_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_erf_l = cast1 Unmanaged._foreach_erf_l
+_foreach_erf_l = _cast1 Unmanaged._foreach_erf_l
 
 _foreach_erf__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_erf__l = cast1 Unmanaged._foreach_erf__l
+_foreach_erf__l = _cast1 Unmanaged._foreach_erf__l
 
 _foreach_erfc_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_erfc_l = cast1 Unmanaged._foreach_erfc_l
+_foreach_erfc_l = _cast1 Unmanaged._foreach_erfc_l
 
 _foreach_erfc__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_erfc__l = cast1 Unmanaged._foreach_erfc__l
+_foreach_erfc__l = _cast1 Unmanaged._foreach_erfc__l
 
 _foreach_expm1_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_expm1_l = cast1 Unmanaged._foreach_expm1_l
+_foreach_expm1_l = _cast1 Unmanaged._foreach_expm1_l
 
 _foreach_expm1__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_expm1__l = cast1 Unmanaged._foreach_expm1__l
+_foreach_expm1__l = _cast1 Unmanaged._foreach_expm1__l
 
 _foreach_floor_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_floor_l = cast1 Unmanaged._foreach_floor_l
+_foreach_floor_l = _cast1 Unmanaged._foreach_floor_l
 
 _foreach_floor__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_floor__l = cast1 Unmanaged._foreach_floor__l
+_foreach_floor__l = _cast1 Unmanaged._foreach_floor__l
 
 _foreach_log_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_log_l = cast1 Unmanaged._foreach_log_l
+_foreach_log_l = _cast1 Unmanaged._foreach_log_l
 
 _foreach_log__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_log__l = cast1 Unmanaged._foreach_log__l
+_foreach_log__l = _cast1 Unmanaged._foreach_log__l
 
 _foreach_log10_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_log10_l = cast1 Unmanaged._foreach_log10_l
+_foreach_log10_l = _cast1 Unmanaged._foreach_log10_l
 
 _foreach_log10__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_log10__l = cast1 Unmanaged._foreach_log10__l
+_foreach_log10__l = _cast1 Unmanaged._foreach_log10__l
 
 _foreach_log1p_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_log1p_l = cast1 Unmanaged._foreach_log1p_l
+_foreach_log1p_l = _cast1 Unmanaged._foreach_log1p_l
 
 _foreach_log1p__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_log1p__l = cast1 Unmanaged._foreach_log1p__l
+_foreach_log1p__l = _cast1 Unmanaged._foreach_log1p__l
 
 _foreach_log2_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_log2_l = cast1 Unmanaged._foreach_log2_l
+_foreach_log2_l = _cast1 Unmanaged._foreach_log2_l
 
 _foreach_log2__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_log2__l = cast1 Unmanaged._foreach_log2__l
+_foreach_log2__l = _cast1 Unmanaged._foreach_log2__l
 
 _foreach_neg_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_neg_l = cast1 Unmanaged._foreach_neg_l
+_foreach_neg_l = _cast1 Unmanaged._foreach_neg_l
 
 _foreach_neg__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_neg__l = cast1 Unmanaged._foreach_neg__l
+_foreach_neg__l = _cast1 Unmanaged._foreach_neg__l
 
 _foreach_tan_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_tan_l = cast1 Unmanaged._foreach_tan_l
+_foreach_tan_l = _cast1 Unmanaged._foreach_tan_l
 
 _foreach_tan__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_tan__l = cast1 Unmanaged._foreach_tan__l
+_foreach_tan__l = _cast1 Unmanaged._foreach_tan__l
 
 _foreach_tanh_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_tanh_l = cast1 Unmanaged._foreach_tanh_l
+_foreach_tanh_l = _cast1 Unmanaged._foreach_tanh_l
 
 _foreach_tanh__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_tanh__l = cast1 Unmanaged._foreach_tanh__l
+_foreach_tanh__l = _cast1 Unmanaged._foreach_tanh__l
 
 _foreach_sin_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_sin_l = cast1 Unmanaged._foreach_sin_l
+_foreach_sin_l = _cast1 Unmanaged._foreach_sin_l
 
 _foreach_sin__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_sin__l = cast1 Unmanaged._foreach_sin__l
+_foreach_sin__l = _cast1 Unmanaged._foreach_sin__l
 
 _foreach_sinh_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_sinh_l = cast1 Unmanaged._foreach_sinh_l
+_foreach_sinh_l = _cast1 Unmanaged._foreach_sinh_l
 
 _foreach_sinh__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_sinh__l = cast1 Unmanaged._foreach_sinh__l
+_foreach_sinh__l = _cast1 Unmanaged._foreach_sinh__l
 
 _foreach_round_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_round_l = cast1 Unmanaged._foreach_round_l
+_foreach_round_l = _cast1 Unmanaged._foreach_round_l
 
 _foreach_round__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_round__l = cast1 Unmanaged._foreach_round__l
+_foreach_round__l = _cast1 Unmanaged._foreach_round__l
 
 _foreach_lgamma_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_lgamma_l = cast1 Unmanaged._foreach_lgamma_l
+_foreach_lgamma_l = _cast1 Unmanaged._foreach_lgamma_l
 
 _foreach_lgamma__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_lgamma__l = cast1 Unmanaged._foreach_lgamma__l
+_foreach_lgamma__l = _cast1 Unmanaged._foreach_lgamma__l
 
 _foreach_frac_l
   :: ForeignPtr TensorList
   -> IO (ForeignPtr TensorList)
-_foreach_frac_l = cast1 Unmanaged._foreach_frac_l
+_foreach_frac_l = _cast1 Unmanaged._foreach_frac_l
 
 _foreach_frac__l
   :: ForeignPtr TensorList
   -> IO (())
-_foreach_frac__l = cast1 Unmanaged._foreach_frac__l
+_foreach_frac__l = _cast1 Unmanaged._foreach_frac__l
 

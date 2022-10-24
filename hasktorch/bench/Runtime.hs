@@ -111,43 +111,49 @@ main = do
       vT' = T.asTensor vList
 
     C.defaultMain [
-        C.env (pure (aH', bH', subH', vH')) $ \ ~(aH, bH, subH, vH) ->
-            C.bgroup "Hmatrix" [ 
-                             C.bench "multiplication" $ C.nf ((<>) aH) bH,
-                             C.bench "repeated multiplication" $ C.nf ( H.sumElements . flip (H.?) [1] . (<>) bH . (<>) aH . (<>) aH) bH,
-                             C.bench "multiplicationV" $ C.nf ((H.#>) aH) subH,
-                             -- C.bench "qr factorization" $ C.nf H.qr aH,
-                             C.bench "transpose" $ C.nf H.tr aH,
-                             C.bench "norm" $ C.nf H.norm_2 vH,
-                             C.bench "row" $ C.nf ((H.?) aH) [0],
-                             C.bench "column" $ C.nf ((H.¿) aH) [0], 
-                             C.bench "identity" $ C.nf identH n,
-                             C.bench "diag" $ C.nf H.diag subH,
-                             C.bench "map const 0" $ C.nf (mapH elemZero) aH,
-                             C.bench "map sqr" $ C.nf (mapH elemSqr) aH,
-                             C.bench "size" $ C.nf H.size aH
-                           ],
+        -- C.env (pure (aH', bH', subH', vH')) $ \ ~(aH, bH, subH, vH) ->
+        --     C.bgroup "Hmatrix" [ 
+        --                      C.bench "multiplication" $ C.nf ((<>) aH) bH,
+        --                      C.bench "repeated multiplication" $ C.nf ( H.sumElements . flip (H.?) [1] . (<>) bH . (<>) aH . (<>) aH) bH,
+        --                      C.bench "multiplicationV" $ C.nf ((H.#>) aH) subH,
+        --                      -- C.bench "qr factorization" $ C.nf H.qr aH,
+        --                      C.bench "transpose" $ C.nf H.tr aH,
+        --                      C.bench "norm" $ C.nf H.norm_2 vH,
+        --                      C.bench "row" $ C.nf ((H.?) aH) [0],
+        --                      C.bench "column" $ C.nf ((H.¿) aH) [0], 
+        --                      C.bench "identity" $ C.nf identH n,
+        --                      C.bench "diag" $ C.nf H.diag subH,
+        --                      C.bench "map const 0" $ C.nf (mapH elemZero) aH,
+        --                      C.bench "map sqr" $ C.nf (mapH elemSqr) aH,
+        --                      C.bench "size" $ C.nf H.size aH
+        --                    ],
 
         C.env (pure (aT', bT', subT', vT')) $ \ ~(aT, bT, subT, vT) ->
             C.bgroup "Hasktorch" [ 
-                             C.bench "multiplication" $ C.nf (T.matmul aT) bT,
-                             C.bench "repeated multiplication" $ C.nf ( T.sumAll . T.matmul bT . T.matmul aT . T.matmul aT) bT,
-                             C.bench "multiplicationV" $ C.nf (T.matmul aT) subT,
-                             -- C.bench "qr factorization" $ C.nf (\v -> TI.qr v True) aT,
-                             C.bench "transpose" $ C.nf TI.t aT,
-                             C.bench "norm" $ C.nf (\v -> TI.normAll v 2) vT,
-                             C.bench "row" $ C.nf ((T.!) aT) (0::Int),
-                             C.bench "column" $ C.nf ((T.!) aT) [T.slice|...,0|],
-                             C.bench "identity" $ C.nf (\i -> T.eye' i i) n,
-                             C.bench "diag" $ C.nf (T.diag (T.Diag 0)) subT,
-                             C.bench "map const 0" $ C.nf (\v -> T.maskedFill v  [T.slice|...|] 0) aT,
-                             C.bench "map sqr" $ C.nf (\v -> v * v) aT,
+                             -- C.bench "multiplication" $ C.nf (T.matmul aT) bT,
+                             -- C.bench "repeated multiplication" $ C.nf ( T.sumAll . T.matmul bT . T.matmul aT . T.matmul aT) bT,
+                             -- C.bench "multiplicationV" $ C.nf (T.matmul aT) subT,
+                             -- -- C.bench "qr factorization" $ C.nf (\v -> TI.qr v True) aT,
+                             -- C.bench "transpose" $ C.nf TI.t aT,
+                             -- C.bench "norm" $ C.nf (\v -> TI.normAll v 2) vT,
+                             -- C.bench "row" $ C.nf ((T.!) aT) (0::Int),
+                             -- C.bench "column" $ C.nf ((T.!) aT) [T.slice|...,0|],
+                             -- C.bench "identity" $ C.nf (\i -> T.eye' i i) n,
+                             -- C.bench "diag" $ C.nf (T.diag (T.Diag 0)) subT,
+                             -- C.bench "map const 0" $ C.nf (\v -> T.maskedFill v  [T.slice|...|] 0) aT,
+                             -- C.bench "map sqr" $ C.nf (\v -> v * v) aT,
                              C.bench "shape" $ C.nf T.shape aT,
                              C.bench "shape(managed)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ TIM.tensor_sizes v) aT,
                              C.bench "shape(unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_sizes ptr) aT,
                              C.bench "dim" $ C.nf T.dim aT,
                              C.bench "dim(managed)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ TIM.tensor_dim v) aT,
-                             C.bench "dim(unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_dim ptr) aT
+                             C.bench "dim(unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_dim ptr) aT,
+                             C.bench "dim(unsafe)" $ C.nf T.dimUnsafe aT,
+                             C.bench "dim(unsafe/managed)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ TIM.tensor_dim_unsafe v) aT,
+                             C.bench "dim(unsafe/unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_dim_unsafe ptr) aT,
+                             C.bench "dim(unsafe-c)" $ C.nf T.dimCUnsafe aT,
+                             C.bench "dim(unsafe-c/managed)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ TIM.tensor_dim_c_unsafe v) aT,
+                             C.bench "dim(unsafe-c/unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_dim_c_unsafe ptr) aT
                            ]
                ]
 

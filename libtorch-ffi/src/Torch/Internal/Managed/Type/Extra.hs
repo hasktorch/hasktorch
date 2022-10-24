@@ -26,7 +26,7 @@ tensor_assign1_l
   -> Int64
   -> Int64
   -> IO ()
-tensor_assign1_l  = cast3 Unmanaged.tensor_assign1_l
+tensor_assign1_l  = _cast3 Unmanaged.tensor_assign1_l
 
 tensor_assign2_l
   :: ForeignPtr Tensor
@@ -34,14 +34,14 @@ tensor_assign2_l
   -> Int64
   -> Int64
   -> IO ()
-tensor_assign2_l = cast4 Unmanaged.tensor_assign2_l
+tensor_assign2_l = _cast4 Unmanaged.tensor_assign2_l
 
 tensor_assign1_d
   :: ForeignPtr Tensor
   -> Int64
   -> CDouble
   -> IO ()
-tensor_assign1_d = cast3 Unmanaged.tensor_assign1_d
+tensor_assign1_d = _cast3 Unmanaged.tensor_assign1_d
 
 tensor_assign2_d
   :: ForeignPtr Tensor
@@ -49,14 +49,14 @@ tensor_assign2_d
   -> Int64
   -> CDouble
   -> IO ()
-tensor_assign2_d = cast4 Unmanaged.tensor_assign2_d
+tensor_assign2_d = _cast4 Unmanaged.tensor_assign2_d
 
 tensor_assign1_t
   :: ForeignPtr Tensor
   -> Int64
   -> ForeignPtr Tensor
   -> IO ()
-tensor_assign1_t  = cast3 Unmanaged.tensor_assign1_t
+tensor_assign1_t  = _cast3 Unmanaged.tensor_assign1_t
 
 tensor_assign2_t
   :: ForeignPtr Tensor
@@ -64,10 +64,10 @@ tensor_assign2_t
   -> Int64
   -> ForeignPtr Tensor
   -> IO ()
-tensor_assign2_t = cast4 Unmanaged.tensor_assign2_t
+tensor_assign2_t = _cast4 Unmanaged.tensor_assign2_t
 
 tensor_names
   :: ForeignPtr Tensor
   -> IO (ForeignPtr DimnameList)
-tensor_names = cast1 Unmanaged.tensor_names
+tensor_names = _cast1 Unmanaged.tensor_names
 

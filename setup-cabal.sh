@@ -5,7 +5,7 @@ ghc --version
 
 curl https://www.stackage.org/nightly-2022-10-11/cabal.config |\
 sed -e 's/with-compiler: .*$//g' |\
-sed -e 's/.*inline-c-cpp.*//g' > cabal.project.freeze
+sed -e 's/.*inline-c.*//g' > cabal.project.freeze
 
 case "$(uname)" in
   "Darwin")
