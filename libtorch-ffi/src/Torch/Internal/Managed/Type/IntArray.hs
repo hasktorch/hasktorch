@@ -50,3 +50,12 @@ intArray_push_back_l
   -> IO (())
 intArray_push_back_l = _cast2 Unmanaged.intArray_push_back_l
 
+intArray_fromList
+  :: ForeignPtr IntArray
+  -> [Int64]
+  -> IO (())
+intArray_fromList = _cast2 Unmanaged.intArray_fromList
+
+intArray_toList
+  :: ForeignPtr IntArray -> IO [Int64]
+intArray_toList = _cast1 Unmanaged.intArray_toList

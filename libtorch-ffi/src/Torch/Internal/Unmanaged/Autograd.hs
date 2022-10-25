@@ -9,7 +9,7 @@ module Torch.Internal.Unmanaged.Autograd where
 
 import Foreign.Ptr
 import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
+import qualified Language.C.Inline.Cpp.Unsafe as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
 import Foreign.C.Types (CBool)

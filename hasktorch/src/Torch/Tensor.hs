@@ -46,6 +46,7 @@ import qualified Torch.Internal.Managed.Type.StdString as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
+import qualified Torch.Internal.Managed.Type.Extra as ATen
 import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import Torch.Lens
@@ -267,6 +268,9 @@ _toDevice device' t = unsafePerformIO $ do
           <> show di'
           <> "\""
 
+toDeviceWithTensor :: Tensor -> Tensor -> Tensor
+toDeviceWithTensor reference input = unsafePerformIO $ cast2 ATen.tensor_to_device reference input
+
 -- | Slices the input tensor along the selected dimension at the given index.
 select ::
   -- | dimension to slice along
@@ -300,7 +304,7 @@ indexSelect' ::
   Tensor ->
   -- | output
   Tensor
-indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (asTensor indexList)
+indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (asTensor' indexList t)
 
 -- | Slices the input tensor along the selected dimension at the given range.
 sliceDim ::
@@ -352,12 +356,6 @@ toCPU t = unsafePerformIO $ (cast1 ATen.tensor_cpu) t
 
 toCUDA :: Tensor -> Tensor
 toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
-
-withTensorOptions :: Tensor -> TensorOptions -> Tensor
-withTensorOptions t opts = unsafePerformIO $ cast4 ATen.tensor_to_obb t opts nonBlocking copy
-  where
-    nonBlocking = False
-    copy = False
 
 --------------------------------------------------------------------------------
 -- Indexing support
@@ -530,8 +528,23 @@ asValue t =
       contTensor = if isContiguous cpuTensor then cpuTensor else contiguous cpuTensor
    in _asValue contTensor
 
+class TensorOptionLike a where
+  withTensorOptions :: Tensor -> a -> Tensor
+
+instance  TensorOptionLike TensorOptions where
+  withTensorOptions t opts = unsafePerformIO $ cast4 ATen.tensor_to_obb t opts nonBlocking copy
+    where
+      nonBlocking = False
+      copy = False
+
+instance  TensorOptionLike Tensor where
+  withTensorOptions t opts = unsafePerformIO $ cast4 ATen.tensor_to_tbb t opts nonBlocking copy
+    where
+      nonBlocking = False
+      copy = False
+
 class TensorLike a where
-  asTensor' :: a -> TensorOptions -> Tensor
+  asTensor' :: TensorOptionLike opt => a -> opt -> Tensor
   asTensor' v opts = withTensorOptions (asTensor v) opts
   asTensor :: a -> Tensor
   _asValue :: Tensor -> a
@@ -558,10 +571,15 @@ withTensor t fn =
   let tensor = if isContiguous t then t else contiguous t
    in cast tensor $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
 
+-- | The internal function of withTensor. It does not check contiguous memory-layout.
+_withTensor :: Tensor -> (Ptr () -> IO a) -> IO a
+_withTensor t fn =
+  cast t $ \t' -> withForeignPtr t' $ \tensor_ptr -> Unmanaged.tensor_data_ptr tensor_ptr >>= fn
+
 instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
   asTensor v = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @a) defaultOpts
-    withTensor t $ \ptr -> do
+    t <- ((cast2 ATen.new_empty_tensor) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @a) defaultOpts
+    _withTensor t $ \ptr -> do
       _pokeElemOff ptr 0 v
     return t
 
@@ -580,8 +598,8 @@ instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike a where
 
 instance {-# OVERLAPPING #-} TensorLike Bool where
   asTensor v = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @Bool) defaultOpts
-    withTensor t $ \ptr -> do
+    t <- ((cast2 ATen.new_empty_tensor) :: [Int] -> TensorOptions -> IO Tensor) [] $ withDType (_dtype @Bool) defaultOpts
+    _withTensor t $ \ptr -> do
       _pokeElemOff ptr 0 v
     return t
 
@@ -621,8 +639,8 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike (a, a) where
 
 instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
   asTensor v = unsafePerformIO $ do
-    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) defaultOpts
-    withTensor t $ \ptr -> do
+    t <- ((cast2 ATen.new_empty_tensor) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) defaultOpts
+    _withTensor t $ \ptr -> do
       _pokeElemOff ptr 0 v
     return t
 

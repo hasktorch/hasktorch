@@ -33,15 +33,11 @@ instance Castable Int (ForeignPtr IntArray) where
 instance Castable [Int] (ForeignPtr IntArray) where
   cast xs f = do
     arr <- newIntArray
-    forM_ xs $ (intArray_push_back_l arr) . fromIntegral
+    intArray_fromList arr (map fromIntegral xs)
     f arr
   uncast xs f = do
-    len <- intArray_size xs
-    -- NB: This check is necessary, because len is unsigned and it will wrap around if
-    --     we subtract 1 when it's 0.
-    if len == 0
-      then f []
-      else f =<< mapM (\i -> intArray_at_s xs i >>= return . fromIntegral) [0..(len - 1)]
+    xs <- intArray_toList xs
+    f (map fromIntegral xs)
 
 instance Castable [Double] (ForeignPtr (StdVector CDouble)) where
   cast xs f = do
