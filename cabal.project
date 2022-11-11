@@ -27,16 +27,16 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://github.com/hasktorch/inline-c
+    location: https://github.com/fpco/inline-c
     --sha256: 0hi4s3p0whf0ndsxn8qrfc3a7qndsgac0vz7n23kp3rx69yp0yr1
-    tag: 5b1a54e81f4c726faf35c15a8e39a4d86c52c6ba
+    tag: 2d0fe9b2f0aa0e1aefc7bfed95a501e59486afb0
     subdir: inline-c
 
 source-repository-package
     type: git
-    location: https://github.com/hasktorch/inline-c
+    location: https://github.com/fpco/inline-c
     --sha256: 0hi4s3p0whf0ndsxn8qrfc3a7qndsgac0vz7n23kp3rx69yp0yr1
-    tag: 5b1a54e81f4c726faf35c15a8e39a4d86c52c6ba
+    tag: 2d0fe9b2f0aa0e1aefc7bfed95a501e59486afb0
     subdir: inline-c-cpp
 
 write-ghc-environment-files: always
