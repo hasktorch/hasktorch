@@ -27,12 +27,12 @@ max_values_tlb
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-max_values_tlb = cast3 Unmanaged.max_values_tlb
+max_values_tlb = _cast3 Unmanaged.max_values_tlb
 
 min_values_tlb
   :: ForeignPtr Tensor
   -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-min_values_tlb = cast3 Unmanaged.min_values_tlb
+min_values_tlb = _cast3 Unmanaged.min_values_tlb
 

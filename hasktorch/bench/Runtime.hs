@@ -147,7 +147,13 @@ main = do
                              C.bench "shape(unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_sizes ptr) aT,
                              C.bench "dim" $ C.nf T.dim aT,
                              C.bench "dim(managed)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ TIM.tensor_dim v) aT,
-                             C.bench "dim(unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_dim ptr) aT
+                             C.bench "dim(unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_dim ptr) aT,
+                             C.bench "dim(unsafe)" $ C.nf T.dimUnsafe aT,
+                             C.bench "dim(unsafe/managed)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ TIM.tensor_dim_unsafe v) aT,
+                             C.bench "dim(unsafe/unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_dim_unsafe ptr) aT,
+                             C.bench "dim(unsafe-c)" $ C.nf T.dimCUnsafe aT,
+                             C.bench "dim(unsafe-c/managed)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ TIM.tensor_dim_c_unsafe v) aT,
+                             C.bench "dim(unsafe-c/unmanaged)" $ C.nf (\(T.Unsafe v) -> unsafePerformIO $ withForeignPtr v $ \ptr -> TIU.tensor_dim_c_unsafe ptr) aT
                            ]
                ]
 

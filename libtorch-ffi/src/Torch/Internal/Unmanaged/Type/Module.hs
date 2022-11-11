@@ -18,7 +18,8 @@ import Foreign.C.String
 import Foreign.C.Types
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
+import qualified Language.C.Inline.Cpp.Unsafe as C
+import qualified Language.C.Inline.Cpp.Exceptions as Safe
 import qualified Language.C.Types as C
 import Torch.Internal.Type
 import Torch.Internal.Unmanaged.Helper
@@ -270,7 +271,7 @@ trace moduleName functionName func inputs =
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
     freeHaskellFunPtr
     $ \funcPtr ->
-      [C.throwBlock| torch::jit::script::Module* {
+      [Safe.throwBlock| torch::jit::script::Module* {
         torch::jit::script::Module self($(char* moduleName));
         auto vars_in = *$(std::vector<at::Tensor>* inputs);
         auto tfunc = $(void* (*funcPtr)(void*));
@@ -301,7 +302,7 @@ traceAsGraph func inputs =
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
     freeHaskellFunPtr
     $ \funcPtr ->
-      [C.throwBlock| std::shared_ptr<torch::jit::Graph>* {
+      [Safe.throwBlock| std::shared_ptr<torch::jit::Graph>* {
         torch::jit::script::Module self("MyModule");
         auto vars_in = *$(std::vector<at::Tensor>* inputs);
         auto tfunc = $(void* (*funcPtr)(void*));
@@ -340,7 +341,7 @@ graphOutputs graph = do
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
     freeHaskellFunPtr
     $ \funcPtr ->
-      [C.throwBlock| void {
+      [Safe.throwBlock| void {
         auto tfunc = $(void* (*funcPtr)(void*));
         typedef torch::jit::Value* (*Func)(torch::jit::Value*);
         auto func = (Func)tfunc;
@@ -361,7 +362,7 @@ graphInputs graph = do
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
     freeHaskellFunPtr
     $ \funcPtr ->
-      [C.throwBlock| void {
+      [Safe.throwBlock| void {
         auto tfunc = $(void* (*funcPtr)(void*));
         typedef torch::jit::Value* (*Func)(torch::jit::Value*);
         auto func = (Func)tfunc;
@@ -382,7 +383,7 @@ graphNodes graph = do
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
     freeHaskellFunPtr
     $ \funcPtr ->
-      [C.throwBlock| void {
+      [Safe.throwBlock| void {
         auto tfunc = $(void* (*funcPtr)(void*));
         typedef torch::jit::Node* (*Func)(torch::jit::Node*);
         auto func = (Func)tfunc;
@@ -403,7 +404,7 @@ nodeInputs node = do
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
     freeHaskellFunPtr
     $ \funcPtr ->
-      [C.throwBlock| void {
+      [Safe.throwBlock| void {
         auto tfunc = $(void* (*funcPtr)(void*));
         typedef torch::jit::Value* (*Func)(torch::jit::Value*);
         auto func = (Func)tfunc;
@@ -424,7 +425,7 @@ nodeOutputs node = do
     (callbackHelper $ \inputs' -> castPtr <$> func (castPtr inputs'))
     freeHaskellFunPtr
     $ \funcPtr ->
-      [C.throwBlock| void {
+      [Safe.throwBlock| void {
         auto tfunc = $(void* (*funcPtr)(void*));
         typedef torch::jit::Value* (*Func)(torch::jit::Value*);
         auto func = (Func)tfunc;

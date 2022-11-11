@@ -11,13 +11,13 @@ import Torch.Internal.Objects
 
 
 save :: ForeignPtr TensorList -> FilePath -> IO ()
-save = cast2 Unmanaged.save
+save = _cast2 Unmanaged.save
 
 load :: FilePath -> IO (ForeignPtr TensorList)
-load = cast1 Unmanaged.load
+load = _cast1 Unmanaged.load
 
 pickleSave :: ForeignPtr IValue -> FilePath -> IO ()
-pickleSave = cast2 Unmanaged.pickleSave
+pickleSave = _cast2 Unmanaged.pickleSave
 
 pickleLoad :: FilePath -> IO (ForeignPtr IValue)
-pickleLoad = cast1 Unmanaged.pickleLoad
+pickleLoad = _cast1 Unmanaged.pickleLoad

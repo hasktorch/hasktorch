@@ -24,17 +24,17 @@ import qualified Torch.Internal.Unmanaged.Type.StdString as Unmanaged
 
 newStdString
   :: IO (ForeignPtr StdString)
-newStdString = cast0 Unmanaged.newStdString
+newStdString = _cast0 Unmanaged.newStdString
 
 newStdString_s
   :: String
   -> IO (ForeignPtr StdString)
-newStdString_s str = cast1 Unmanaged.newStdString_s str
+newStdString_s str = _cast1 Unmanaged.newStdString_s str
 
 string_c_str
   :: ForeignPtr StdString
   -> IO String
-string_c_str str = cast1 Unmanaged.string_c_str str
+string_c_str str = _cast1 Unmanaged.string_c_str str
 
 instance Castable String (ForeignPtr StdString) where
   cast str f = newStdString_s str >>= f

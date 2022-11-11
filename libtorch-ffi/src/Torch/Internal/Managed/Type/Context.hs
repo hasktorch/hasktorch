@@ -32,48 +32,48 @@ import qualified Torch.Internal.Unmanaged.Type.Context as Unmanaged
 
 init
   :: IO (())
-init = cast0 Unmanaged.init
+init = _cast0 Unmanaged.init
 
 hasCUDA
   :: IO (CBool)
-hasCUDA = cast0 Unmanaged.hasCUDA
+hasCUDA = _cast0 Unmanaged.hasCUDA
 
 hasHIP
   :: IO (CBool)
-hasHIP = cast0 Unmanaged.hasHIP
+hasHIP = _cast0 Unmanaged.hasHIP
 
 hasXLA
   :: IO (CBool)
-hasXLA = cast0 Unmanaged.hasXLA
+hasXLA = _cast0 Unmanaged.hasXLA
 
 getNumGPUs
   :: IO (CSize)
-getNumGPUs = cast0 Unmanaged.getNumGPUs
+getNumGPUs = _cast0 Unmanaged.getNumGPUs
 
 hasOpenMP
   :: IO (CBool)
-hasOpenMP = cast0 Unmanaged.hasOpenMP
+hasOpenMP = _cast0 Unmanaged.hasOpenMP
 
 hasMKL
   :: IO (CBool)
-hasMKL = cast0 Unmanaged.hasMKL
+hasMKL = _cast0 Unmanaged.hasMKL
 
 hasLAPACK
   :: IO (CBool)
-hasLAPACK = cast0 Unmanaged.hasLAPACK
+hasLAPACK = _cast0 Unmanaged.hasLAPACK
 
 hasMAGMA
   :: IO (CBool)
-hasMAGMA = cast0 Unmanaged.hasMAGMA
+hasMAGMA = _cast0 Unmanaged.hasMAGMA
 
 hasMKLDNN
   :: IO (CBool)
-hasMKLDNN = cast0 Unmanaged.hasMKLDNN
+hasMKLDNN = _cast0 Unmanaged.hasMKLDNN
 
 manual_seed_L
   :: Word64
   -> IO (())
-manual_seed_L = cast1 Unmanaged.manual_seed_L
+manual_seed_L = _cast1 Unmanaged.manual_seed_L
 
 get_manual_seed
   :: IO (Word64)

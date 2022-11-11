@@ -10,7 +10,7 @@ module Torch.Internal.Unmanaged.Serialize where
 import Foreign.Ptr
 import Foreign.C.String
 import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
+import qualified Language.C.Inline.Cpp.Unsafe as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
 

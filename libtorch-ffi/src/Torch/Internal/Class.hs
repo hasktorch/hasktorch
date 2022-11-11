@@ -13,6 +13,7 @@ class Castable a b where
 
 class CppObject a where
   fromPtr :: Ptr a -> IO (ForeignPtr a)
+  deletePtr :: Ptr a -> IO ()
 
 class CppTuple2 m where
   type A m

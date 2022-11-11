@@ -26,5 +26,5 @@ import qualified Torch.Internal.Unmanaged.Type.Storage as Unmanaged
 
 newStorage
   :: IO (ForeignPtr Storage)
-newStorage = cast0 Unmanaged.newStorage
+newStorage = _cast0 Unmanaged.newStorage
 

@@ -12,7 +12,8 @@ module Torch.Internal.Unmanaged.Type.Tensor.Tensor0 where
 
 
 import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
+import qualified Language.C.Inline.Cpp.Unsafe as C
+import qualified Language.C.Inline.Unsafe as CUnsafe
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
 import qualified Data.Map as Map
@@ -113,6 +114,22 @@ tensor_dim
   -> IO (Int64)
 tensor_dim _obj =
   [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).dim(
+    );
+  }|]
+
+tensor_dim_unsafe
+  :: Ptr Tensor
+  -> IO (Int64)
+tensor_dim_unsafe _obj =
+  [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).dim(
+    );
+  }|]
+
+tensor_dim_c_unsafe
+  :: Ptr Tensor
+  -> IO (Int64)
+tensor_dim_c_unsafe _obj =
+  [CUnsafe.block| int64_t { return (*$(at::Tensor* _obj)).dim(
     );
   }|]
 
@@ -521,7 +538,7 @@ tensor_sizes
   :: Ptr Tensor
   -> IO (Ptr IntArray)
 tensor_sizes _obj =
-  [C.throwBlock| std::vector<int64_t>* { return new std::vector<int64_t>((*$(at::Tensor* _obj)).sizes(
+  [CUnsafe.block| std::vector<int64_t>* { return new std::vector<int64_t>((*$(at::Tensor* _obj)).sizes(
     ).vec());
   }|]
 

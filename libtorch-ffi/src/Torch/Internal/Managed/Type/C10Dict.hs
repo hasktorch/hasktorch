@@ -25,19 +25,19 @@ import Control.Monad (forM)
 
 
 newC10Dict :: ForeignPtr IValue -> ForeignPtr IValue -> IO (ForeignPtr (C10Dict '(IValue,IValue)))
-newC10Dict = cast2 Unmanaged.newC10Dict
+newC10Dict = _cast2 Unmanaged.newC10Dict
 
 c10Dict_empty :: ForeignPtr (C10Dict '(IValue,IValue)) -> IO (CBool)
-c10Dict_empty = cast1 Unmanaged.c10Dict_empty
+c10Dict_empty = _cast1 Unmanaged.c10Dict_empty
 
 c10Dict_size :: ForeignPtr (C10Dict '(IValue,IValue)) -> IO (CSize)
-c10Dict_size = cast1 Unmanaged.c10Dict_size
+c10Dict_size = _cast1 Unmanaged.c10Dict_size
 
 c10Dict_at :: ForeignPtr (C10Dict '(IValue,IValue)) -> ForeignPtr IValue -> IO (ForeignPtr IValue)
-c10Dict_at = cast2 Unmanaged.c10Dict_at
+c10Dict_at = _cast2 Unmanaged.c10Dict_at
 
 c10Dict_insert :: ForeignPtr (C10Dict '(IValue,IValue)) -> ForeignPtr IValue -> ForeignPtr IValue -> IO ()
-c10Dict_insert = cast3 Unmanaged.c10Dict_insert
+c10Dict_insert = _cast3 Unmanaged.c10Dict_insert
 
 c10Dict_toList :: ForeignPtr (C10Dict '(IValue,IValue)) -> IO [(ForeignPtr IValue,ForeignPtr IValue)]
 c10Dict_toList obj = withForeignPtr obj $ \obj' -> do
