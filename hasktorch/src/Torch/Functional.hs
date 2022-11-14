@@ -3111,9 +3111,9 @@ batchNormIO ::
   -- | bias
   Tensor ->
   -- | running_mean
-  Tensor ->
+  MutableTensor ->
   -- | running_var
-  Tensor ->
+  MutableTensor ->
   -- | training
   Bool ->
   -- | momentum
@@ -3124,7 +3124,7 @@ batchNormIO ::
   Tensor ->
   -- | output
   IO Tensor
-batchNormIO weight bias running_mean running_var training momentum eps input =
+batchNormIO weight bias (MutableTensor running_mean) (MutableTensor running_var) training momentum eps input =
   cast9
     ATen.batch_norm_tttttbddb
     input
@@ -3143,9 +3143,9 @@ instanceNormIO ::
   -- | bias
   Tensor ->
   -- | running_mean
-  Tensor ->
+  MutableTensor ->
   -- | running_var
-  Tensor ->
+  MutableTensor ->
   -- | training
   Bool ->
   -- | momentum
@@ -3156,7 +3156,7 @@ instanceNormIO ::
   Tensor ->
   -- | output
   IO Tensor
-instanceNormIO weight bias running_mean running_var training momentum eps input =
+instanceNormIO weight bias (MutableTensor running_mean) (MutableTensor running_var) training momentum eps input =
   cast9
     ATen.instance_norm_tttttbddb
     input

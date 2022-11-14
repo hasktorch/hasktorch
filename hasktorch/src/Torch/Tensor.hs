@@ -60,6 +60,14 @@ instance Castable Tensor ATenTensor where
   cast (Unsafe aten_tensor) f = f aten_tensor
   uncast aten_tensor f = f $ Unsafe aten_tensor
 
+newtype MutableTensor = MutableTensor Tensor deriving Show
+
+newMutableTensor :: Tensor -> IO MutableTensor
+newMutableTensor tensor = MutableTensor <$> cast1 ATen.detach_t tensor
+
+toImmutable :: MutableTensor -> IO Tensor
+toImmutable (MutableTensor tensor) = cast1 ATen.detach_t tensor
+
 --------------------------------------------------------------------------------
 -- Basic tensor properties
 --------------------------------------------------------------------------------
