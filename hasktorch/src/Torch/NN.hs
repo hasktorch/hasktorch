@@ -702,7 +702,7 @@ instance Randomizable BatchNormSpec BatchNorm where
     return $ BatchNorm w b mean var
 
 data InstanceNormSpec = InstanceNormSpec
-  { iNumFeatures :: Int
+  { numFeatures :: Int
   }
   deriving (Show, Eq)
 
@@ -728,8 +728,8 @@ instanceNormForwardIO params train momentum eps input =
 
 instance Randomizable InstanceNormSpec InstanceNorm where
   sample InstanceNormSpec {..} = do
-    w <- makeIndependent (ones' [iNumFeatures])
-    b <- makeIndependent (zeros' [iNumFeatures])
+    w <- makeIndependent (ones' [numFeatures])
+    b <- makeIndependent (zeros' [numFeatures])
     mean <- MutableTensor <$> toDependent <$> makeIndependentWithRequiresGrad (zeros' [numFeatures]) False
     var <- MutableTensor <$> toDependent <$> makeIndependentWithRequiresGrad (ones' [numFeatures]) False
     return $ InstanceNorm w b mean var
