@@ -676,14 +676,14 @@ data BatchNormSpec = BatchNormSpec
 data BatchNorm = BatchNorm
   { weight :: Parameter,
     bias :: Parameter,
-    runningMean :: Tensor,
-    runningVar :: Tensor
+    runningMean :: MutableTensor,
+    runningVar :: MutableTensor
   }
   deriving (Show, Generic)
 
-batchNormForward :: BatchNorm -> Bool -> Double -> Double -> Tensor -> Tensor
-batchNormForward params train momentum eps input =
-  Torch.Functional.batchNorm
+batchNormForwardIO :: BatchNorm -> Bool -> Double -> Double -> Tensor -> IO Tensor
+batchNormForwardIO params train momentum eps input =
+  Torch.Functional.batchNormIO
     (toDependent params.weight)
     (toDependent params.bias)
     params.runningMean
@@ -697,30 +697,30 @@ instance Randomizable BatchNormSpec BatchNorm where
   sample BatchNormSpec {..} = do
     w <- makeIndependent (ones' [numFeatures])
     b <- makeIndependent (zeros' [numFeatures])
-    mean <- toDependent <$> makeIndependentWithRequiresGrad (zeros' [numFeatures]) False
-    var <- toDependent <$> makeIndependentWithRequiresGrad (ones' [numFeatures]) False
+    mean <- MutableTensor <$> toDependent <$> makeIndependentWithRequiresGrad (zeros' [numFeatures]) False
+    var <- MutableTensor <$> toDependent <$> makeIndependentWithRequiresGrad (ones' [numFeatures]) False
     return $ BatchNorm w b mean var
 
 data InstanceNormSpec = InstanceNormSpec
-  { iNumFeatures :: Int
+  { numFeatures :: Int
   }
   deriving (Show, Eq)
 
 data InstanceNorm = InstanceNorm
   { weight :: Parameter,
     bias :: Parameter,
-    iRunningMean :: Tensor,
-    iRunningVar :: Tensor
+    runningMean :: MutableTensor,
+    runningVar :: MutableTensor
   }
   deriving (Show, Generic)
 
-instanceNormForward :: InstanceNorm -> Bool -> Double -> Double -> Tensor -> Tensor
-instanceNormForward params train momentum eps input =
-  Torch.Functional.instanceNorm
+instanceNormForwardIO :: InstanceNorm -> Bool -> Double -> Double -> Tensor -> IO Tensor
+instanceNormForwardIO params train momentum eps input =
+  Torch.Functional.instanceNormIO
     (toDependent params.weight)
     (toDependent params.bias)
-    params.iRunningMean
-    params.iRunningVar
+    params.runningMean
+    params.runningVar
     train
     momentum
     eps
@@ -728,10 +728,10 @@ instanceNormForward params train momentum eps input =
 
 instance Randomizable InstanceNormSpec InstanceNorm where
   sample InstanceNormSpec {..} = do
-    w <- makeIndependent (ones' [iNumFeatures])
-    b <- makeIndependent (zeros' [iNumFeatures])
-    mean <- toDependent <$> makeIndependentWithRequiresGrad (zeros' [iNumFeatures]) False
-    var <- toDependent <$> makeIndependentWithRequiresGrad (ones' [iNumFeatures]) False
+    w <- makeIndependent (ones' [numFeatures])
+    b <- makeIndependent (zeros' [numFeatures])
+    mean <- MutableTensor <$> toDependent <$> makeIndependentWithRequiresGrad (zeros' [numFeatures]) False
+    var <- MutableTensor <$> toDependent <$> makeIndependentWithRequiresGrad (ones' [numFeatures]) False
     return $ InstanceNorm w b mean var
 
 data UpSampleSpec = UpSampleSpec
