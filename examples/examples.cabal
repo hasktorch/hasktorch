@@ -51,6 +51,16 @@ library static-mnist
                      , pipes-concurrency
                      , mtl
 
+executable resnet
+  import:              config
+  hs-source-dirs:      resnet
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver
+  build-depends:       libtorch-ffi
+                     , random >= 1.1
+                     , safe-exceptions
+                     , static-mnist
+
 executable static-mnist-cnn
   import:              config
   hs-source-dirs:      static-mnist-cnn

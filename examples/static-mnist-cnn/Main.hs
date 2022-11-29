@@ -93,16 +93,22 @@ train' ::
   _ =>
   IO ()
 train' = do
-  let learningRate = 0.1
+  let learningRate = 0.001
+      numEpochs = 30
   manual_seed_L 123
   initModel <- sample (CNNSpec @'Float @device)
-  let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-  train @BatchSize @device
+  let initOptim = mkAdam 0.00001 0.9 0.999 (flattenParameters initModel)
+  (trainedModel,_) <- train @BatchSize @device
     initModel
     initOptim
     (\model _ input -> return $ cnn model input)
     learningRate
     "static-mnist-cnn.pt"
+    numEpochs
+    
+  test  @BatchSize @device trainedModel (\model _ input -> return $ cnn model input)
+
+  return ()
 
 main :: IO ()
 main = do

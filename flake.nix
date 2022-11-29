@@ -138,16 +138,16 @@
 
         extra-packages = {
           packages = {
-            haddocks-join = (pkgset.cpu.pkgs.callPackage ./nix/haddock-combine.nix {
-              inherit ghc;
-            }) {
-              hsdocs = [
-                builds.cpu.packages."libtorch-ffi-cpu:lib:libtorch-ffi".doc
-                builds.cpu.packages."libtorch-ffi-helper-cpu:lib:libtorch-ffi-helper".doc
-                builds.cpu.packages."hasktorch-cpu:lib:hasktorch".doc
-                builds.cpu.packages."hasktorch-gradually-typed-cpu:lib:hasktorch-gradually-typed".doc
-              ];
-            };
+            # haddocks-join = (pkgset.cpu.pkgs.callPackage ./nix/haddock-combine.nix {
+            #   inherit ghc;
+            # }) {
+            #   hsdocs = [
+            #     builds.cpu.packages."libtorch-ffi-cpu:lib:libtorch-ffi".doc
+            #     builds.cpu.packages."libtorch-ffi-helper-cpu:lib:libtorch-ffi-helper".doc
+            #     builds.cpu.packages."hasktorch-cpu:lib:hasktorch".doc
+            #     builds.cpu.packages."hasktorch-gradually-typed-cpu:lib:hasktorch-gradually-typed".doc
+            #   ];
+            # };
           };
           checks = {
             # pre-commit-check = pre-commit-hooks.lib.${system}.run {

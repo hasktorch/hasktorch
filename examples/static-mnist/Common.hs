@@ -109,11 +109,11 @@ train ::
   ) ->
   LearningRate device 'Float ->
   String ->
-  IO ()
-train initModel initOptim forward learningRate ptFile = do
-  let numEpochs = 1000
+  Int ->
+  IO (model, optim)
+train initModel initOptim forward learningRate ptFile numEpochs = do
   (trainingData, testData) <- mkMnist @device @batchSize
-  foldLoop_
+  foldLoop
     (initModel, initOptim)
     numEpochs
     $ \(epochModel, epochOptim) epoch -> do
@@ -156,6 +156,55 @@ train initModel initOptim forward learningRate ptFile = do
             )
         begin = pure (0, 0)
         done = pure
+
+
+test ::
+  forall
+    (batchSize :: Nat)
+    (device :: (DeviceType, Nat))
+    model.
+  ( KnownNat batchSize,
+    StandardFloatingPointDTypeValidation device 'Float,
+    SumDTypeIsValid device 'Bool,
+    ComparisonDTypeIsValid device 'Int64,
+    StandardDTypeValidation device 'Float,
+    KnownDevice device,
+--    HasGrad (HList parameters) (HList tensors),
+--    HMap' ToDependent parameters tensors,
+--    Castable (HList tensors) [ATenTensor],
+--    parameters ~ Parameters model,
+    Parameterized model,
+--    Optimizer optim tensors tensors 'Float device,
+--    HMapM' IO MakeIndependent tensors parameters,
+    _
+  ) =>
+  model ->
+  ( model ->
+    Bool ->
+    Tensor device 'Float '[batchSize, DataDim] ->
+    IO (Tensor device 'Float '[batchSize, ClassDim])
+  ) ->
+  IO ()
+test model forward = do
+  (_, testData) <- mkMnist @device @batchSize
+  testError <-
+    runContT (streamFromMap (datasetOpts 1) testData) $
+      evalStep (forward model False) . fst
+  putStrLn $
+    "Epoch: "
+      <> ". Test error-rate: "
+      <> show (testError / realToFrac (length $ mnistData testData))
+  return ()
+  where
+    evalStep forward' = P.foldM step begin done . enumerateData
+      where
+        step org_err ((input, target), _) = do
+          prediction <- forward' input
+          let err = errorCount prediction target
+          return $ org_err + toFloat err
+        begin = pure 0
+        done = pure
+
 
 mkMnist :: IO (MNIST IO device batchSize, MNIST IO device batchSize)
 mkMnist = do

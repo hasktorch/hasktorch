@@ -135,7 +135,8 @@ train' ::
   IO ()
 train' = do
   let dropoutProb = 0.5
-      learningRate = 0.1
+      learningRate = 0.003
+      numEpochs = 50
   manual_seed_L 123
   initModel <-
     sample
@@ -146,8 +147,10 @@ train' = do
           @device
           dropoutProb
       )
-  let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-  train @BatchSize @device initModel initOptim mlp learningRate "static-mnist-mlp.pt"
+  let initOptim = mkAdam 0.00001 0.9 0.999 (flattenParameters initModel)
+  (trainedModel,_) <- train @BatchSize @device initModel initOptim mlp learningRate "static-mnist-mlp.pt" numEpochs
+  test @BatchSize @device trainedModel mlp
+  return ()
 
 main :: IO ()
 main = do

@@ -83,6 +83,10 @@ main = do
   model <- foldLoop init 5 $ \model _ ->
     runContT (streamFromMap (datasetOpts 2) trainMnist) $ trainLoop model optimizer . fst
 
+  runContT (streamFromMap (datasetOpts 2) testMnist) $ \(input, _) -> do
+    runEffect $ enumerateData input >-> do
+      await >>= lift . print
+
   -- show test images + labels
   forM_ [0 .. 10] $ displayImages model <=< getItem testMnist
 
