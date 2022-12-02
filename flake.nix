@@ -103,7 +103,7 @@
             legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
           };
 
-    in { inherit (hasktorch) overlays; } // (eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
+    in { inherit (hasktorch) overlays; } // (eachSystem [ "x86_64-linux" ] (system:
       let
         mk-pkgset = generic-pkgset system;
 
@@ -186,7 +186,7 @@
               if build-config.dev.cudaMajorVersion == "10" then cuda-10 else cuda-11;
           in {
             lib = pkgset;
-            devShell =  dev.pkgs.callPackage ./shell.nix {
+            devShells.default =  dev.pkgs.callPackage ./shell.nix {
               # preCommitShellHook = self.checks.${system}.pre-commit-check.shellHook;
               inherit (build-config.dev) cudaSupport cudaMajorVersion;
             };

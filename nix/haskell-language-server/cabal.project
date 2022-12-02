@@ -25,7 +25,7 @@ packages:
          ./plugins/hls-ormolu-plugin
          ./plugins/hls-call-hierarchy-plugin
 
-with-compiler: ghc-9.0.1
+with-compiler: ghc-9.2.4
 
 tests: true
 
