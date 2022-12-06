@@ -22,9 +22,6 @@ hasktorchProject.shellFor {
   # buildInputs = with haskellPackages; [ ];
 
   shellHook = lib.strings.concatStringsSep "\n" [
-    # make sure correct libtorch is in cpath for cabal
-    "export CPATH=${torch}/include/torch/csrc/api/include"
-
     # set dynamic libraries for cuda support
     (lib.optionalString cudaSupport "export LD_LIBRARY_PATH=\"$LD_LIBRARY_PATH:/run/opengl-driver/lib\"")
 
