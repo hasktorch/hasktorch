@@ -82,7 +82,6 @@ let
           configureFlags = [
             "--extra-lib-dirs=${pkgs.torch.out}/lib"
             "--extra-include-dirs=${pkgs.torch.dev}/include"
-            "--extra-include-dirs=${pkgs.torch.dev}/include/torch/csrc/api/include"
           ];
           flags = {
             cuda = cudaSupport;

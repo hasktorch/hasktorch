@@ -54,6 +54,12 @@ in stdenv.mkDerivation {
     substituteInPlace \
       $dev/share/cmake/Caffe2/Caffe2Targets-release.cmake \
       --replace \''${_IMPORT_PREFIX}/lib "$out/lib" \
+
+    pushd $dev/include/torch
+    for i in csrc/api/include/torch/* ; do
+      ln -s $i
+    done
+    popd
   '';
 
   postFixup = let
