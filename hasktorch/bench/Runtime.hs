@@ -36,6 +36,7 @@ import qualified Torch as T
 import qualified Torch.Functional.Internal as TI
 import qualified Torch.Internal.Unmanaged.Type.Tensor as TIU
 import qualified Torch.Internal.Managed.Type.Tensor as TIM
+import qualified Torch.Jit as T
 
 import qualified System.Random.MWC as Mwc
 
@@ -110,6 +111,11 @@ main = do
       subT' = T.asTensor . take n $ vList
       vT' = T.asTensor vList
 
+    cache <- T.newScriptCache
+
+    let jit :: (T.Tensor -> T.Tensor) -> T.Tensor -> T.Tensor
+        jit func input = let [r] = T.jit cache (\[v] -> [func v]) [input] in r
+
     C.defaultMain [
         C.env (pure (aH', bH', subH', vH')) $ \ ~(aH, bH, subH, vH) ->
             C.bgroup "Hmatrix" [ 
@@ -132,6 +138,7 @@ main = do
             C.bgroup "Hasktorch" [ 
                              C.bench "multiplication" $ C.nf (T.matmul aT) bT,
                              C.bench "repeated multiplication" $ C.nf ( T.sumAll . T.matmul bT . T.matmul aT . T.matmul aT) bT,
+                             C.bench "repeated multiplication with JIT" $ C.nf ( T.sumAll . T.matmul bT . T.matmul aT . T.matmul aT) bT,
                              C.bench "multiplicationV" $ C.nf (T.matmul aT) subT,
                              -- C.bench "qr factorization" $ C.nf (\v -> TI.qr v True) aT,
                              C.bench "transpose" $ C.nf TI.t aT,
