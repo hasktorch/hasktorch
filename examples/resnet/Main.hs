@@ -340,19 +340,54 @@ instance
 
 
 
-type Resnet dtype device numClasses =
+instance 
+  ( All KnownNat '[ inputChannelSize,
+                    inputSize0, inputSize1,
+                    batchSize,
+                    outputSize0, outputSize1 ]
+  , outputSize0 ~ 2 + Div (inputSize0 - 1) 2
+  , outputSize1 ~ 2 + Div (inputSize1 - 1) 2
+  , ConvSideCheck inputSize0 2 1 0 outputSize0 
+  , ConvSideCheck inputSize1 2 1 0 outputSize1
+  ) =>
+  HasForward
+    (MaxPool2d, ResnetConfig)
+    (Tensor device dtype '[batchSize, inputChannelSize, inputSize0, inputSize1])
+    (Tensor device dtype '[batchSize, inputChannelSize, outputSize0, outputSize1])
+  where
+    forward (conv,_) = maxPool2d @'(3,3) @'(2,2) @'(1,1)
+    forwardStoch = (pure .) . forward
+
+newtype Resnet dtype device (numClasses :: Nat) =
+  Resnet (
   (Conv2d 3 64 7 7 dtype device, ConvConfig 2 3) :>>>
-  (BatchNorm2d 3 dtype device, ResnetConfig) :>>>
+  BatchNorm2d 64 dtype device :>>>
   Relu :>>>
-  (MaxPool2d, ResnetConfig) :>>>
-  (ReplicateBlock 2 (BasicBlock dtype device 64 64)) :>>>
-  (ReplicateBlock 2 (BasicBlock dtype device 64 128)) :>>>
-  (ReplicateBlock 2 (BasicBlock dtype device 128 256)) :>>>
-  (ReplicateBlock 2 (BasicBlock dtype device 256 512)) :>>>
-  (AdaptiveAvgPool2d, ResnetConfig) :>>>
-  (Flatten, ResnetConfig) :>>>
-  (Linear 512 numClasses dtype device, ResnetConfig)
+  (Conv2d 3 64 3 3 dtype device, ConvConfig 2 1) :>>>
+--  (MaxPool2d, ResnetConfig) :>>>
+  (ReplicateBlock 2 (BasicBlock dtype device 64 64))
+  -- (ReplicateBlock 2 (BasicBlock dtype device 64 128)) :>>>
+  -- (ReplicateBlock 2 (BasicBlock dtype device 128 256)) :>>>
+  -- (ReplicateBlock 2 (BasicBlock dtype device 256 512)) :>>>
+  -- BasicBlock dtype device 64 64 :>>>
+  -- BasicBlock dtype device 64 128 :>>>
+  -- BasicBlock dtype device 128 256 :>>>
+  -- BasicBlock dtype device 256 512 :>>>
+  -- (AdaptiveAvgPool2d, ResnetConfig) :>>>
+  -- (Flatten, ResnetConfig) :>>>
+  -- (Linear 512 numClasses dtype device, ResnetConfig)
+  )
   
+forwardResnet
+  :: ( All KnownNat '[ inputSize0, inputSize1, batchSize, numClasses ]
+     , StandardFloatingPointDTypeValidation device dtype
+     , 1 <= inputSize0
+     , 1 <= inputSize1)
+  => Resnet dtype device numClasses
+  -> Tensor device dtype '[batchSize, 3, inputSize0, inputSize1]
+  -> IO (Tensor device dtype '[batchSize, 64, _, _])
+forwardResnet (Resnet conv) = forwardStoch conv
+
 
 data CNNSpec (dtype :: DType) (device :: (DeviceType, Nat))
   = CNNSpec
