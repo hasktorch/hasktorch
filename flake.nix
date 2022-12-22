@@ -1,195 +1,151 @@
 {
-  description = "Hasktorch";
+  description = "Easy example of using stacklock2nix to build a Haskell project";
 
-  nixConfig = {
-    substituters = [
-      "https://cache.nixos.org"
-    ];
-    extra-substituters = [
-      "https://cache.iog.io"
-      "https://hasktorch.cachix.org"
-    ];
-    extra-trusted-public-keys = [
-      "hydra.iohk.io:f/Ea+s+dFdN+3Y/G+FDgSq+a5NEWhJGzdjvKNGv0/EQ="
-      "hasktorch.cachix.org-1:wLjNS6HuFVpmzbmv01lxwjdCOtWRD8pQVR3Zr/wVoQc="
-    ];
-    allow-import-from-derivation = "true";
-    bash-prompt = "\\[\\033[1m\\][dev-hasktorch$(__git_ps1 \" (%s)\")]\\[\\033\[m\\]\\040\\w$\\040";
-    
-  };
+  # This is a flake reference to the stacklock2nix repo.
+  #
+  # Note that if you copy the `./flake.lock` to your own repo, you'll likely
+  # want to update the commit that this stacklock2nix reference points to:
+  #
+  # $ nix flake lock --update-input stacklock2nix
+  #
+  # You may also want to lock stacklock2nix to a specific release:
+  #
+  # inputs.stacklock2nix.url = "github:cdepillabout/stacklock2nix/v1.5.0";
+  inputs.stacklock2nix.url = "github:cdepillabout/stacklock2nix/main";
 
-  inputs = {
-    haskell-nix = {
-      url = "github:input-output-hk/haskell.nix?rev=ec0c59e2de05053c21301bc959a27df92fe93376";
-    };
-    nixpkgs.follows = "haskell-nix/nixpkgs-unstable";
-    utils.follows = "haskell-nix/flake-utils";
-    iohkNix = {
-      url = "github:input-output-hk/iohk-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    tokenizers = {
-      url = "github:hasktorch/tokenizers/flakes";
-      inputs.utils.follows = "haskell-nix/flake-utils";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
-  };
+  # This is a flake reference to Nixpkgs.
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-  outputs = { self
-            , nixpkgs
-            , haskell-nix
-            , utils
-            , iohkNix
-            , tokenizers
-            , pre-commit-hooks
-            , ... }: with utils.lib;
+  outputs = { self, nixpkgs, stacklock2nix }:
     let
-      inherit (nixpkgs) lib;
-      inherit (lib);
-      inherit (iohkNix.lib) collectExes;
+      # System types to support.
+      supportedSystems = [
+        "x86_64-linux"
+      ];
 
-      build-config.dev     = import ./nix/dev-config.nix; # only used to generate devshell
-      build-config.cpu     = { profiling = true; cudaSupport = false; cudaMajorVersion = "invalid"; };
-      build-config.cuda-10 = { profiling = true; cudaSupport = true;  cudaMajorVersion = "10"; };
-      build-config.cuda-11 = { profiling = true; cudaSupport = true;  cudaMajorVersion = "11"; };
+      # Helper function to generate an attrset '{ x86_64-linux = f "x86_64-linux"; ... }'.
+      forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems (system: f system);
 
-      hasktorch.overlays = {
-        cpu-config     = final: prev: { hasktorch-config = build-config.cpu; };
-        cuda-10-config = final: prev: { hasktorch-config = build-config.cuda-10; };
-        cuda-11-config = final: prev: { hasktorch-config = build-config.cuda-11; };
+      # Nixpkgs instantiated for supported system types.
+      nixpkgsFor =
+        forAllSystems (system: import nixpkgs { inherit system; overlays = [ stacklock2nix.overlay self.overlay ]; });
 
-        dev-tools = final: prev: {
-          haskell-nix = prev.haskell-nix // {
-            custom-tools = prev.haskell-nix.custom-tools // (prev.callPackage ./nix/haskell-language-server {});
+      deviceConfig = {cudaSupport=true;device="cuda-11";};
+    in
+    {
+      # A Nixpkgs overlay.
+      overlay = final: prev: {
+        # This is a top-level attribute that contains the result from calling
+        # stacklock2nix.
+        torch = prev.callPackage ./nix/libtorch.nix deviceConfig;
+        c10 = prev.callPackage ./nix/libtorch.nix deviceConfig;
+        torch_cpu = prev.callPackage ./nix/libtorch.nix deviceConfig;
+        torch_cuda = if deviceConfig.cudaSupport then prev.callPackage ./nix/libtorch.nix deviceConfig else null;
+        
+        hasktorch-stacklock = final.stacklock2nix {
+          stackYaml = ./stack.yaml;
+
+          # The Haskell package set to use as a base.  You should change this
+          # based on the compiler version from the resolver in your stack.yaml.
+          baseHaskellPkgSet = final.haskell.packages.ghc924;
+
+          # Any additional Haskell package overrides you may want to add.
+          additionalHaskellPkgSetOverrides = hfinal: hprev: {
+            # The servant-cassava.cabal file is malformed on GitHub:
+            # https://github.com/haskell-servant/servant-cassava/pull/29
+            libtorch-ffi =
+              final.haskell.lib.compose.overrideCabal
+               {
+                 configureFlags =
+                   [] ++ (if deviceConfig.cudaSupport then [" -f cuda"] else []) ++ (if prev.stdenv.hostPlatform.isDarwin then [" -f gcc"] else []);
+               }
+               hprev.libtorch-ffi;
+            tar =
+              final.haskell.lib.compose.overrideCabal
+               { doCheck = false;
+               }
+               hprev.tar;
+            streaming-cassava =
+              final.haskell.lib.compose.overrideCabal
+               { preConfigure = ''
+                   sed -i 's/2.8/2.10.8/' *.cabal
+                 '';
+               }
+               hprev.streaming-cassava;
+            haskell-language-server =
+              final.haskell.lib.compose.overrideCabal
+                { doCheck = false;
+                } hprev.haskell-language-server;
+            lsp =
+              final.haskell.lib.compose.overrideCabal
+                { doCheck = false;
+                } hprev.lsp;
+            torch = null;
+          };
+
+          # Additional packages that should be available for development.
+          additionalDevShellNativeBuildInputs = stacklockHaskellPkgSet: [
+            # Some Haskell tools (like cabal-install and ghcid) can be taken from the
+            # top-level of Nixpkgs.
+            final.cabal-install
+            final.ghcid
+            final.stack
+            # Some Haskell tools need to have been compiled with the same compiler
+            # you used to define your stacklock2nix Haskell package set.  Be
+            # careful not to pull these packages from your stacklock2nix Haskell
+            # package set, since transitive dependency versions may have been
+            # carefully setup in Nixpkgs so that the tool will compile, and your
+            # stacklock2nix Haskell package set will likely contain different
+            # versions.
+            final.haskell-language-server
+            # Other Haskell tools may need to be taken from the stacklock2nix
+            # Haskell package set, and compiled with the example same dependency
+            # versions your project depends on.
+            #stacklockHaskellPkgSet.some-haskell-lib
+          ];
+
+          # When creating your own Haskell package set from the stacklock2nix
+          # output, you may need to specify a newer all-cabal-hashes.
+          #
+          # This is necessary when you are using a Stackage snapshot/resolver or
+          # `extraDeps` in your `stack.yaml` file that is _newer_ than the
+          # `all-cabal-hashes` derivation from the Nixpkgs you are using.
+          #
+          # If you are using the latest nixpkgs-unstable and an old Stackage
+          # resolver, then it is usually not necessary to override
+          # `all-cabal-hashes`.
+          #
+          # If you are using a very recent Stackage resolver and an old Nixpkgs,
+          # it is almost always necessary to override `all-cabal-hashes`.
+          all-cabal-hashes = final.fetchurl {
+            name = "all-cabal-hashes";
+            url = "https://github.com/commercialhaskell/all-cabal-hashes/archive/9ab160f48cb535719783bc43c0fbf33e6d52fa99.tar.gz";
+            sha256 = "sha256-QC07T3MEm9LIMRpxIq3Pnqul60r7FpAdope6S62sEX8=";
           };
         };
 
-        hasktorch-project = ty: final: prev:
-          let libtorch = prev.pkgs.callPackage ./nix/libtorch.nix {
-                cudaSupport = build-config."${ty}".cudaSupport;
-                device = ty;
-              };
-              libtorch-libs = {
-                torch = libtorch;
-                c10 = libtorch;
-                torch_cpu = libtorch;
-              } // (if build-config."${ty}".cudaSupport then {
-                torch_cuda = libtorch;
-              } else {
-              });
-          in {
-            hasktorchProject = import ./nix/haskell.nix ({
-              pkgs = prev // libtorch-libs;
-              compiler-nix-name = "ghc924";
-              inherit (prev) lib;
-              profiling = build-config."${ty}".profiling;
-              cudaSupport = build-config."${ty}".cudaSupport;
-            });
-          } // libtorch-libs;
+        # One of our local packages.
+        hasktorch-examples = final.hasktorch-stacklock.pkgSet.examples;
+
+        # You can also easily create a development shell for hacking on your local
+        # packages with `cabal`.
+        hasktorch-dev-shell = final.hasktorch-stacklock.devShell;
       };
 
-      generic-pkgset = system: ty:
-        let
-          overlays = [
-            haskell-nix.overlay
-            iohkNix.overlays.haskell-nix-extra
-            tokenizers.overlay
-            hasktorch.overlays.dev-tools
-            (hasktorch.overlays.hasktorch-project ty)
-          ];
-        in
-          { pkgs = import nixpkgs { inherit system overlays; inherit (haskell-nix) config;};
-            legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
-          };
+      lib = forAllSystems (system: {
+        hasktorch = nixpkgsFor.${system}.hasktorch-stacklock;
+      });
 
-    in { inherit (hasktorch) overlays; } // (eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
-      let
-        mk-pkgset = generic-pkgset system;
+      packages = forAllSystems (system: {
+        examples = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.examples;
+      });
 
-        pkgset = rec {
-          cpu     = mk-pkgset "cpu";
-          cuda-10 = mk-pkgset "cuda-10";
-          cuda-11 = mk-pkgset "cuda-11";
-        };
+      defaultPackage = forAllSystems (system: self.packages.${system}.examples);
 
-        mapper = name-pred: name-map: with lib.attrsets; mapAttrs' (name: nameValuePair (if (name-pred name) then (name-map name) else name));
-        mapper2 = name-pred: name-map: with lib.attrsets;
-          mapAttrs' (p: v: nameValuePair p (mapper name-pred name-map v));
+      devShells = forAllSystems (system: {
+        hasktorch-dev-shell = nixpkgsFor.${system}.hasktorch-dev-shell;
+      });
 
-        build-flake = ty: with lib.strings; with lib.lists;
-          let
-            inherit (pkgset.${ty}) pkgs;
-            pkg-flake = pkgs.hasktorchProject.flake {};
-          in
-            mapper2
-              #(n: head (splitString ":" n) == "hasktorch")
-              (n: hasInfix ":" n && head (splitString ":" n) != "codegen")
-              (n: let parts = splitString ":" n; in concatStringsSep ":" (concatLists [["${head parts}-${ty}"] (tail parts)]))
-              pkg-flake;
-
-        builds = {
-          cpu     = build-flake "cpu";
-          cuda-10 = build-flake "cuda-10";
-          cuda-11 = build-flake "cuda-11";
-        };
-
-        ghc = pkgset.cpu.pkgs.hasktorchProject.ghcWithPackages (_: []);
-
-        extra-packages = {
-          packages = {
-            haddocks-join = (pkgset.cpu.pkgs.callPackage ./nix/haddock-combine.nix {
-              inherit ghc;
-            }) {
-              hsdocs = [
-                builds.cpu.packages."libtorch-ffi-cpu:lib:libtorch-ffi".doc
-                builds.cpu.packages."libtorch-ffi-helper-cpu:lib:libtorch-ffi-helper".doc
-                builds.cpu.packages."hasktorch-cpu:lib:hasktorch".doc
-                builds.cpu.packages."hasktorch-gradually-typed-cpu:lib:hasktorch-gradually-typed".doc
-              ];
-            };
-          };
-          checks = {
-            # pre-commit-check = pre-commit-hooks.lib.${system}.run {
-            #   src = ./.;
-            #   hooks = {
-            #     nixpkgs-fmt = {
-            #       enable = true;
-            #       excludes = [
-            #         "^nix/sources\.nix"
-            #       ];
-            #     };
-            #     ormolu = {
-            #       enable = true;
-            #       excludes = [
-            #         "^Setup.hs$"
-            #         "^libtorch-ffi/.*$"
-            #       ];
-            #     };
-            #   };
-            # };
-          };
-        };
-        packages = with builds;
-          builtins.foldl' (sum: v: lib.recursiveUpdate sum v) {} (
-            if system == "x86_64-darwin"
-            then  [cpu extra-packages]
-            else  [cpu cuda-10 cuda-11 extra-packages]
-          );
-          
-
-      in with builds;
-         packages // (
-          let
-            dev = with pkgset;
-              if !build-config.dev.cudaSupport then cpu else
-              if build-config.dev.cudaMajorVersion == "10" then cuda-10 else cuda-11;
-          in {
-            lib = pkgset;
-            devShells.default =  dev.pkgs.callPackage ./shell.nix {
-              # preCommitShellHook = self.checks.${system}.pre-commit-check.shellHook;
-              inherit (build-config.dev) cudaSupport cudaMajorVersion;
-            };
-          } )
-    ));
+      devShell = forAllSystems (system: self.devShells.${system}.hasktorch-dev-shell);
+    };
 }
