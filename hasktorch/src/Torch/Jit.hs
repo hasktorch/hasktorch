@@ -33,8 +33,8 @@ jitIO (ScriptCache cache) func input = do
       script' <- toScriptModule m
       atomically $ writeTVar cache (Just script')
       return script'
-  IVTensorList r0 <- forwardStoch script (map IVTensor input)
-  return r0
+  IVTensor r0 <- forwardStoch script (map IVTensor input)
+  return [r0]
 
 jit :: ScriptCache -> ([Tensor] -> [Tensor]) -> [Tensor] -> [Tensor]
 jit cache func input = unsafePerformIO $ jitIO cache (return . func) input

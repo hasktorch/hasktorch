@@ -137,8 +137,8 @@ main = do
         C.env (pure (aT', bT', subT', vT')) $ \ ~(aT, bT, subT, vT) ->
             C.bgroup "Hasktorch" [ 
                              C.bench "multiplication" $ C.nf (T.matmul aT) bT,
-                             C.bench "repeated multiplication" $ C.nf ( T.sumAll . T.matmul bT . T.matmul aT . T.matmul aT) bT,
-                             C.bench "repeated multiplication with JIT" $ C.nf ( T.sumAll . T.matmul bT . T.matmul aT . T.matmul aT) bT,
+                             C.bench "repeated multiplication" $ C.nf (T.sumAll . T.matmul bT . T.matmul aT . T.matmul aT) bT,
+                             C.bench "repeated multiplication with JIT" $ C.nf (jit $ T.sumAll . T.matmul bT . T.matmul aT . T.matmul aT) bT,
                              C.bench "multiplicationV" $ C.nf (T.matmul aT) subT,
                              -- C.bench "qr factorization" $ C.nf (\v -> TI.qr v True) aT,
                              C.bench "transpose" $ C.nf TI.t aT,
