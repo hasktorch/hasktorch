@@ -11,7 +11,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
-VERSION=1.11.0
+VERSION=2.0.0
 
 if ! command -v unzip &> /dev/null
 then
@@ -51,7 +51,7 @@ fi
 
 
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu102" or "cu113"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu117" or "cu118"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
     echo "    # Use libtorch-$(VERSION)  w/o -l" 1>&2
     echo "" 1>&2
@@ -59,8 +59,8 @@ usage_exit() {
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
     echo "" 1>&2
     echo " -a cpu   # Use CPU without CUDA" 1>&2
-    echo " -a cu102 # Use CUDA-10.2" 1>&2
-    echo " -a cu113 # Use CUDA-11.3" 1>&2
+    echo " -a cu117 # Use CUDA-11.7" 1>&2
+    echo " -a cu118 # Use CUDA-11.8" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
@@ -107,13 +107,6 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
         unzip libtorch-macos-${VERSION}.zip
         rm libtorch-macos-${VERSION}.zip
       fi
-      wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_mac_2019.0.1.20181227.tgz
-      tar -xzf mklml_mac_2019.0.1.20181227.tgz
-      rm -f mklml_mac_2019.0.1.20181227.tgz
-      rm -f mklml_mac_2019.0.1.20181227.tgz.1
-      rm -rf mklml
-      mv mklml_mac_2019.0.1.20181227 mklml
-
       wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip
       unzip libtokenizers-macos.zip
       ;;
@@ -129,8 +122,8 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
       else
 	case "${COMPUTE_ARCH}" in
 	      "cpu" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcpu.zip ;;
-	      "cu102" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu102.zip ;;
-	      "cu113" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu113.zip ;;
+	      "cu117" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu117.zip ;;
+	      "cu118" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu118.zip ;;
               *)
                   1>&2 printf "Error: invalid value '%s' passed to -a\n\n" "$COMPUTE_ARCH"
                   usage_exit
@@ -139,13 +132,6 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
         unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
         rm libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
       fi
-      wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz
-      tar -xzf mklml_lnx_2019.0.1.20181227.tgz
-      rm -f mklml_lnx_2019.0.1.20181227.tgz
-      rm -f mklml_lnx_2019.0.1.20181227.tgz.1
-      rm -rf mklml
-      mv mklml_lnx_2019.0.1.20181227 mklml
-      ln -s libmklml_intel.so mklml/lib/libmklml.so
 
       wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip
       unzip libtokenizers-linux.zip
@@ -192,7 +178,7 @@ if ! ($PYTHON -c 'import typing_extensions') ; then
 fi
 
 # See https://github.com/pytorch/pytorch/blob/master/.circleci/scripts/cpp_doc_push_script.sh
-$PYTHON -m tools.codegen.gen \
+$PYTHON -m torchgen.gen \
         -s aten/src/ATen \
         -d build/aten/src/ATen
 

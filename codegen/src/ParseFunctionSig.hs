@@ -129,6 +129,7 @@ data TenType
   | TensorOptions
   | TensorList
   | C10ListTensor
+  | ITensorListRef
   | IntegerTensor
   | IndexTensor
   | BoolTensor
@@ -280,6 +281,8 @@ identifier = (lexm . try) (p >>= check)
 -- TenType TensorList
 -- >>> parseTest typ "const c10::List<c10::optional<Tensor>> &"
 -- TenType C10ListTensor
+-- >>> parseTest typ "const at::ITensorListRef &"
+-- TenType ITensorListRef
 -- >>> parseTest typ "TensorOptions"
 -- TenType TensorOptions
 -- >>> parseTest typ "bool"
@@ -380,6 +383,7 @@ typ =
         <|> try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList))
         <|> try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList))
         <|> try ((lexm $ try (string "const c10::List<c10::optional<at::Tensor>> &") <|> string "const c10::List<c10::optional<Tensor>> &") >> (pure $ TenType C10ListTensor))
+        <|> try ((lexm $ string "const at::ITensorListRef &") >> (pure $ TenType ITensorListRef))
         <|> try ((lexm $ string "Tensor(a)[]") >> (pure $ TenType TensorAVector))
         <|> try ((lexm $ string "Tensor(a)") >> (pure $ TenType TensorA))
         <|> try ((lexm $ string "Tensor(a!)") >> (pure $ TenType TensorA'))

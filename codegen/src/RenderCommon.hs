@@ -38,6 +38,7 @@ tenTypeToCppType tentype =
     TensorOptions -> "at::TensorOptions"
     TensorList -> "std::vector<at::Tensor>"
     C10ListTensor -> "c10::List<c10::optional<at::Tensor>>"
+    ITensorListRef -> "at::ITensorListRef"
     IndexTensor -> "at::Tensor"
     IntegerTensor -> "at::Tensor"
     BoolTensor -> "at::Tensor"
@@ -122,6 +123,7 @@ tenTypeToHsType tentype =
     TensorOptions -> "TensorOptions"
     TensorList -> "TensorList"
     C10ListTensor -> "(C10List (C10Optional Tensor))"
+    ITensorListRef -> "ITensorListRef"
     IntegerTensor -> "Tensor"
     IndexTensor -> "Tensor"
     BoolTensor -> "Tensor"
@@ -148,6 +150,7 @@ tenTypeToHigherHsType tentype =
     TensorOptions -> "TensorOptions"
     TensorList -> "[Tensor]"
     C10ListTensor -> "[Tensor]"
+    ITensorListRef -> "[Tensor]"
     IntegerTensor -> "Tensor"
     IndexTensor -> "Tensor"
     BoolTensor -> "Tensor"
@@ -289,6 +292,7 @@ tenTypeToInitial tentype =
     TensorOptions -> "o"
     TensorList -> "l"
     C10ListTensor -> "l"
+    ITensorListRef -> "l"
     IndexTensor -> "t"
     IntegerTensor -> "t"
     BoolTensor -> "t"
@@ -440,7 +444,7 @@ functionToCpp is_managed add_type_initials prefix suffix fn =
           [st|
 #{hsfuncname}#{type_initials}
   :: #{types}
-#{hsfuncname}#{type_initials} = cast#{num_args} Unmanaged.#{hsfuncname}#{type_initials}
+#{hsfuncname}#{type_initials} = _cast#{num_args} Unmanaged.#{hsfuncname}#{type_initials}
 |]
         else
           [st|

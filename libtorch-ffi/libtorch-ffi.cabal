@@ -1,7 +1,7 @@
 cabal-version:       3.0
 name:                libtorch-ffi
-version:             1.11.0.0
--- The prefix(1.11) of this version("1.11.0.0") is the same as libtorch's one.
+version:             2.0.0.0
+-- The prefix(2.0) of this version("2.0.0.0") is the same as libtorch's one.
 synopsis:            test out alternative options for ffi interface to libtorch 1.x
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme

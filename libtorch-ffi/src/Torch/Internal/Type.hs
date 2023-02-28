@@ -74,6 +74,8 @@ data C10Dict a
 data C10List a
 data C10Optional a
 
+data ITensorListRef
+
 data IVNone
 data IVObject
 data IVTuple
@@ -119,6 +121,7 @@ typeTable = Map.fromList [
       , (C.TypeName "c10::Dict", [t|C10Dict|])
       , (C.TypeName "c10::List", [t|C10List|])
       , (C.TypeName "c10::optional", [t|C10Optional|])
+      , (C.TypeName "at::ITensorListRef", [t|ITensorListRef|])
       , (C.TypeName "at::ivalue::Tuple", [t|IVTuple|])
       , (C.TypeName "at::ivalue::Future", [t|IVFuture|])
       , (C.TypeName "at::ivalue::ConstantString", [t|IVConstantString|])

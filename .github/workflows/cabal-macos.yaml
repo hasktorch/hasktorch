@@ -18,7 +18,7 @@ jobs:
         #brew install ghc@9.02 || true
         #brew install cabal-install || true
         brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
-        brew install libtorch-prebuild@1.11 || true
+        brew install libtorch-prebuild@2.0 || true
         brew tap hasktorch/tokenizers https://github.com/hasktorch/tokenizers || true
         brew install libtokenizers || true
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd

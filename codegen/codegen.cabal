@@ -1,5 +1,5 @@
 name:                codegen
-version:             1.11.0.0
+version:             2.0.0.0
 synopsis:            parse torch yaml spec files, generate code
 -- description:
 homepage:            https://github.com/hasktorch/hasktorch#readme
