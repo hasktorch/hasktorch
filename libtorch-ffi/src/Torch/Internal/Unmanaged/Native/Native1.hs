@@ -28,6 +28,14 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+block_diag_l
+  :: Ptr TensorList
+  -> IO (Ptr Tensor)
+block_diag_l _tensors =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::block_diag(
+    *$(std::vector<at::Tensor>* _tensors)));
+  }|]
+
 ceil_t
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -3554,27 +3562,5 @@ embedding_ttlb _weight _indices _padding_idx _scale_grad_by_freq =
   , *$(at::Tensor* _indices)
   , $(int64_t _padding_idx)
   , $(bool _scale_grad_by_freq)));
-  }|]
-
-embedding_ttl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Int64
-  -> IO (Ptr Tensor)
-embedding_ttl _weight _indices _padding_idx =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::embedding(
-    *$(at::Tensor* _weight)
-  , *$(at::Tensor* _indices)
-  , $(int64_t _padding_idx)));
-  }|]
-
-embedding_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-embedding_tt _weight _indices =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::embedding(
-    *$(at::Tensor* _weight)
-  , *$(at::Tensor* _indices)));
   }|]
 

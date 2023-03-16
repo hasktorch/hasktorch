@@ -28,6 +28,16 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+fft_rfft_out_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+fft_rfft_out_tt _out _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::fft_rfft_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)));
+  }|]
+
 fft_irfft_tlls
   :: Ptr Tensor
   -> Int64
@@ -3294,43 +3304,5 @@ _linalg_svd_t
 _linalg_svd_t _A =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_linalg_svd(
     *$(at::Tensor* _A)));
-  }|]
-
-_linalg_svd_out_ttttbbs
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> CBool
-  -> CBool
-  -> Ptr StdString
-  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
-_linalg_svd_out_ttttbbs _U _S _Vh _A _full_matrices _compute_uv _driver =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_linalg_svd_out(
-    *$(at::Tensor* _U)
-  , *$(at::Tensor* _S)
-  , *$(at::Tensor* _Vh)
-  , *$(at::Tensor* _A)
-  , $(bool _full_matrices)
-  , $(bool _compute_uv)
-  , *$(std::string* _driver)));
-  }|]
-
-_linalg_svd_out_ttttbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> CBool
-  -> CBool
-  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
-_linalg_svd_out_ttttbb _U _S _Vh _A _full_matrices _compute_uv =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_linalg_svd_out(
-    *$(at::Tensor* _U)
-  , *$(at::Tensor* _S)
-  , *$(at::Tensor* _Vh)
-  , *$(at::Tensor* _A)
-  , $(bool _full_matrices)
-  , $(bool _compute_uv)));
   }|]
 

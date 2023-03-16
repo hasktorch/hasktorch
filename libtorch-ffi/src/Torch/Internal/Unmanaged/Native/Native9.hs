@@ -28,16 +28,6 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
-nll_loss_nd_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-nll_loss_nd_tt _self _target =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nll_loss_nd(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _target)));
-  }|]
-
 nll_loss_tttll
   :: Ptr Tensor
   -> Ptr Tensor

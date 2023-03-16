@@ -1003,6 +1003,41 @@ cast29 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x2
     cast x28 $ \cx28 ->
     (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14 cx15 cx16 cx17 cx18 cx19 cx20 cx21 cx22 cx23 cx24 cx25 cx26 cx27 cx28 ) >>= \cy -> uncast cy return
 
+cast30 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4, Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9, Castable x10 cx10, Castable x11 cx11, Castable x12 cx12, Castable x13 cx13, Castable x14 cx14, Castable x15 cx15, Castable x16 cx16, Castable x17 cx17, Castable x18 cx18, Castable x19 cx19, Castable x20 cx20, Castable x21 cx21, Castable x22 cx22, Castable x23 cx23, Castable x24 cx24, Castable x25 cx25, Castable x26 cx26, Castable x27 cx27, Castable x28 cx28, Castable x29 cx29, Castable y cy)
+        => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> cx11 -> cx12 -> cx13 -> cx14 -> cx15 -> cx16 -> cx17 -> cx18 -> cx19 -> cx20 -> cx21 -> cx22 -> cx23 -> cx24 -> cx25 -> cx26 -> cx27 -> cx28 -> cx29 -> IO cy) -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> x11 -> x12 -> x13 -> x14 -> x15 -> x16 -> x17 -> x18 -> x19 -> x20 -> x21 -> x22 -> x23 -> x24 -> x25 -> x26 -> x27 -> x28 -> x29 -> IO y
+cast30 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 = 
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+    cast x2 $ \cx2 ->
+    cast x3 $ \cx3 ->
+    cast x4 $ \cx4 ->
+    cast x5 $ \cx5 ->
+    cast x6 $ \cx6 ->
+    cast x7 $ \cx7 ->
+    cast x8 $ \cx8 ->
+    cast x9 $ \cx9 ->
+    cast x10 $ \cx10 ->
+    cast x11 $ \cx11 ->
+    cast x12 $ \cx12 ->
+    cast x13 $ \cx13 ->
+    cast x14 $ \cx14 ->
+    cast x15 $ \cx15 ->
+    cast x16 $ \cx16 ->
+    cast x17 $ \cx17 ->
+    cast x18 $ \cx18 ->
+    cast x19 $ \cx19 ->
+    cast x20 $ \cx20 ->
+    cast x21 $ \cx21 ->
+    cast x22 $ \cx22 ->
+    cast x23 $ \cx23 ->
+    cast x24 $ \cx24 ->
+    cast x25 $ \cx25 ->
+    cast x26 $ \cx26 ->
+    cast x27 $ \cx27 ->
+    cast x28 $ \cx28 ->
+    cast x29 $ \cx29 ->
+    (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14 cx15 cx16 cx17 cx18 cx19 cx20 cx21 cx22 cx23 cx24 cx25 cx26 cx27 cx28 cx29) >>= \cy -> uncast cy return
+
 {-# INLINE cast0 #-}
 {-# INLINE cast1 #-}
 {-# INLINE cast2 #-}
@@ -1033,6 +1068,7 @@ cast29 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x2
 {-# INLINE cast27 #-}
 {-# INLINE cast28 #-}
 {-# INLINE cast29 #-}
+{-# INLINE cast30 #-}
 
 --------------------------------------------------------------------------------
 -- Cast functions with retryWithGC
@@ -1649,6 +1685,41 @@ _cast29 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x
     cast x28 $ \cx28 ->
     retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14 cx15 cx16 cx17 cx18 cx19 cx20 cx21 cx22 cx23 cx24 cx25 cx26 cx27 cx28 ) >>= \cy -> uncast cy return
 
+_cast30 :: (Castable a ca, Castable x1 cx1, Castable x2 cx2, Castable x3 cx3, Castable x4 cx4, Castable x5 cx5, Castable x6 cx6, Castable x7 cx7, Castable x8 cx8, Castable x9 cx9, Castable x10 cx10, Castable x11 cx11, Castable x12 cx12, Castable x13 cx13, Castable x14 cx14, Castable x15 cx15, Castable x16 cx16, Castable x17 cx17, Castable x18 cx18, Castable x19 cx19, Castable x20 cx20, Castable x21 cx21, Castable x22 cx22, Castable x23 cx23, Castable x24 cx24, Castable x25 cx25, Castable x26 cx26, Castable x27 cx27, Castable x28 cx28, Castable x29 cx29, Castable y cy)
+        => (ca -> cx1 -> cx2 -> cx3 -> cx4 -> cx5 -> cx6 -> cx7 -> cx8 -> cx9 -> cx10 -> cx11 -> cx12 -> cx13 -> cx14 -> cx15 -> cx16 -> cx17 -> cx18 -> cx19 -> cx20 -> cx21 -> cx22 -> cx23 -> cx24 -> cx25 -> cx26 -> cx27 -> cx28 -> cx29 -> IO cy) -> a -> x1 -> x2 -> x3 -> x4 -> x5 -> x6 -> x7 -> x8 -> x9 -> x10 -> x11 -> x12 -> x13 -> x14 -> x15 -> x16 -> x17 -> x18 -> x19 -> x20 -> x21 -> x22 -> x23 -> x24 -> x25 -> x26 -> x27 -> x28 -> x29 -> IO y
+_cast30 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x20 x21 x22 x23 x24 x25 x26 x27 x28 x29 = 
+  cast a $ \ca ->
+    cast x1 $ \cx1 ->
+    cast x2 $ \cx2 ->
+    cast x3 $ \cx3 ->
+    cast x4 $ \cx4 ->
+    cast x5 $ \cx5 ->
+    cast x6 $ \cx6 ->
+    cast x7 $ \cx7 ->
+    cast x8 $ \cx8 ->
+    cast x9 $ \cx9 ->
+    cast x10 $ \cx10 ->
+    cast x11 $ \cx11 ->
+    cast x12 $ \cx12 ->
+    cast x13 $ \cx13 ->
+    cast x14 $ \cx14 ->
+    cast x15 $ \cx15 ->
+    cast x16 $ \cx16 ->
+    cast x17 $ \cx17 ->
+    cast x18 $ \cx18 ->
+    cast x19 $ \cx19 ->
+    cast x20 $ \cx20 ->
+    cast x21 $ \cx21 ->
+    cast x22 $ \cx22 ->
+    cast x23 $ \cx23 ->
+    cast x24 $ \cx24 ->
+    cast x25 $ \cx25 ->
+    cast x26 $ \cx26 ->
+    cast x27 $ \cx27 ->
+    cast x28 $ \cx28 ->
+    cast x29 $ \cx29 ->
+    retryWithGC (f ca cx1 cx2 cx3 cx4 cx5 cx6 cx7 cx8 cx9 cx10 cx11 cx12 cx13 cx14 cx15 cx16 cx17 cx18 cx19 cx20 cx21 cx22 cx23 cx24 cx25 cx26 cx27 cx28 cx29) >>= \cy -> uncast cy return
+
 
 {-# INLINE _cast0 #-}
 {-# INLINE _cast1 #-}
@@ -1680,3 +1751,4 @@ _cast29 f a x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x
 {-# INLINE _cast27 #-}
 {-# INLINE _cast28 #-}
 {-# INLINE _cast29 #-}
+{-# INLINE _cast30 #-}

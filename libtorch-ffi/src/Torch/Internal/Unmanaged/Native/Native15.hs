@@ -28,6 +28,18 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+random_tll
+  :: Ptr Tensor
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+random_tll _self _from _to =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::random(
+    *$(at::Tensor* _self)
+  , $(int64_t _from)
+  , $(int64_t _to)));
+  }|]
+
 random_out_ttlG
   :: Ptr Tensor
   -> Ptr Tensor
@@ -1756,42 +1768,6 @@ _foreach_lerp_out_llls _out _self _tensors1 _weight =
   , *$(std::vector<at::Tensor>* _self)
   , *$(std::vector<at::Tensor>* _tensors1)
   , *$(at::Scalar* _weight)));
-  }|]
-
-_foreach_pow_out_lll
-  :: Ptr TensorList
-  -> Ptr TensorList
-  -> Ptr TensorList
-  -> IO (())
-_foreach_pow_out_lll _out _self _exponent =
-  [C.throwBlock| void {  (at::_foreach_pow_out(
-    *$(std::vector<at::Tensor>* _out)
-  , *$(std::vector<at::Tensor>* _self)
-  , *$(std::vector<at::Tensor>* _exponent)));
-  }|]
-
-_foreach_pow_out_lls
-  :: Ptr TensorList
-  -> Ptr TensorList
-  -> Ptr Scalar
-  -> IO (())
-_foreach_pow_out_lls _out _self _exponent =
-  [C.throwBlock| void {  (at::_foreach_pow_out(
-    *$(std::vector<at::Tensor>* _out)
-  , *$(std::vector<at::Tensor>* _self)
-  , *$(at::Scalar* _exponent)));
-  }|]
-
-_foreach_pow_out_llA
-  :: Ptr TensorList
-  -> Ptr TensorList
-  -> Ptr (StdVector Scalar)
-  -> IO (())
-_foreach_pow_out_llA _out _self _exponent =
-  [C.throwBlock| void {  (at::_foreach_pow_out(
-    *$(std::vector<at::Tensor>* _out)
-  , *$(std::vector<at::Tensor>* _self)
-  , *$(std::vector<at::Scalar>* _exponent)));
   }|]
 
 bucketize_out_tstbb

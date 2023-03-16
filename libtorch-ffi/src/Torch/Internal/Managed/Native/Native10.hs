@@ -2230,9 +2230,3 @@ fft_rfft_out_ttl
   -> IO (ForeignPtr Tensor)
 fft_rfft_out_ttl = _cast3 Unmanaged.fft_rfft_out_ttl
 
-fft_rfft_out_tt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-fft_rfft_out_tt = _cast2 Unmanaged.fft_rfft_out_tt
-

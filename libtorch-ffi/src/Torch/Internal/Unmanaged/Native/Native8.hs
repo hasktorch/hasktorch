@@ -28,6 +28,78 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+nanquantile_out_ttdlb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> Int64
+  -> CBool
+  -> IO (Ptr Tensor)
+nanquantile_out_ttdlb _out _self _q _dim _keepdim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nanquantile_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , $(double _q)
+  , $(int64_t _dim)
+  , $(bool _keepdim)));
+  }|]
+
+nanquantile_out_ttdl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> Int64
+  -> IO (Ptr Tensor)
+nanquantile_out_ttdl _out _self _q _dim =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nanquantile_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , $(double _q)
+  , $(int64_t _dim)));
+  }|]
+
+nanquantile_out_ttd
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> IO (Ptr Tensor)
+nanquantile_out_ttd _out _self _q =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nanquantile_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , $(double _q)));
+  }|]
+
+sort_out_tttlb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+sort_out_tttlb _values _indices _self _dim _descending =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::sort_out(
+    *$(at::Tensor* _values)
+  , *$(at::Tensor* _indices)
+  , *$(at::Tensor* _self)
+  , $(int64_t _dim)
+  , $(bool _descending)));
+  }|]
+
+sort_out_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+sort_out_tttl _values _indices _self _dim =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::sort_out(
+    *$(at::Tensor* _values)
+  , *$(at::Tensor* _indices)
+  , *$(at::Tensor* _self)
+  , $(int64_t _dim)));
+  }|]
+
 sort_out_ttt
   :: Ptr Tensor
   -> Ptr Tensor
@@ -2282,76 +2354,6 @@ _foreach_lerp__lls _self _tensors1 _weight =
   , *$(at::Scalar* _weight)));
   }|]
 
-_foreach_pow_ll
-  :: Ptr TensorList
-  -> Ptr TensorList
-  -> IO (Ptr TensorList)
-_foreach_pow_ll _self _exponent =
-  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::_foreach_pow(
-    *$(std::vector<at::Tensor>* _self)
-  , *$(std::vector<at::Tensor>* _exponent)));
-  }|]
-
-_foreach_pow_ls
-  :: Ptr TensorList
-  -> Ptr Scalar
-  -> IO (Ptr TensorList)
-_foreach_pow_ls _self _exponent =
-  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::_foreach_pow(
-    *$(std::vector<at::Tensor>* _self)
-  , *$(at::Scalar* _exponent)));
-  }|]
-
-_foreach_pow_lA
-  :: Ptr TensorList
-  -> Ptr (StdVector Scalar)
-  -> IO (Ptr TensorList)
-_foreach_pow_lA _self _exponent =
-  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::_foreach_pow(
-    *$(std::vector<at::Tensor>* _self)
-  , *$(std::vector<at::Scalar>* _exponent)));
-  }|]
-
-_foreach_pow_sl
-  :: Ptr Scalar
-  -> Ptr TensorList
-  -> IO (Ptr TensorList)
-_foreach_pow_sl _self _exponent =
-  [C.throwBlock| std::vector<at::Tensor>* { return new std::vector<at::Tensor>(at::_foreach_pow(
-    *$(at::Scalar* _self)
-  , *$(std::vector<at::Tensor>* _exponent)));
-  }|]
-
-_foreach_pow__ll
-  :: Ptr TensorList
-  -> Ptr TensorList
-  -> IO (())
-_foreach_pow__ll _self _exponent =
-  [C.throwBlock| void {  (at::_foreach_pow_(
-    *$(std::vector<at::Tensor>* _self)
-  , *$(std::vector<at::Tensor>* _exponent)));
-  }|]
-
-_foreach_pow__ls
-  :: Ptr TensorList
-  -> Ptr Scalar
-  -> IO (())
-_foreach_pow__ls _self _exponent =
-  [C.throwBlock| void {  (at::_foreach_pow_(
-    *$(std::vector<at::Tensor>* _self)
-  , *$(at::Scalar* _exponent)));
-  }|]
-
-_foreach_pow__lA
-  :: Ptr TensorList
-  -> Ptr (StdVector Scalar)
-  -> IO (())
-_foreach_pow__lA _self _exponent =
-  [C.throwBlock| void {  (at::_foreach_pow_(
-    *$(std::vector<at::Tensor>* _self)
-  , *$(std::vector<at::Scalar>* _exponent)));
-  }|]
-
 bucketize_ttbb
   :: Ptr Tensor
   -> Ptr Tensor
@@ -3386,5 +3388,15 @@ nll_loss_nd_ttt _self _target _weight =
     *$(at::Tensor* _self)
   , *$(at::Tensor* _target)
   , *$(at::Tensor* _weight)));
+  }|]
+
+nll_loss_nd_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+nll_loss_nd_tt _self _target =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nll_loss_nd(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _target)));
   }|]
 

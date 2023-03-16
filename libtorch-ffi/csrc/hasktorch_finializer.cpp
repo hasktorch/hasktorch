@@ -145,6 +145,18 @@ void delete_tensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::
   delete object;
 }
 
+void delete_tensortensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* object){
+  delete object;
+}
+
+void delete_tensortensortensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* object){
+  delete object;
+}
+
+void delete_tensortensortensortensorint64int64int64int64tensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor,at::Tensor>* object){
+  delete object;
+}
+
 void delete_tensortensortensortensorlist(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* object){
   delete object;
 }
@@ -212,11 +224,6 @@ void delete_arrayrefscalar(at::ArrayRef<at::Scalar>* object){
 void delete_vectorscalar(std::vector<at::Scalar>* object){
   delete object;
 }
-
-void delete_itensorlistref(at::ITensorListRef* ptr){
-  delete object;
-}
-
 
 std::map<void*,int> objectAge;
 std::map<void*,int> prevObjectAge;
@@ -315,6 +322,12 @@ showObject(int flag, void* ptr, void* fptr){
     std::cout << age << ":" << "(tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensortensortensortensortensor){
     std::cout << age << ":" << "(tensor,tensor,tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensortensortensor){
+    std::cout << age << ":" << "(tensor,tensor,tensor,tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensortensortensortensor){
+    std::cout << age << ":" << "(tensor,tensor,tensor,tensor,tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensorint64int64int64int64tensor){
+    std::cout << age << ":" << "(tensor,tensor,tensor,tensor,int,int,int,int,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensortensortensortensorlist){
     std::cout << age << ":" << "(tensor,tensor,tensor,[tensor])" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensortensortensortensorint64){

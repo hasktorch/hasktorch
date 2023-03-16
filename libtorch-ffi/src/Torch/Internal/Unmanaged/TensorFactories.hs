@@ -256,28 +256,6 @@ empty_l _size =
     *$(std::vector<int64_t>* _size)));
   }|]
 
-empty_permuted_llo
-  :: Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr TensorOptions
-  -> IO (Ptr Tensor)
-empty_permuted_llo _size _physical_layout _options =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_permuted(
-    *$(std::vector<int64_t>* _size)
-  , *$(std::vector<int64_t>* _physical_layout)
-  , *$(at::TensorOptions* _options)));
-  }|]
-
-empty_permuted_ll
-  :: Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-empty_permuted_ll _size _physical_layout =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_permuted(
-    *$(std::vector<int64_t>* _size)
-  , *$(std::vector<int64_t>* _physical_layout)));
-  }|]
-
 _empty_affine_quantized_lodlM
   :: Ptr IntArray
   -> Ptr TensorOptions

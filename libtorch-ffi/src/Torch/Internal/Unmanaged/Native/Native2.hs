@@ -28,6 +28,28 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+embedding_ttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Int64
+  -> IO (Ptr Tensor)
+embedding_ttl _weight _indices _padding_idx =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::embedding(
+    *$(at::Tensor* _weight)
+  , *$(at::Tensor* _indices)
+  , $(int64_t _padding_idx)));
+  }|]
+
+embedding_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+embedding_tt _weight _indices =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::embedding(
+    *$(at::Tensor* _weight)
+  , *$(at::Tensor* _indices)));
+  }|]
+
 embedding_backward_ttllbb
   :: Ptr Tensor
   -> Ptr Tensor
@@ -760,28 +782,6 @@ empty_l
 empty_l _size =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::empty(
     *$(std::vector<int64_t>* _size)));
-  }|]
-
-empty_permuted_llo
-  :: Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr TensorOptions
-  -> IO (Ptr Tensor)
-empty_permuted_llo _size _physical_layout _options =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::empty_permuted(
-    *$(std::vector<int64_t>* _size)
-  , *$(std::vector<int64_t>* _physical_layout)
-  , *$(at::TensorOptions* _options)));
-  }|]
-
-empty_permuted_ll
-  :: Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-empty_permuted_ll _size _physical_layout =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::empty_permuted(
-    *$(std::vector<int64_t>* _size)
-  , *$(std::vector<int64_t>* _physical_layout)));
   }|]
 
 _empty_affine_quantized_lodlM
@@ -3730,15 +3730,5 @@ xlogy_st _self _other =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::xlogy(
     *$(at::Scalar* _self)
   , *$(at::Tensor* _other)));
-  }|]
-
-xlogy_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-xlogy_ts _self _other =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::xlogy(
-    *$(at::Tensor* _self)
-  , *$(at::Scalar* _other)));
   }|]
 

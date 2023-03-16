@@ -502,16 +502,16 @@ tensor_std_lbb _obj _dim _unbiased _keepdim =
   , $(bool _keepdim)));
   }|]
 
-tensor_std_lsb
+tensor_std_llb
   :: Ptr Tensor
   -> Ptr IntArray
-  -> Ptr Scalar
+  -> Int64
   -> CBool
   -> IO (Ptr Tensor)
-tensor_std_lsb _obj _dim _correction _keepdim =
+tensor_std_llb _obj _dim _correction _keepdim =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).std(
     *$(std::vector<int64_t>* _dim)
-  , *$(at::Scalar* _correction)
+  , $(int64_t _correction)
   , $(bool _keepdim)));
   }|]
 
@@ -528,16 +528,16 @@ tensor_std_Nbb _obj _dim _unbiased _keepdim =
   , $(bool _keepdim)));
   }|]
 
-tensor_std_Nsb
+tensor_std_Nlb
   :: Ptr Tensor
   -> Ptr DimnameList
-  -> Ptr Scalar
+  -> Int64
   -> CBool
   -> IO (Ptr Tensor)
-tensor_std_Nsb _obj _dim _correction _keepdim =
+tensor_std_Nlb _obj _dim _correction _keepdim =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).std(
     *$(std::vector<at::Dimname>* _dim)
-  , *$(at::Scalar* _correction)
+  , $(int64_t _correction)
   , $(bool _keepdim)));
   }|]
 
@@ -818,16 +818,16 @@ tensor_var_lbb _obj _dim _unbiased _keepdim =
   , $(bool _keepdim)));
   }|]
 
-tensor_var_lsb
+tensor_var_llb
   :: Ptr Tensor
   -> Ptr IntArray
-  -> Ptr Scalar
+  -> Int64
   -> CBool
   -> IO (Ptr Tensor)
-tensor_var_lsb _obj _dim _correction _keepdim =
+tensor_var_llb _obj _dim _correction _keepdim =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).var(
     *$(std::vector<int64_t>* _dim)
-  , *$(at::Scalar* _correction)
+  , $(int64_t _correction)
   , $(bool _keepdim)));
   }|]
 
@@ -844,16 +844,16 @@ tensor_var_Nbb _obj _dim _unbiased _keepdim =
   , $(bool _keepdim)));
   }|]
 
-tensor_var_Nsb
+tensor_var_Nlb
   :: Ptr Tensor
   -> Ptr DimnameList
-  -> Ptr Scalar
+  -> Int64
   -> CBool
   -> IO (Ptr Tensor)
-tensor_var_Nsb _obj _dim _correction _keepdim =
+tensor_var_Nlb _obj _dim _correction _keepdim =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).var(
     *$(std::vector<at::Dimname>* _dim)
-  , *$(at::Scalar* _correction)
+  , $(int64_t _correction)
   , $(bool _keepdim)));
   }|]
 

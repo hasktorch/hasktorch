@@ -316,13 +316,13 @@ tensor_std_lbb
   -> IO (ForeignPtr Tensor)
 tensor_std_lbb = cast4 Unmanaged.tensor_std_lbb
 
-tensor_std_lsb
+tensor_std_llb
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray
-  -> ForeignPtr Scalar
+  -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-tensor_std_lsb = cast4 Unmanaged.tensor_std_lsb
+tensor_std_llb = cast4 Unmanaged.tensor_std_llb
 
 tensor_std_Nbb
   :: ForeignPtr Tensor
@@ -332,13 +332,13 @@ tensor_std_Nbb
   -> IO (ForeignPtr Tensor)
 tensor_std_Nbb = cast4 Unmanaged.tensor_std_Nbb
 
-tensor_std_Nsb
+tensor_std_Nlb
   :: ForeignPtr Tensor
   -> ForeignPtr DimnameList
-  -> ForeignPtr Scalar
+  -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-tensor_std_Nsb = cast4 Unmanaged.tensor_std_Nsb
+tensor_std_Nlb = cast4 Unmanaged.tensor_std_Nlb
 
 tensor_prod_s
   :: ForeignPtr Tensor
@@ -516,13 +516,13 @@ tensor_var_lbb
   -> IO (ForeignPtr Tensor)
 tensor_var_lbb = cast4 Unmanaged.tensor_var_lbb
 
-tensor_var_lsb
+tensor_var_llb
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray
-  -> ForeignPtr Scalar
+  -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-tensor_var_lsb = cast4 Unmanaged.tensor_var_lsb
+tensor_var_llb = cast4 Unmanaged.tensor_var_llb
 
 tensor_var_Nbb
   :: ForeignPtr Tensor
@@ -532,13 +532,13 @@ tensor_var_Nbb
   -> IO (ForeignPtr Tensor)
 tensor_var_Nbb = cast4 Unmanaged.tensor_var_Nbb
 
-tensor_var_Nsb
+tensor_var_Nlb
   :: ForeignPtr Tensor
   -> ForeignPtr DimnameList
-  -> ForeignPtr Scalar
+  -> Int64
   -> CBool
   -> IO (ForeignPtr Tensor)
-tensor_var_Nsb = cast4 Unmanaged.tensor_var_Nsb
+tensor_var_Nlb = cast4 Unmanaged.tensor_var_Nlb
 
 tensor_view_as_t
   :: ForeignPtr Tensor

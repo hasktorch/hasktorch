@@ -526,6 +526,41 @@ instance CppObject (StdTuple '(Tensor,Tensor,Int64,Int64,Tensor)) where
   deletePtr ptr = c_delete_tensortensorint64int64tensor' ptr
   {-# INLINE deletePtr #-}
 
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensortensortensorint64int64int64int64tensor"
+  c_delete_tensortensortensortensorint64int64int64int64tensor :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)) -> IO ())
+
+foreign import ccall unsafe "hasktorch_finalizer.h delete_tensortensorint64int64tensor"
+  c_delete_tensortensortensortensorint64int64int64int64tensor' ::  Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)) -> IO ()
+
+instance CppObject (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)) where
+  fromPtr ptr = newForeignPtr c_delete_tensortensortensortensorint64int64int64int64tensor ptr
+  {-# INLINE fromPtr #-}
+  deletePtr ptr = c_delete_tensortensortensortensorint64int64int64int64tensor' ptr
+  {-# INLINE deletePtr #-}
+
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensortensortensortensortensor"
+  c_delete_tensortensortensortensortensortensor :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)) -> IO ())
+
+foreign import ccall unsafe "hasktorch_finalizer.h delete_tensortensorint64int64tensor"
+  c_delete_tensortensortensortensortensortensor' ::  Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)) -> IO ()
+
+instance CppObject (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)) where
+  fromPtr ptr = newForeignPtr c_delete_tensortensortensortensortensortensor ptr
+  {-# INLINE fromPtr #-}
+  deletePtr ptr = c_delete_tensortensortensortensortensortensor' ptr
+  {-# INLINE deletePtr #-}
+
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensortensortensortensortensortensortensor"
+  c_delete_tensortensortensortensortensortensortensor :: FunPtr ( Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)) -> IO ())
+
+foreign import ccall unsafe "hasktorch_finalizer.h delete_tensortensorint64int64tensortensor"
+  c_delete_tensortensortensortensortensortensortensor' ::  Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)) -> IO ()
+
+instance CppObject (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)) where
+  fromPtr ptr = newForeignPtr c_delete_tensortensortensortensortensortensortensor ptr
+  {-# INLINE fromPtr #-}
+  deletePtr ptr = c_delete_tensortensortensortensortensortensortensor' ptr
+  {-# INLINE deletePtr #-}
 
 foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensorlisttensor"
   c_delete_tensorlisttensor :: FunPtr ( Ptr (StdTuple '(TensorList,Tensor)) -> IO ())
@@ -657,16 +692,4 @@ instance CppObject (StdVector Scalar) where
   fromPtr ptr = newForeignPtr c_delete_vectorscalar ptr
   {-# INLINE fromPtr #-}
   deletePtr ptr = c_delete_vectorscalar' ptr
-  {-# INLINE deletePtr #-}
-
-foreign import ccall unsafe "hasktorch_finalizer.h &delete_itensorlistref"
-  c_delete_itensorlistref :: FunPtr ( Ptr ITensorListRef -> IO ())
-
-foreign import ccall unsafe "hasktorch_finalizer.h delete_itensorlistref"
-  c_delete_itensorlistref' ::  Ptr ITensorListRef -> IO ()
-
-instance CppObject ITensorListRef where
-  fromPtr ptr = newForeignPtr c_delete_itensorlistref ptr
-  {-# INLINE fromPtr #-}
-  deletePtr ptr = c_delete_itensorlistref' ptr
   {-# INLINE deletePtr #-}

@@ -21,6 +21,32 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native7 as Unmanaged
 
 
+triu_indices_lllo
+  :: Int64
+  -> Int64
+  -> Int64
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+triu_indices_lllo = _cast4 Unmanaged.triu_indices_lllo
+
+triu_indices_lll
+  :: Int64
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+triu_indices_lll = _cast3 Unmanaged.triu_indices_lll
+
+triu_indices_ll
+  :: Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+triu_indices_ll = _cast2 Unmanaged.triu_indices_ll
+
+trace_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+trace_t = _cast1 Unmanaged.trace_t
+
 trace_backward_tl
   :: ForeignPtr Tensor
   -> ForeignPtr IntArray
@@ -2011,45 +2037,4 @@ nanquantile_out_ttdlbs
   -> ForeignPtr StdString
   -> IO (ForeignPtr Tensor)
 nanquantile_out_ttdlbs = _cast6 Unmanaged.nanquantile_out_ttdlbs
-
-nanquantile_out_ttdlb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CDouble
-  -> Int64
-  -> CBool
-  -> IO (ForeignPtr Tensor)
-nanquantile_out_ttdlb = _cast5 Unmanaged.nanquantile_out_ttdlb
-
-nanquantile_out_ttdl
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CDouble
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-nanquantile_out_ttdl = _cast4 Unmanaged.nanquantile_out_ttdl
-
-nanquantile_out_ttd
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-nanquantile_out_ttd = _cast3 Unmanaged.nanquantile_out_ttd
-
-sort_out_tttlb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> Int64
-  -> CBool
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttlb = _cast5 Unmanaged.sort_out_tttlb
-
-sort_out_tttl
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> Int64
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-sort_out_tttl = _cast4 Unmanaged.sort_out_tttl
 

@@ -3880,13 +3880,3 @@ fft_rfft_out_ttl _out _self _n =
   , $(int64_t _n)));
   }|]
 
-fft_rfft_out_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-fft_rfft_out_tt _out _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::fft_rfft_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)));
-  }|]
-

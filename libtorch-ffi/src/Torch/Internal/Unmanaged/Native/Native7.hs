@@ -28,6 +28,50 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+triu_indices_lllo
+  :: Int64
+  -> Int64
+  -> Int64
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+triu_indices_lllo _row _col _offset _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::triu_indices(
+    $(int64_t _row)
+  , $(int64_t _col)
+  , $(int64_t _offset)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+triu_indices_lll
+  :: Int64
+  -> Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+triu_indices_lll _row _col _offset =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::triu_indices(
+    $(int64_t _row)
+  , $(int64_t _col)
+  , $(int64_t _offset)));
+  }|]
+
+triu_indices_ll
+  :: Int64
+  -> Int64
+  -> IO (Ptr Tensor)
+triu_indices_ll _row _col =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::triu_indices(
+    $(int64_t _row)
+  , $(int64_t _col)));
+  }|]
+
+trace_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+trace_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::trace(
+    *$(at::Tensor* _self)));
+  }|]
+
 trace_backward_tl
   :: Ptr Tensor
   -> Ptr IntArray
@@ -3448,77 +3492,5 @@ nanquantile_out_ttdlbs _out _self _q _dim _keepdim _interpolation =
   , $(int64_t _dim)
   , $(bool _keepdim)
   , *$(std::string* _interpolation)));
-  }|]
-
-nanquantile_out_ttdlb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> CDouble
-  -> Int64
-  -> CBool
-  -> IO (Ptr Tensor)
-nanquantile_out_ttdlb _out _self _q _dim _keepdim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nanquantile_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , $(double _q)
-  , $(int64_t _dim)
-  , $(bool _keepdim)));
-  }|]
-
-nanquantile_out_ttdl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> CDouble
-  -> Int64
-  -> IO (Ptr Tensor)
-nanquantile_out_ttdl _out _self _q _dim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nanquantile_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , $(double _q)
-  , $(int64_t _dim)));
-  }|]
-
-nanquantile_out_ttd
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> CDouble
-  -> IO (Ptr Tensor)
-nanquantile_out_ttd _out _self _q =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::nanquantile_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , $(double _q)));
-  }|]
-
-sort_out_tttlb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Int64
-  -> CBool
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-sort_out_tttlb _values _indices _self _dim _descending =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::sort_out(
-    *$(at::Tensor* _values)
-  , *$(at::Tensor* _indices)
-  , *$(at::Tensor* _self)
-  , $(int64_t _dim)
-  , $(bool _descending)));
-  }|]
-
-sort_out_tttl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Int64
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-sort_out_tttl _values _indices _self _dim =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::sort_out(
-    *$(at::Tensor* _values)
-  , *$(at::Tensor* _indices)
-  , *$(at::Tensor* _self)
-  , $(int64_t _dim)));
   }|]
 

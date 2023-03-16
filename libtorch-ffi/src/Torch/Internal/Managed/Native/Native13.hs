@@ -21,6 +21,24 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native13 as Unmanaged
 
 
+special_hermite_polynomial_h_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+special_hermite_polynomial_h_tt = _cast2 Unmanaged.special_hermite_polynomial_h_tt
+
+special_hermite_polynomial_h_st
+  :: ForeignPtr Scalar
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+special_hermite_polynomial_h_st = _cast2 Unmanaged.special_hermite_polynomial_h_st
+
+special_hermite_polynomial_h_ts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+special_hermite_polynomial_h_ts = _cast2 Unmanaged.special_hermite_polynomial_h_ts
+
 special_hermite_polynomial_h_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -525,20 +543,6 @@ _fused_adamw__lllllldddddbb
   -> CBool
   -> IO (())
 _fused_adamw__lllllldddddbb = _cast13 Unmanaged._fused_adamw__lllllldddddbb
-
-all_reduce_tssll
-  :: ForeignPtr Tensor
-  -> ForeignPtr StdString
-  -> ForeignPtr StdString
-  -> ForeignPtr IntArray
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-all_reduce_tssll = _cast5 Unmanaged.all_reduce_tssll
-
-wait_tensor_t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-wait_tensor_t = _cast1 Unmanaged.wait_tensor_t
 
 _new_zeros_with_same_feature_meta_out_tttl
   :: ForeignPtr Tensor
@@ -1665,13 +1669,6 @@ empty_out_tlN
   -> IO (ForeignPtr Tensor)
 empty_out_tlN = _cast3 Unmanaged.empty_out_tlN
 
-empty_permuted_out_tll
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-empty_permuted_out_tll = _cast3 Unmanaged.empty_permuted_out_tll
-
 new_empty_out_ttl
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -2651,39 +2648,39 @@ mkldnn_rnn_layer_out_tttttttttttbllllbbbb
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor)))
 mkldnn_rnn_layer_out_tttttttttttbllllbbbb = _cast20 Unmanaged.mkldnn_rnn_layer_out_tttttttttttbllllbbbb
 
--- mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> CBool
---   -> Int64
---   -> Int64
---   -> Int64
---   -> CBool
---   -> CBool
---   -> CBool
---   -> ForeignPtr IntArray
---   -> CBool
---   -> ForeignPtr Tensor
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt = _cast30 Unmanaged.mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt
+mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CBool
+  -> Int64
+  -> Int64
+  -> Int64
+  -> CBool
+  -> CBool
+  -> CBool
+  -> ForeignPtr IntArray
+  -> CBool
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt = _cast30 Unmanaged.mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt
 
 miopen_batch_norm_out_ttttttttbdd
   :: ForeignPtr Tensor
@@ -2714,18 +2711,4 @@ miopen_batch_norm_backward_out_ttttttttttd
   -> CDouble
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor)))
 miopen_batch_norm_backward_out_ttttttttttd = _cast11 Unmanaged.miopen_batch_norm_backward_out_ttttttttttd
-
-miopen_convolution_out_ttttllllbb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> Int64
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr Tensor)
-miopen_convolution_out_ttttllllbb = _cast10 Unmanaged.miopen_convolution_out_ttttllllbb
 

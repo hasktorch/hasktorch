@@ -21,12 +21,6 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native9 as Unmanaged
 
 
-nll_loss_nd_tt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-nll_loss_nd_tt = _cast2 Unmanaged.nll_loss_nd_tt
-
 nll_loss_tttll
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor

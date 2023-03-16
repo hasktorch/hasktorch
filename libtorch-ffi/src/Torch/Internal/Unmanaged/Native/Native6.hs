@@ -28,6 +28,40 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+subtract_tss
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+subtract_tss _self _other _alpha =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::subtract(
+    *$(at::Tensor* _self)
+  , *$(at::Scalar* _other)
+  , *$(at::Scalar* _alpha)));
+  }|]
+
+subtract_ts
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+subtract_ts _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::subtract(
+    *$(at::Tensor* _self)
+  , *$(at::Scalar* _other)));
+  }|]
+
+rsub_tts
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+rsub_tts _self _other _alpha =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rsub(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _other)
+  , *$(at::Scalar* _alpha)));
+  }|]
+
 rsub_tt
   :: Ptr Tensor
   -> Ptr Tensor
@@ -2032,29 +2066,29 @@ _local_scalar_dense_t _self =
     *$(at::Tensor* _self)));
   }|]
 
--- _lstm_mps_tllbldbbb
---   :: Ptr Tensor
---   -> Ptr TensorList
---   -> Ptr TensorList
---   -> CBool
---   -> Int64
---   -> CDouble
---   -> CBool
---   -> CBool
---   -> CBool
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _lstm_mps_tllbldbbb _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_lstm_mps(
---     *$(at::Tensor* _input)
---   , *$(std::vector<at::Tensor>* _hx)
---   , *$(std::vector<at::Tensor>* _params)
---   , $(bool _has_biases)
---   , $(int64_t _num_layers)
---   , $(double _dropout)
---   , $(bool _train)
---   , $(bool _bidirectional)
---   , $(bool _batch_first)));
---   }|]
+_lstm_mps_tllbldbbb
+  :: Ptr Tensor
+  -> Ptr TensorList
+  -> Ptr TensorList
+  -> CBool
+  -> Int64
+  -> CDouble
+  -> CBool
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_lstm_mps_tllbldbbb _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_lstm_mps(
+    *$(at::Tensor* _input)
+  , *$(std::vector<at::Tensor>* _hx)
+  , *$(std::vector<at::Tensor>* _params)
+  , $(bool _has_biases)
+  , $(int64_t _num_layers)
+  , $(double _dropout)
+  , $(bool _train)
+  , $(bool _bidirectional)
+  , $(bool _batch_first)));
+  }|]
 
 lstm_mps_backward_tttttttllbldbbb
   :: Ptr Tensor
@@ -4130,49 +4164,5 @@ tril_indices_ll _row _col =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::tril_indices(
     $(int64_t _row)
   , $(int64_t _col)));
-  }|]
-
-triu_indices_lllo
-  :: Int64
-  -> Int64
-  -> Int64
-  -> Ptr TensorOptions
-  -> IO (Ptr Tensor)
-triu_indices_lllo _row _col _offset _options =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::triu_indices(
-    $(int64_t _row)
-  , $(int64_t _col)
-  , $(int64_t _offset)
-  , *$(at::TensorOptions* _options)));
-  }|]
-
-triu_indices_lll
-  :: Int64
-  -> Int64
-  -> Int64
-  -> IO (Ptr Tensor)
-triu_indices_lll _row _col _offset =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::triu_indices(
-    $(int64_t _row)
-  , $(int64_t _col)
-  , $(int64_t _offset)));
-  }|]
-
-triu_indices_ll
-  :: Int64
-  -> Int64
-  -> IO (Ptr Tensor)
-triu_indices_ll _row _col =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::triu_indices(
-    $(int64_t _row)
-  , $(int64_t _col)));
-  }|]
-
-trace_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-trace_t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::trace(
-    *$(at::Tensor* _self)));
   }|]
 

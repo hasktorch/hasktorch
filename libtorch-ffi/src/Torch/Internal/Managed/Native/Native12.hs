@@ -21,6 +21,27 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native12 as Unmanaged
 
 
+_linalg_svd_out_ttttbbs
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CBool
+  -> CBool
+  -> ForeignPtr StdString
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor)))
+_linalg_svd_out_ttttbbs = _cast7 Unmanaged._linalg_svd_out_ttttbbs
+
+_linalg_svd_out_ttttbb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor)))
+_linalg_svd_out_ttttbb = _cast6 Unmanaged._linalg_svd_out_ttttbb
+
 _linalg_svd_out_ttttb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1543,46 +1564,46 @@ _scaled_dot_product_attention_math_tttt
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 _scaled_dot_product_attention_math_tttt = _cast4 Unmanaged._scaled_dot_product_attention_math_tttt
 
-_scaled_dot_product_attention_math_ttt
+-- _scaled_dot_product_attention_math_ttt
+--   :: ForeignPtr Tensor
+--   -> ForeignPtr Tensor
+--   -> ForeignPtr Tensor
+--   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+-- _scaled_dot_product_attention_math_ttt = _cast3 Unmanaged._scaled_dot_product_attention_math_ttt
+
+_scaled_dot_product_flash_attention_tttdbb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-_scaled_dot_product_attention_math_ttt = _cast3 Unmanaged._scaled_dot_product_attention_math_ttt
+  -> CDouble
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
+_scaled_dot_product_flash_attention_tttdbb = _cast6 Unmanaged._scaled_dot_product_flash_attention_tttdbb
 
--- _scaled_dot_product_flash_attention_tttdbb
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> CDouble
---   -> CBool
---   -> CBool
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
--- _scaled_dot_product_flash_attention_tttdbb = _cast6 Unmanaged._scaled_dot_product_flash_attention_tttdbb
+_scaled_dot_product_flash_attention_tttdb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CDouble
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
+_scaled_dot_product_flash_attention_tttdb = _cast5 Unmanaged._scaled_dot_product_flash_attention_tttdb
 
--- _scaled_dot_product_flash_attention_tttdb
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> CDouble
---   -> CBool
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
--- _scaled_dot_product_flash_attention_tttdb = _cast5 Unmanaged._scaled_dot_product_flash_attention_tttdb
+_scaled_dot_product_flash_attention_tttd
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CDouble
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
+_scaled_dot_product_flash_attention_tttd = _cast4 Unmanaged._scaled_dot_product_flash_attention_tttd
 
--- _scaled_dot_product_flash_attention_tttd
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> CDouble
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
--- _scaled_dot_product_flash_attention_tttd = _cast4 Unmanaged._scaled_dot_product_flash_attention_tttd
-
--- _scaled_dot_product_flash_attention_ttt
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
--- _scaled_dot_product_flash_attention_ttt = _cast3 Unmanaged._scaled_dot_product_flash_attention_ttt
+_scaled_dot_product_flash_attention_ttt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
+_scaled_dot_product_flash_attention_ttt = _cast3 Unmanaged._scaled_dot_product_flash_attention_ttt
 
 _scaled_dot_product_flash_attention_backward_ttttttttlldbll
   :: ForeignPtr Tensor
@@ -2204,22 +2225,4 @@ special_chebyshev_polynomial_w_out_tts
   -> ForeignPtr Scalar
   -> IO (ForeignPtr Tensor)
 special_chebyshev_polynomial_w_out_tts = _cast3 Unmanaged.special_chebyshev_polynomial_w_out_tts
-
-special_hermite_polynomial_h_tt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-special_hermite_polynomial_h_tt = _cast2 Unmanaged.special_hermite_polynomial_h_tt
-
-special_hermite_polynomial_h_st
-  :: ForeignPtr Scalar
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-special_hermite_polynomial_h_st = _cast2 Unmanaged.special_hermite_polynomial_h_st
-
-special_hermite_polynomial_h_ts
-  :: ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-special_hermite_polynomial_h_ts = _cast2 Unmanaged.special_hermite_polynomial_h_ts
 

@@ -21,6 +21,12 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native4 as Unmanaged
 
 
+rand_lN
+  :: ForeignPtr IntArray
+  -> ForeignPtr DimnameList
+  -> IO (ForeignPtr Tensor)
+rand_lN = _cast2 Unmanaged.rand_lN
+
 rand_lGNo
   :: ForeignPtr IntArray
   -> ForeignPtr Generator
@@ -1880,17 +1886,4 @@ std_tlbb
   -> CBool
   -> IO (ForeignPtr Tensor)
 std_tlbb = _cast4 Unmanaged.std_tlbb
-
-std_tlb
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> CBool
-  -> IO (ForeignPtr Tensor)
-std_tlb = _cast3 Unmanaged.std_tlb
-
-std_tl
-  :: ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-std_tl = _cast2 Unmanaged.std_tl
 

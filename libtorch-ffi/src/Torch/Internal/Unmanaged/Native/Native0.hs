@@ -3162,43 +3162,43 @@ _sparse_broadcast_to_tl _self _size =
   }|]
 
 cat_ll
-  :: Ptr ITensorListRef
+  :: Ptr TensorList
   -> Int64
   -> IO (Ptr Tensor)
 cat_ll _tensors _dim =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::cat(
-    *$(at::ITensorListRef* _tensors)
+    *$(std::vector<at::Tensor>* _tensors)
   , $(int64_t _dim)));
   }|]
 
 cat_l
-  :: Ptr ITensorListRef
+  :: Ptr TensorList
   -> IO (Ptr Tensor)
 cat_l _tensors =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::cat(
-    *$(at::ITensorListRef* _tensors)));
+    *$(std::vector<at::Tensor>* _tensors)));
   }|]
 
 cat_out_tll
   :: Ptr Tensor
-  -> Ptr ITensorListRef
+  -> Ptr TensorList
   -> Int64
   -> IO (Ptr Tensor)
 cat_out_tll _out _tensors _dim =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::cat_out(
     *$(at::Tensor* _out)
-  , *$(at::ITensorListRef* _tensors)
+  , *$(std::vector<at::Tensor>* _tensors)
   , $(int64_t _dim)));
   }|]
 
 cat_out_tl
   :: Ptr Tensor
-  -> Ptr ITensorListRef
+  -> Ptr TensorList
   -> IO (Ptr Tensor)
 cat_out_tl _out _tensors =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::cat_out(
     *$(at::Tensor* _out)
-  , *$(at::ITensorListRef* _tensors)));
+  , *$(std::vector<at::Tensor>* _tensors)));
   }|]
 
 cat_ln
@@ -3345,13 +3345,5 @@ concatenate_out_tln _out _tensors _dim =
     *$(at::Tensor* _out)
   , *$(std::vector<at::Tensor>* _tensors)
   , *$(at::Dimname* _dim)));
-  }|]
-
-block_diag_l
-  :: Ptr TensorList
-  -> IO (Ptr Tensor)
-block_diag_l _tensors =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::block_diag(
-    *$(std::vector<at::Tensor>* _tensors)));
   }|]
 

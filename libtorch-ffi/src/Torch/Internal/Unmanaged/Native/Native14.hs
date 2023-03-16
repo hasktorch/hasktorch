@@ -28,6 +28,32 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+miopen_convolution_out_ttttllllbb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Ptr IntArray
+  -> Int64
+  -> CBool
+  -> CBool
+  -> IO (Ptr Tensor)
+miopen_convolution_out_ttttllllbb _out _self _weight _bias _padding _stride _dilation _groups _benchmark _deterministic =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::miopen_convolution_out(
+    *$(at::Tensor* _out)
+  , *$(at::Tensor* _self)
+  , *$(at::Tensor* _weight)
+  , *$(at::Tensor* _bias)
+  , *$(std::vector<int64_t>* _padding)
+  , *$(std::vector<int64_t>* _stride)
+  , *$(std::vector<int64_t>* _dilation)
+  , $(int64_t _groups)
+  , $(bool _benchmark)
+  , $(bool _deterministic)));
+  }|]
+
 miopen_convolution_transpose_out_ttttlllllbb
   :: Ptr Tensor
   -> Ptr Tensor
@@ -224,32 +250,6 @@ _native_batch_norm_legit_functional_tttttbdd _input _weight _bias _running_mean 
   , *$(at::Tensor* _running_mean)
   , *$(at::Tensor* _running_var)
   , $(bool _training)
-  , $(double _momentum)
-  , $(double _eps)));
-  }|]
-
-_native_batch_norm_legit_no_training_out_ttttttttdd
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> CDouble
-  -> CDouble
-  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
-_native_batch_norm_legit_no_training_out_ttttttttdd _out0 _out1 _out2 _input _weight _bias _running_mean _running_var _momentum _eps =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_native_batch_norm_legit_no_training_out(
-    *$(at::Tensor* _out0)
-  , *$(at::Tensor* _out1)
-  , *$(at::Tensor* _out2)
-  , *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)
-  , *$(at::Tensor* _running_mean)
-  , *$(at::Tensor* _running_var)
   , $(double _momentum)
   , $(double _eps)));
   }|]
@@ -1174,38 +1174,38 @@ sum_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
-std_mean_out_tttlsb
+std_mean_out_tttllb
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntArray
-  -> Ptr Scalar
+  -> Int64
   -> CBool
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-std_mean_out_tttlsb _out0 _out1 _self _dim _correction _keepdim =
+std_mean_out_tttllb _out0 _out1 _self _dim _correction _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::std_mean_out(
     *$(at::Tensor* _out0)
   , *$(at::Tensor* _out1)
   , *$(at::Tensor* _self)
   , *$(std::vector<int64_t>* _dim)
-  , *$(at::Scalar* _correction)
+  , $(int64_t _correction)
   , $(bool _keepdim)));
   }|]
 
-std_mean_out_tttls
+std_mean_out_tttll
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntArray
-  -> Ptr Scalar
+  -> Int64
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-std_mean_out_tttls _out0 _out1 _self _dim _correction =
+std_mean_out_tttll _out0 _out1 _self _dim _correction =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::std_mean_out(
     *$(at::Tensor* _out0)
   , *$(at::Tensor* _out1)
   , *$(at::Tensor* _self)
   , *$(std::vector<int64_t>* _dim)
-  , *$(at::Scalar* _correction)));
+  , $(int64_t _correction)));
   }|]
 
 std_mean_out_tttl
@@ -1828,38 +1828,38 @@ _unsafe_view_out_ttl _out _self _size =
   , *$(std::vector<int64_t>* _size)));
   }|]
 
-var_mean_out_tttlsb
+var_mean_out_tttllb
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntArray
-  -> Ptr Scalar
+  -> Int64
   -> CBool
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-var_mean_out_tttlsb _out0 _out1 _self _dim _correction _keepdim =
+var_mean_out_tttllb _out0 _out1 _self _dim _correction _keepdim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::var_mean_out(
     *$(at::Tensor* _out0)
   , *$(at::Tensor* _out1)
   , *$(at::Tensor* _self)
   , *$(std::vector<int64_t>* _dim)
-  , *$(at::Scalar* _correction)
+  , $(int64_t _correction)
   , $(bool _keepdim)));
   }|]
 
-var_mean_out_tttls
+var_mean_out_tttll
   :: Ptr Tensor
   -> Ptr Tensor
   -> Ptr Tensor
   -> Ptr IntArray
-  -> Ptr Scalar
+  -> Int64
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-var_mean_out_tttls _out0 _out1 _self _dim _correction =
+var_mean_out_tttll _out0 _out1 _self _dim _correction =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::var_mean_out(
     *$(at::Tensor* _out0)
   , *$(at::Tensor* _out1)
   , *$(at::Tensor* _self)
   , *$(std::vector<int64_t>* _dim)
-  , *$(at::Scalar* _correction)));
+  , $(int64_t _correction)));
   }|]
 
 var_mean_out_tttl
@@ -3576,95 +3576,95 @@ _fused_moving_avg_obs_fq_helper_out_tttttttttdlll _out0 _out1 _self _observer_on
   , $(int64_t _ch_axis)));
   }|]
 
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> CDouble
---   -> Int64
---   -> Int64
---   -> Int64
---   -> CBool
---   -> CBool
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb _self _observer_on _fake_quant_on _running_min _running_max _scale _zero_point _averaging_const _quant_min _quant_max _ch_axis _per_row_fake_quant _symmetric_quant =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_fused_moving_avg_obs_fq_helper_functional(
---     *$(at::Tensor* _self)
---   , *$(at::Tensor* _observer_on)
---   , *$(at::Tensor* _fake_quant_on)
---   , *$(at::Tensor* _running_min)
---   , *$(at::Tensor* _running_max)
---   , *$(at::Tensor* _scale)
---   , *$(at::Tensor* _zero_point)
---   , $(double _averaging_const)
---   , $(int64_t _quant_min)
---   , $(int64_t _quant_max)
---   , $(int64_t _ch_axis)
---   , $(bool _per_row_fake_quant)
---   , $(bool _symmetric_quant)));
---   }|]
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> Int64
+  -> Int64
+  -> Int64
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb _self _observer_on _fake_quant_on _running_min _running_max _scale _zero_point _averaging_const _quant_min _quant_max _ch_axis _per_row_fake_quant _symmetric_quant =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_fused_moving_avg_obs_fq_helper_functional(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _observer_on)
+  , *$(at::Tensor* _fake_quant_on)
+  , *$(at::Tensor* _running_min)
+  , *$(at::Tensor* _running_max)
+  , *$(at::Tensor* _scale)
+  , *$(at::Tensor* _zero_point)
+  , $(double _averaging_const)
+  , $(int64_t _quant_min)
+  , $(int64_t _quant_max)
+  , $(int64_t _ch_axis)
+  , $(bool _per_row_fake_quant)
+  , $(bool _symmetric_quant)));
+  }|]
 
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlllb
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> CDouble
---   -> Int64
---   -> Int64
---   -> Int64
---   -> CBool
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlllb _self _observer_on _fake_quant_on _running_min _running_max _scale _zero_point _averaging_const _quant_min _quant_max _ch_axis _per_row_fake_quant =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_fused_moving_avg_obs_fq_helper_functional(
---     *$(at::Tensor* _self)
---   , *$(at::Tensor* _observer_on)
---   , *$(at::Tensor* _fake_quant_on)
---   , *$(at::Tensor* _running_min)
---   , *$(at::Tensor* _running_max)
---   , *$(at::Tensor* _scale)
---   , *$(at::Tensor* _zero_point)
---   , $(double _averaging_const)
---   , $(int64_t _quant_min)
---   , $(int64_t _quant_max)
---   , $(int64_t _ch_axis)
---   , $(bool _per_row_fake_quant)));
---   }|]
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlllb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> Int64
+  -> Int64
+  -> Int64
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlllb _self _observer_on _fake_quant_on _running_min _running_max _scale _zero_point _averaging_const _quant_min _quant_max _ch_axis _per_row_fake_quant =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_fused_moving_avg_obs_fq_helper_functional(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _observer_on)
+  , *$(at::Tensor* _fake_quant_on)
+  , *$(at::Tensor* _running_min)
+  , *$(at::Tensor* _running_max)
+  , *$(at::Tensor* _scale)
+  , *$(at::Tensor* _zero_point)
+  , $(double _averaging_const)
+  , $(int64_t _quant_min)
+  , $(int64_t _quant_max)
+  , $(int64_t _ch_axis)
+  , $(bool _per_row_fake_quant)));
+  }|]
 
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlll
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> CDouble
---   -> Int64
---   -> Int64
---   -> Int64
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlll _self _observer_on _fake_quant_on _running_min _running_max _scale _zero_point _averaging_const _quant_min _quant_max _ch_axis =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_fused_moving_avg_obs_fq_helper_functional(
---     *$(at::Tensor* _self)
---   , *$(at::Tensor* _observer_on)
---   , *$(at::Tensor* _fake_quant_on)
---   , *$(at::Tensor* _running_min)
---   , *$(at::Tensor* _running_max)
---   , *$(at::Tensor* _scale)
---   , *$(at::Tensor* _zero_point)
---   , $(double _averaging_const)
---   , $(int64_t _quant_min)
---   , $(int64_t _quant_max)
---   , $(int64_t _ch_axis)));
---   }|]
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlll
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> Int64
+  -> Int64
+  -> Int64
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlll _self _observer_on _fake_quant_on _running_min _running_max _scale _zero_point _averaging_const _quant_min _quant_max _ch_axis =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_fused_moving_avg_obs_fq_helper_functional(
+    *$(at::Tensor* _self)
+  , *$(at::Tensor* _observer_on)
+  , *$(at::Tensor* _fake_quant_on)
+  , *$(at::Tensor* _running_min)
+  , *$(at::Tensor* _running_max)
+  , *$(at::Tensor* _scale)
+  , *$(at::Tensor* _zero_point)
+  , $(double _averaging_const)
+  , $(int64_t _quant_min)
+  , $(int64_t _quant_max)
+  , $(int64_t _ch_axis)));
+  }|]
 
 _to_copy_out_ttbM
   :: Ptr Tensor
@@ -3702,41 +3702,41 @@ _to_copy_out_tt _out _self =
   , *$(at::Tensor* _self)));
   }|]
 
--- _lstm_mps_out_tttttttllbldbbb
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr TensorList
---   -> Ptr TensorList
---   -> CBool
---   -> Int64
---   -> CDouble
---   -> CBool
---   -> CBool
---   -> CBool
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _lstm_mps_out_tttttttllbldbbb _out0 _out1 _out2 _out3 _out4 _out5 _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_lstm_mps_out(
---     *$(at::Tensor* _out0)
---   , *$(at::Tensor* _out1)
---   , *$(at::Tensor* _out2)
---   , *$(at::Tensor* _out3)
---   , *$(at::Tensor* _out4)
---   , *$(at::Tensor* _out5)
---   , *$(at::Tensor* _input)
---   , *$(std::vector<at::Tensor>* _hx)
---   , *$(std::vector<at::Tensor>* _params)
---   , $(bool _has_biases)
---   , $(int64_t _num_layers)
---   , $(double _dropout)
---   , $(bool _train)
---   , $(bool _bidirectional)
---   , $(bool _batch_first)));
---   }|]
+_lstm_mps_out_tttttttllbldbbb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr TensorList
+  -> Ptr TensorList
+  -> CBool
+  -> Int64
+  -> CDouble
+  -> CBool
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_lstm_mps_out_tttttttllbldbbb _out0 _out1 _out2 _out3 _out4 _out5 _input _hx _params _has_biases _num_layers _dropout _train _bidirectional _batch_first =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::_lstm_mps_out(
+    *$(at::Tensor* _out0)
+  , *$(at::Tensor* _out1)
+  , *$(at::Tensor* _out2)
+  , *$(at::Tensor* _out3)
+  , *$(at::Tensor* _out4)
+  , *$(at::Tensor* _out5)
+  , *$(at::Tensor* _input)
+  , *$(std::vector<at::Tensor>* _hx)
+  , *$(std::vector<at::Tensor>* _params)
+  , $(bool _has_biases)
+  , $(int64_t _num_layers)
+  , $(double _dropout)
+  , $(bool _train)
+  , $(bool _bidirectional)
+  , $(bool _batch_first)));
+  }|]
 
 lstm_mps_backward_out_tlltttttttllbldbbb
   :: Ptr Tensor
@@ -4428,17 +4428,5 @@ random_tllG _self _from _to _generator =
   , $(int64_t _from)
   , $(int64_t _to)
   , *$(at::Generator* _generator)));
-  }|]
-
-random_tll
-  :: Ptr Tensor
-  -> Int64
-  -> Int64
-  -> IO (Ptr Tensor)
-random_tll _self _from _to =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::random(
-    *$(at::Tensor* _self)
-  , $(int64_t _from)
-  , $(int64_t _to)));
   }|]
 

@@ -28,6 +28,36 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+special_hermite_polynomial_h_tt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+special_hermite_polynomial_h_tt _x _n =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::special_hermite_polynomial_h(
+    *$(at::Tensor* _x)
+  , *$(at::Tensor* _n)));
+  }|]
+
+special_hermite_polynomial_h_st
+  :: Ptr Scalar
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+special_hermite_polynomial_h_st _x _n =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::special_hermite_polynomial_h(
+    *$(at::Scalar* _x)
+  , *$(at::Tensor* _n)));
+  }|]
+
+special_hermite_polynomial_h_ts
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+special_hermite_polynomial_h_ts _x _n =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::special_hermite_polynomial_h(
+    *$(at::Tensor* _x)
+  , *$(at::Scalar* _n)));
+  }|]
+
 special_hermite_polynomial_h_out_ttt
   :: Ptr Tensor
   -> Ptr Tensor
@@ -898,30 +928,6 @@ _fused_adamw__lllllldddddbb _self _grads _exp_avgs _exp_avg_sqs _max_exp_avg_sqs
   , $(double _eps)
   , $(bool _amsgrad)
   , $(bool _maximize)));
-  }|]
-
-all_reduce_tssll
-  :: Ptr Tensor
-  -> Ptr StdString
-  -> Ptr StdString
-  -> Ptr IntArray
-  -> Int64
-  -> IO (Ptr Tensor)
-all_reduce_tssll _self _reduceOp _tag _ranks _group_size =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::all_reduce(
-    *$(at::Tensor* _self)
-  , *$(std::string* _reduceOp)
-  , *$(std::string* _tag)
-  , *$(std::vector<int64_t>* _ranks)
-  , $(int64_t _group_size)));
-  }|]
-
-wait_tensor_t
-  :: Ptr Tensor
-  -> IO (Ptr Tensor)
-wait_tensor_t _self =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::wait_tensor(
-    *$(at::Tensor* _self)));
   }|]
 
 _new_zeros_with_same_feature_meta_out_tttl
@@ -2958,18 +2964,6 @@ empty_out_tlN _out _size _names =
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
-empty_permuted_out_tll
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-empty_permuted_out_tll _out _size _physical_layout =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::empty_permuted_out(
-    *$(at::Tensor* _out)
-  , *$(std::vector<int64_t>* _size)
-  , *$(std::vector<int64_t>* _physical_layout)));
-  }|]
-
 new_empty_out_ttl
   :: Ptr Tensor
   -> Ptr Tensor
@@ -4712,71 +4706,71 @@ mkldnn_rnn_layer_out_tttttttttttbllllbbbb _out0 _out1 _out2 _out3 _input _weight
   , $(bool _train)));
   }|]
 
--- mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> CBool
---   -> Int64
---   -> Int64
---   -> Int64
---   -> CBool
---   -> CBool
---   -> CBool
---   -> Ptr IntArray
---   -> CBool
---   -> Ptr Tensor
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt _out0 _out1 _out2 _out3 _out4 _out5 _out6 _input _weight1 _weight2 _weight3 _weight4 _hx_ _cx_tmp _output _hy_ _cy_ _grad_output _grad_hy _grad_cy _reverse _mode _hidden_size _num_layers _has_biases _train _bidirectional _batch_sizes _batch_first _workspace =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::mkldnn_rnn_layer_backward_out(
---     *$(at::Tensor* _out0)
---   , *$(at::Tensor* _out1)
---   , *$(at::Tensor* _out2)
---   , *$(at::Tensor* _out3)
---   , *$(at::Tensor* _out4)
---   , *$(at::Tensor* _out5)
---   , *$(at::Tensor* _out6)
---   , *$(at::Tensor* _input)
---   , *$(at::Tensor* _weight1)
---   , *$(at::Tensor* _weight2)
---   , *$(at::Tensor* _weight3)
---   , *$(at::Tensor* _weight4)
---   , *$(at::Tensor* _hx_)
---   , *$(at::Tensor* _cx_tmp)
---   , *$(at::Tensor* _output)
---   , *$(at::Tensor* _hy_)
---   , *$(at::Tensor* _cy_)
---   , *$(at::Tensor* _grad_output)
---   , *$(at::Tensor* _grad_hy)
---   , *$(at::Tensor* _grad_cy)
---   , $(bool _reverse)
---   , $(int64_t _mode)
---   , $(int64_t _hidden_size)
---   , $(int64_t _num_layers)
---   , $(bool _has_biases)
---   , $(bool _train)
---   , $(bool _bidirectional)
---   , *$(std::vector<int64_t>* _batch_sizes)
---   , $(bool _batch_first)
---   , *$(at::Tensor* _workspace)));
---   }|]
+mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> Int64
+  -> Int64
+  -> Int64
+  -> CBool
+  -> CBool
+  -> CBool
+  -> Ptr IntArray
+  -> CBool
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+mkldnn_rnn_layer_backward_out_ttttttttttttttttttttblllbbblbt _out0 _out1 _out2 _out3 _out4 _out5 _out6 _input _weight1 _weight2 _weight3 _weight4 _hx_ _cx_tmp _output _hy_ _cy_ _grad_output _grad_hy _grad_cy _reverse _mode _hidden_size _num_layers _has_biases _train _bidirectional _batch_sizes _batch_first _workspace =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::mkldnn_rnn_layer_backward_out(
+    *$(at::Tensor* _out0)
+  , *$(at::Tensor* _out1)
+  , *$(at::Tensor* _out2)
+  , *$(at::Tensor* _out3)
+  , *$(at::Tensor* _out4)
+  , *$(at::Tensor* _out5)
+  , *$(at::Tensor* _out6)
+  , *$(at::Tensor* _input)
+  , *$(at::Tensor* _weight1)
+  , *$(at::Tensor* _weight2)
+  , *$(at::Tensor* _weight3)
+  , *$(at::Tensor* _weight4)
+  , *$(at::Tensor* _hx_)
+  , *$(at::Tensor* _cx_tmp)
+  , *$(at::Tensor* _output)
+  , *$(at::Tensor* _hy_)
+  , *$(at::Tensor* _cy_)
+  , *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _grad_hy)
+  , *$(at::Tensor* _grad_cy)
+  , $(bool _reverse)
+  , $(int64_t _mode)
+  , $(int64_t _hidden_size)
+  , $(int64_t _num_layers)
+  , $(bool _has_biases)
+  , $(bool _train)
+  , $(bool _bidirectional)
+  , *$(std::vector<int64_t>* _batch_sizes)
+  , $(bool _batch_first)
+  , *$(at::Tensor* _workspace)));
+  }|]
 
 miopen_batch_norm_out_ttttttttbdd
   :: Ptr Tensor
@@ -4832,31 +4826,5 @@ miopen_batch_norm_backward_out_ttttttttttd _out0 _out1 _out2 _input _grad_output
   , *$(at::Tensor* _save_mean)
   , *$(at::Tensor* _save_var)
   , $(double _epsilon)));
-  }|]
-
-miopen_convolution_out_ttttllllbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Ptr IntArray
-  -> Int64
-  -> CBool
-  -> CBool
-  -> IO (Ptr Tensor)
-miopen_convolution_out_ttttllllbb _out _self _weight _bias _padding _stride _dilation _groups _benchmark _deterministic =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::miopen_convolution_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)
-  , *$(std::vector<int64_t>* _padding)
-  , *$(std::vector<int64_t>* _stride)
-  , *$(std::vector<int64_t>* _dilation)
-  , $(int64_t _groups)
-  , $(bool _benchmark)
-  , $(bool _deterministic)));
   }|]
 

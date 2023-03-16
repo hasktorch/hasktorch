@@ -21,6 +21,12 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native3 as Unmanaged
 
 
+xlogy_ts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+xlogy_ts = _cast2 Unmanaged.xlogy_ts
+
 xlogy__tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1418,32 +1424,32 @@ mkldnn_rnn_layer_tttttttbllllbbbb
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor)))
 mkldnn_rnn_layer_tttttttbllllbbbb = _cast16 Unmanaged.mkldnn_rnn_layer_tttttttbllllbbbb
 
--- mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> CBool
---   -> Int64
---   -> Int64
---   -> Int64
---   -> CBool
---   -> CBool
---   -> CBool
---   -> ForeignPtr IntArray
---   -> CBool
---   -> ForeignPtr Tensor
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt = _cast23 Unmanaged.mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt
+mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CBool
+  -> Int64
+  -> Int64
+  -> Int64
+  -> CBool
+  -> CBool
+  -> CBool
+  -> ForeignPtr IntArray
+  -> CBool
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt = _cast23 Unmanaged.mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt
 
 miopen_batch_norm_tttttbdd
   :: ForeignPtr Tensor
@@ -1815,17 +1821,6 @@ _native_batch_norm_legit_tttttbdd
   -> CDouble
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor)))
 _native_batch_norm_legit_tttttbdd = _cast8 Unmanaged._native_batch_norm_legit_tttttbdd
-
-_native_batch_norm_legit_no_training_tttttdd
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CDouble
-  -> CDouble
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor)))
-_native_batch_norm_legit_no_training_tttttdd = _cast7 Unmanaged._native_batch_norm_legit_no_training_tttttdd
 
 _native_batch_norm_legit_out_ttttttttbdd
   :: ForeignPtr Tensor
@@ -2290,10 +2285,4 @@ rand_lNo
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 rand_lNo = _cast3 Unmanaged.rand_lNo
-
-rand_lN
-  :: ForeignPtr IntArray
-  -> ForeignPtr DimnameList
-  -> IO (ForeignPtr Tensor)
-rand_lN = _cast2 Unmanaged.rand_lN
 

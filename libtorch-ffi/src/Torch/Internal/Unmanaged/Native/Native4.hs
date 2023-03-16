@@ -28,6 +28,16 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+rand_lN
+  :: Ptr IntArray
+  -> Ptr DimnameList
+  -> IO (Ptr Tensor)
+rand_lN _size _names =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rand(
+    *$(std::vector<int64_t>* _size)
+  , *$(std::vector<at::Dimname>* _names)));
+  }|]
+
 rand_lGNo
   :: Ptr IntArray
   -> Ptr Generator
@@ -3196,27 +3206,5 @@ std_tlbb _self _dim _unbiased _keepdim =
   , *$(std::vector<int64_t>* _dim)
   , $(bool _unbiased)
   , $(bool _keepdim)));
-  }|]
-
-std_tlb
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> CBool
-  -> IO (Ptr Tensor)
-std_tlb _self _dim _unbiased =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::std(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _dim)
-  , $(bool _unbiased)));
-  }|]
-
-std_tl
-  :: Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-std_tl _self _dim =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::std(
-    *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _dim)));
   }|]
 

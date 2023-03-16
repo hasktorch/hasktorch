@@ -21,6 +21,47 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native8 as Unmanaged
 
 
+nanquantile_out_ttdlb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CDouble
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+nanquantile_out_ttdlb = _cast5 Unmanaged.nanquantile_out_ttdlb
+
+nanquantile_out_ttdl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CDouble
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+nanquantile_out_ttdl = _cast4 Unmanaged.nanquantile_out_ttdl
+
+nanquantile_out_ttd
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CDouble
+  -> IO (ForeignPtr Tensor)
+nanquantile_out_ttd = _cast3 Unmanaged.nanquantile_out_ttd
+
+sort_out_tttlb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+sort_out_tttlb = _cast5 Unmanaged.sort_out_tttlb
+
+sort_out_tttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
+sort_out_tttl = _cast4 Unmanaged.sort_out_tttl
+
 sort_out_ttt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1360,48 +1401,6 @@ _foreach_lerp__lls
   -> IO (())
 _foreach_lerp__lls = _cast3 Unmanaged._foreach_lerp__lls
 
-_foreach_pow_ll
-  :: ForeignPtr TensorList
-  -> ForeignPtr TensorList
-  -> IO (ForeignPtr TensorList)
-_foreach_pow_ll = _cast2 Unmanaged._foreach_pow_ll
-
-_foreach_pow_ls
-  :: ForeignPtr TensorList
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr TensorList)
-_foreach_pow_ls = _cast2 Unmanaged._foreach_pow_ls
-
-_foreach_pow_lA
-  :: ForeignPtr TensorList
-  -> ForeignPtr (StdVector Scalar)
-  -> IO (ForeignPtr TensorList)
-_foreach_pow_lA = _cast2 Unmanaged._foreach_pow_lA
-
-_foreach_pow_sl
-  :: ForeignPtr Scalar
-  -> ForeignPtr TensorList
-  -> IO (ForeignPtr TensorList)
-_foreach_pow_sl = _cast2 Unmanaged._foreach_pow_sl
-
-_foreach_pow__ll
-  :: ForeignPtr TensorList
-  -> ForeignPtr TensorList
-  -> IO (())
-_foreach_pow__ll = _cast2 Unmanaged._foreach_pow__ll
-
-_foreach_pow__ls
-  :: ForeignPtr TensorList
-  -> ForeignPtr Scalar
-  -> IO (())
-_foreach_pow__ls = _cast2 Unmanaged._foreach_pow__ls
-
-_foreach_pow__lA
-  :: ForeignPtr TensorList
-  -> ForeignPtr (StdVector Scalar)
-  -> IO (())
-_foreach_pow__lA = _cast2 Unmanaged._foreach_pow__lA
-
 bucketize_ttbb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1992,4 +1991,10 @@ nll_loss_nd_ttt
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 nll_loss_nd_ttt = _cast3 Unmanaged.nll_loss_nd_ttt
+
+nll_loss_nd_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+nll_loss_nd_tt = _cast2 Unmanaged.nll_loss_nd_tt
 

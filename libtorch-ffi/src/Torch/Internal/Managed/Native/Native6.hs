@@ -21,6 +21,26 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native6 as Unmanaged
 
 
+subtract_tss
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+subtract_tss = _cast3 Unmanaged.subtract_tss
+
+subtract_ts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+subtract_ts = _cast2 Unmanaged.subtract_ts
+
+rsub_tts
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Scalar
+  -> IO (ForeignPtr Tensor)
+rsub_tts = _cast3 Unmanaged.rsub_tts
+
 rsub_tt
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1168,18 +1188,18 @@ _local_scalar_dense_t
   -> IO (ForeignPtr Scalar)
 _local_scalar_dense_t = _cast1 Unmanaged._local_scalar_dense_t
 
--- _lstm_mps_tllbldbbb
---   :: ForeignPtr Tensor
---   -> ForeignPtr TensorList
---   -> ForeignPtr TensorList
---   -> CBool
---   -> Int64
---   -> CDouble
---   -> CBool
---   -> CBool
---   -> CBool
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _lstm_mps_tllbldbbb = _cast9 Unmanaged._lstm_mps_tllbldbbb
+_lstm_mps_tllbldbbb
+  :: ForeignPtr Tensor
+  -> ForeignPtr TensorList
+  -> ForeignPtr TensorList
+  -> CBool
+  -> Int64
+  -> CDouble
+  -> CBool
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_lstm_mps_tllbldbbb = _cast9 Unmanaged._lstm_mps_tllbldbbb
 
 lstm_mps_backward_tttttttllbldbbb
   :: ForeignPtr Tensor
@@ -2361,30 +2381,4 @@ tril_indices_ll
   -> Int64
   -> IO (ForeignPtr Tensor)
 tril_indices_ll = _cast2 Unmanaged.tril_indices_ll
-
-triu_indices_lllo
-  :: Int64
-  -> Int64
-  -> Int64
-  -> ForeignPtr TensorOptions
-  -> IO (ForeignPtr Tensor)
-triu_indices_lllo = _cast4 Unmanaged.triu_indices_lllo
-
-triu_indices_lll
-  :: Int64
-  -> Int64
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-triu_indices_lll = _cast3 Unmanaged.triu_indices_lll
-
-triu_indices_ll
-  :: Int64
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-triu_indices_ll = _cast2 Unmanaged.triu_indices_ll
-
-trace_t
-  :: ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-trace_t = _cast1 Unmanaged.trace_t
 

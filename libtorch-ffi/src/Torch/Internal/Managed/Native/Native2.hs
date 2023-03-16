@@ -21,6 +21,19 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native2 as Unmanaged
 
 
+embedding_ttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+embedding_ttl = _cast3 Unmanaged.embedding_ttl
+
+embedding_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+embedding_tt = _cast2 Unmanaged.embedding_tt
+
 embedding_backward_ttllbb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -429,19 +442,6 @@ empty_l
   :: ForeignPtr IntArray
   -> IO (ForeignPtr Tensor)
 empty_l = _cast1 Unmanaged.empty_l
-
-empty_permuted_llo
-  :: ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> ForeignPtr TensorOptions
-  -> IO (ForeignPtr Tensor)
-empty_permuted_llo = _cast3 Unmanaged.empty_permuted_llo
-
-empty_permuted_ll
-  :: ForeignPtr IntArray
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-empty_permuted_ll = _cast2 Unmanaged.empty_permuted_ll
 
 _empty_affine_quantized_lodlM
   :: ForeignPtr IntArray
@@ -2164,10 +2164,4 @@ xlogy_st
   -> ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
 xlogy_st = _cast2 Unmanaged.xlogy_st
-
-xlogy_ts
-  :: ForeignPtr Tensor
-  -> ForeignPtr Scalar
-  -> IO (ForeignPtr Tensor)
-xlogy_ts = _cast2 Unmanaged.xlogy_ts
 

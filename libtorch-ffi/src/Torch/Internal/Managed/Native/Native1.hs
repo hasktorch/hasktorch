@@ -21,6 +21,11 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native1 as Unmanaged
 
 
+block_diag_l
+  :: ForeignPtr TensorList
+  -> IO (ForeignPtr Tensor)
+block_diag_l = _cast1 Unmanaged.block_diag_l
+
 ceil_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr Tensor)
@@ -2045,17 +2050,4 @@ embedding_ttlb
   -> CBool
   -> IO (ForeignPtr Tensor)
 embedding_ttlb = _cast4 Unmanaged.embedding_ttlb
-
-embedding_ttl
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-embedding_ttl = _cast3 Unmanaged.embedding_ttl
-
-embedding_tt
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> IO (ForeignPtr Tensor)
-embedding_tt = _cast2 Unmanaged.embedding_tt
 

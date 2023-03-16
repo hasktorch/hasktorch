@@ -21,6 +21,20 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native14 as Unmanaged
 
 
+miopen_convolution_out_ttttllllbb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> ForeignPtr IntArray
+  -> Int64
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+miopen_convolution_out_ttttllllbb = _cast10 Unmanaged.miopen_convolution_out_ttttllllbb
+
 miopen_convolution_transpose_out_ttttlllllbb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -127,20 +141,6 @@ _native_batch_norm_legit_functional_tttttbdd
   -> CDouble
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor)))
 _native_batch_norm_legit_functional_tttttbdd = _cast8 Unmanaged._native_batch_norm_legit_functional_tttttbdd
-
-_native_batch_norm_legit_no_training_out_ttttttttdd
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CDouble
-  -> CDouble
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor)))
-_native_batch_norm_legit_no_training_out_ttttttttdd = _cast10 Unmanaged._native_batch_norm_legit_no_training_out_ttttttttdd
 
 batch_norm_stats_out_tttd
   :: ForeignPtr Tensor
@@ -665,24 +665,24 @@ sum_out_tt
   -> IO (ForeignPtr Tensor)
 sum_out_tt = _cast2 Unmanaged.sum_out_tt
 
-std_mean_out_tttlsb
+std_mean_out_tttllb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr IntArray
-  -> ForeignPtr Scalar
+  -> Int64
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-std_mean_out_tttlsb = _cast6 Unmanaged.std_mean_out_tttlsb
+std_mean_out_tttllb = _cast6 Unmanaged.std_mean_out_tttllb
 
-std_mean_out_tttls
+std_mean_out_tttll
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr IntArray
-  -> ForeignPtr Scalar
+  -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-std_mean_out_tttls = _cast5 Unmanaged.std_mean_out_tttls
+std_mean_out_tttll = _cast5 Unmanaged.std_mean_out_tttll
 
 std_mean_out_tttl
   :: ForeignPtr Tensor
@@ -1035,24 +1035,24 @@ _unsafe_view_out_ttl
   -> IO (ForeignPtr Tensor)
 _unsafe_view_out_ttl = _cast3 Unmanaged._unsafe_view_out_ttl
 
-var_mean_out_tttlsb
+var_mean_out_tttllb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr IntArray
-  -> ForeignPtr Scalar
+  -> Int64
   -> CBool
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-var_mean_out_tttlsb = _cast6 Unmanaged.var_mean_out_tttlsb
+var_mean_out_tttllb = _cast6 Unmanaged.var_mean_out_tttllb
 
-var_mean_out_tttls
+var_mean_out_tttll
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr Tensor
   -> ForeignPtr IntArray
-  -> ForeignPtr Scalar
+  -> Int64
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
-var_mean_out_tttls = _cast5 Unmanaged.var_mean_out_tttls
+var_mean_out_tttll = _cast5 Unmanaged.var_mean_out_tttll
 
 var_mean_out_tttl
   :: ForeignPtr Tensor
@@ -2034,53 +2034,53 @@ _fused_moving_avg_obs_fq_helper_out_tttttttttdlll
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 _fused_moving_avg_obs_fq_helper_out_tttttttttdlll = _cast13 Unmanaged._fused_moving_avg_obs_fq_helper_out_tttttttttdlll
 
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> CDouble
---   -> Int64
---   -> Int64
---   -> Int64
---   -> CBool
---   -> CBool
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb = _cast13 Unmanaged._fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CDouble
+  -> Int64
+  -> Int64
+  -> Int64
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb = _cast13 Unmanaged._fused_moving_avg_obs_fq_helper_functional_tttttttdlllbb
 
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlllb
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> CDouble
---   -> Int64
---   -> Int64
---   -> Int64
---   -> CBool
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlllb = _cast12 Unmanaged._fused_moving_avg_obs_fq_helper_functional_tttttttdlllb
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlllb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CDouble
+  -> Int64
+  -> Int64
+  -> Int64
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlllb = _cast12 Unmanaged._fused_moving_avg_obs_fq_helper_functional_tttttttdlllb
 
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlll
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> CDouble
---   -> Int64
---   -> Int64
---   -> Int64
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _fused_moving_avg_obs_fq_helper_functional_tttttttdlll = _cast11 Unmanaged._fused_moving_avg_obs_fq_helper_functional_tttttttdlll
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlll
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> CDouble
+  -> Int64
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_fused_moving_avg_obs_fq_helper_functional_tttttttdlll = _cast11 Unmanaged._fused_moving_avg_obs_fq_helper_functional_tttttttdlll
 
 _to_copy_out_ttbM
   :: ForeignPtr Tensor
@@ -2103,24 +2103,24 @@ _to_copy_out_tt
   -> IO (ForeignPtr Tensor)
 _to_copy_out_tt = _cast2 Unmanaged._to_copy_out_tt
 
--- _lstm_mps_out_tttttttllbldbbb
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr TensorList
---   -> ForeignPtr TensorList
---   -> CBool
---   -> Int64
---   -> CDouble
---   -> CBool
---   -> CBool
---   -> CBool
---   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- _lstm_mps_out_tttttttllbldbbb = _cast15 Unmanaged._lstm_mps_out_tttttttllbldbbb
+_lstm_mps_out_tttttttllbldbbb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr TensorList
+  -> ForeignPtr TensorList
+  -> CBool
+  -> Int64
+  -> CDouble
+  -> CBool
+  -> CBool
+  -> CBool
+  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+_lstm_mps_out_tttttttllbldbbb = _cast15 Unmanaged._lstm_mps_out_tttttttllbldbbb
 
 lstm_mps_backward_out_tlltttttttllbldbbb
   :: ForeignPtr Tensor
@@ -2513,11 +2513,4 @@ random_tllG
   -> ForeignPtr Generator
   -> IO (ForeignPtr Tensor)
 random_tllG = _cast4 Unmanaged.random_tllG
-
-random_tll
-  :: ForeignPtr Tensor
-  -> Int64
-  -> Int64
-  -> IO (ForeignPtr Tensor)
-random_tll = _cast3 Unmanaged.random_tll
 

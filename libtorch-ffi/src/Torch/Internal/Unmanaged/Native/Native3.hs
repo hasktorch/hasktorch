@@ -28,6 +28,16 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+xlogy_ts
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+xlogy_ts _self _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::xlogy(
+    *$(at::Tensor* _self)
+  , *$(at::Scalar* _other)));
+  }|]
+
 xlogy__tt
   :: Ptr Tensor
   -> Ptr Tensor
@@ -2456,57 +2466,57 @@ mkldnn_rnn_layer_tttttttbllllbbbb _input _weight0 _weight1 _weight2 _weight3 _hx
   , $(bool _train)));
   }|]
 
--- mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> CBool
---   -> Int64
---   -> Int64
---   -> Int64
---   -> CBool
---   -> CBool
---   -> CBool
---   -> Ptr IntArray
---   -> CBool
---   -> Ptr Tensor
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
--- mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt _input _weight1 _weight2 _weight3 _weight4 _hx_ _cx_tmp _output _hy_ _cy_ _grad_output _grad_hy _grad_cy _reverse _mode _hidden_size _num_layers _has_biases _train _bidirectional _batch_sizes _batch_first _workspace =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::mkldnn_rnn_layer_backward(
---     *$(at::Tensor* _input)
---   , *$(at::Tensor* _weight1)
---   , *$(at::Tensor* _weight2)
---   , *$(at::Tensor* _weight3)
---   , *$(at::Tensor* _weight4)
---   , *$(at::Tensor* _hx_)
---   , *$(at::Tensor* _cx_tmp)
---   , *$(at::Tensor* _output)
---   , *$(at::Tensor* _hy_)
---   , *$(at::Tensor* _cy_)
---   , *$(at::Tensor* _grad_output)
---   , *$(at::Tensor* _grad_hy)
---   , *$(at::Tensor* _grad_cy)
---   , $(bool _reverse)
---   , $(int64_t _mode)
---   , $(int64_t _hidden_size)
---   , $(int64_t _num_layers)
---   , $(bool _has_biases)
---   , $(bool _train)
---   , $(bool _bidirectional)
---   , *$(std::vector<int64_t>* _batch_sizes)
---   , $(bool _batch_first)
---   , *$(at::Tensor* _workspace)));
---   }|]
+mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> Int64
+  -> Int64
+  -> Int64
+  -> CBool
+  -> CBool
+  -> CBool
+  -> Ptr IntArray
+  -> CBool
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Tensor,Tensor,Tensor)))
+mkldnn_rnn_layer_backward_tttttttttttttblllbbblbt _input _weight1 _weight2 _weight3 _weight4 _hx_ _cx_tmp _output _hy_ _cy_ _grad_output _grad_hy _grad_cy _reverse _mode _hidden_size _num_layers _has_biases _train _bidirectional _batch_sizes _batch_first _workspace =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>(at::mkldnn_rnn_layer_backward(
+    *$(at::Tensor* _input)
+  , *$(at::Tensor* _weight1)
+  , *$(at::Tensor* _weight2)
+  , *$(at::Tensor* _weight3)
+  , *$(at::Tensor* _weight4)
+  , *$(at::Tensor* _hx_)
+  , *$(at::Tensor* _cx_tmp)
+  , *$(at::Tensor* _output)
+  , *$(at::Tensor* _hy_)
+  , *$(at::Tensor* _cy_)
+  , *$(at::Tensor* _grad_output)
+  , *$(at::Tensor* _grad_hy)
+  , *$(at::Tensor* _grad_cy)
+  , $(bool _reverse)
+  , $(int64_t _mode)
+  , $(int64_t _hidden_size)
+  , $(int64_t _num_layers)
+  , $(bool _has_biases)
+  , $(bool _train)
+  , $(bool _bidirectional)
+  , *$(std::vector<int64_t>* _batch_sizes)
+  , $(bool _batch_first)
+  , *$(at::Tensor* _workspace)));
+  }|]
 
 miopen_batch_norm_tttttbdd
   :: Ptr Tensor
@@ -3164,26 +3174,6 @@ _native_batch_norm_legit_tttttbdd _input _weight _bias _running_mean _running_va
   , *$(at::Tensor* _running_mean)
   , *$(at::Tensor* _running_var)
   , $(bool _training)
-  , $(double _momentum)
-  , $(double _eps)));
-  }|]
-
-_native_batch_norm_legit_no_training_tttttdd
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> CDouble
-  -> CDouble
-  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
-_native_batch_norm_legit_no_training_tttttdd _input _weight _bias _running_mean _running_var _momentum _eps =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_native_batch_norm_legit_no_training(
-    *$(at::Tensor* _input)
-  , *$(at::Tensor* _weight)
-  , *$(at::Tensor* _bias)
-  , *$(at::Tensor* _running_mean)
-  , *$(at::Tensor* _running_var)
   , $(double _momentum)
   , $(double _eps)));
   }|]
@@ -3988,15 +3978,5 @@ rand_lNo _size _names _options =
     *$(std::vector<int64_t>* _size)
   , *$(std::vector<at::Dimname>* _names)
   , *$(at::TensorOptions* _options)));
-  }|]
-
-rand_lN
-  :: Ptr IntArray
-  -> Ptr DimnameList
-  -> IO (Ptr Tensor)
-rand_lN _size _names =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::rand(
-    *$(std::vector<int64_t>* _size)
-  , *$(std::vector<at::Dimname>* _names)));
   }|]
 

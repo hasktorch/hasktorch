@@ -14,6 +14,7 @@ module Torch.Internal.Unmanaged.Type.Extra where
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Unsafe as C
 import qualified Language.C.Inline.Context as C
+import qualified Language.C.Inline.Unsafe as CUnsafe
 import qualified Language.C.Types as C
 import qualified Data.Map as Map
 import Foreign.C.String
@@ -145,4 +146,18 @@ new_empty_tensor _size _options = do
     auto v = new at::Tensor(torch::empty(*$(std::vector<int64_t>* shape), *$(at::TensorOptions* _options)));
     delete $(std::vector<int64_t>* shape);
     return v;
+  }|]
+
+tensor_dim_unsafe
+  :: Ptr Tensor
+  -> IO (Int64)
+tensor_dim_unsafe _obj =
+  [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).dim();
+  }|]
+
+tensor_dim_c_unsafe
+  :: Ptr Tensor
+  -> IO (Int64)
+tensor_dim_c_unsafe _obj =
+  [CUnsafe.block| int64_t { return (*$(at::Tensor* _obj)).dim();
   }|]

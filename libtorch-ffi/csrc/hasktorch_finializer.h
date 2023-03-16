@@ -86,6 +86,12 @@ extern "C" {
 
   void delete_tensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr);
 
+  void delete_tensortensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr);
+
+  void delete_tensortensortensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr);
+
+  void delete_tensortensortensortensorint64int64int64int64tensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor,at::Tensor>* ptr);
+
   void delete_tensortensortensortensorlist(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* ptr);
 
   void delete_tensortensortensortensorint64(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t>* ptr);
@@ -120,6 +126,5 @@ extern "C" {
 
   void delete_vectorscalar(std::vector<at::Scalar>* ptr);
 
-  void delete_itensorlistref(at::ITensorListRef* ptr);
 #include "hasktorch_dump.h"
 };

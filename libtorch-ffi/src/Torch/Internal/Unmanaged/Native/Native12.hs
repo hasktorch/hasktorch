@@ -28,6 +28,44 @@ C.include "<ATen/Tensor.h>"
 C.include "<ATen/Functions.h>"
 
 
+_linalg_svd_out_ttttbbs
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> CBool
+  -> Ptr StdString
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
+_linalg_svd_out_ttttbbs _U _S _Vh _A _full_matrices _compute_uv _driver =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_linalg_svd_out(
+    *$(at::Tensor* _U)
+  , *$(at::Tensor* _S)
+  , *$(at::Tensor* _Vh)
+  , *$(at::Tensor* _A)
+  , $(bool _full_matrices)
+  , $(bool _compute_uv)
+  , *$(std::string* _driver)));
+  }|]
+
+_linalg_svd_out_ttttbb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor)))
+_linalg_svd_out_ttttbb _U _S _Vh _A _full_matrices _compute_uv =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor>(at::_linalg_svd_out(
+    *$(at::Tensor* _U)
+  , *$(at::Tensor* _S)
+  , *$(at::Tensor* _Vh)
+  , *$(at::Tensor* _A)
+  , $(bool _full_matrices)
+  , $(bool _compute_uv)));
+  }|]
+
 _linalg_svd_out_ttttb
   :: Ptr Tensor
   -> Ptr Tensor
@@ -2664,77 +2702,77 @@ _scaled_dot_product_attention_math_tttt _query _key _value _attn_mask =
   , *$(at::Tensor* _attn_mask)));
   }|]
 
-_scaled_dot_product_attention_math_ttt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-_scaled_dot_product_attention_math_ttt _query _key _value =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_scaled_dot_product_attention_math(
-    *$(at::Tensor* _query)
-  , *$(at::Tensor* _key)
-  , *$(at::Tensor* _value)));
-  }|]
-
--- _scaled_dot_product_flash_attention_tttdbb
+-- _scaled_dot_product_attention_math_ttt
 --   :: Ptr Tensor
 --   -> Ptr Tensor
 --   -> Ptr Tensor
---   -> CDouble
---   -> CBool
---   -> CBool
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
--- _scaled_dot_product_flash_attention_tttdbb _query _key _value _dropout_p _is_causal _return_debug_mask =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>(at::_scaled_dot_product_flash_attention(
---     *$(at::Tensor* _query)
---   , *$(at::Tensor* _key)
---   , *$(at::Tensor* _value)
---   , $(double _dropout_p)
---   , $(bool _is_causal)
---   , $(bool _return_debug_mask)));
---   }|]
-
--- _scaled_dot_product_flash_attention_tttdb
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> CDouble
---   -> CBool
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
--- _scaled_dot_product_flash_attention_tttdb _query _key _value _dropout_p _is_causal =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>(at::_scaled_dot_product_flash_attention(
---     *$(at::Tensor* _query)
---   , *$(at::Tensor* _key)
---   , *$(at::Tensor* _value)
---   , $(double _dropout_p)
---   , $(bool _is_causal)));
---   }|]
-
--- _scaled_dot_product_flash_attention_tttd
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> CDouble
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
--- _scaled_dot_product_flash_attention_tttd _query _key _value _dropout_p =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>(at::_scaled_dot_product_flash_attention(
---     *$(at::Tensor* _query)
---   , *$(at::Tensor* _key)
---   , *$(at::Tensor* _value)
---   , $(double _dropout_p)));
---   }|]
-
--- _scaled_dot_product_flash_attention_ttt
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
--- _scaled_dot_product_flash_attention_ttt _query _key _value =
---   [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>(at::_scaled_dot_product_flash_attention(
+--   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+-- _scaled_dot_product_attention_math_ttt _query _key _value =
+--   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>(at::_scaled_dot_product_attention_math(
 --     *$(at::Tensor* _query)
 --   , *$(at::Tensor* _key)
 --   , *$(at::Tensor* _value)));
 --   }|]
+
+_scaled_dot_product_flash_attention_tttdbb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> CBool
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
+_scaled_dot_product_flash_attention_tttdbb _query _key _value _dropout_p _is_causal _return_debug_mask =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>(at::_scaled_dot_product_flash_attention(
+    *$(at::Tensor* _query)
+  , *$(at::Tensor* _key)
+  , *$(at::Tensor* _value)
+  , $(double _dropout_p)
+  , $(bool _is_causal)
+  , $(bool _return_debug_mask)));
+  }|]
+
+_scaled_dot_product_flash_attention_tttdb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> CBool
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
+_scaled_dot_product_flash_attention_tttdb _query _key _value _dropout_p _is_causal =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>(at::_scaled_dot_product_flash_attention(
+    *$(at::Tensor* _query)
+  , *$(at::Tensor* _key)
+  , *$(at::Tensor* _value)
+  , $(double _dropout_p)
+  , $(bool _is_causal)));
+  }|]
+
+_scaled_dot_product_flash_attention_tttd
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> CDouble
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
+_scaled_dot_product_flash_attention_tttd _query _key _value _dropout_p =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>(at::_scaled_dot_product_flash_attention(
+    *$(at::Tensor* _query)
+  , *$(at::Tensor* _key)
+  , *$(at::Tensor* _value)
+  , $(double _dropout_p)));
+  }|]
+
+_scaled_dot_product_flash_attention_ttt
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor,Tensor,Tensor,Int64,Int64,Int64,Int64,Tensor)))
+_scaled_dot_product_flash_attention_ttt _query _key _value =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor>(at::_scaled_dot_product_flash_attention(
+    *$(at::Tensor* _query)
+  , *$(at::Tensor* _key)
+  , *$(at::Tensor* _value)));
+  }|]
 
 _scaled_dot_product_flash_attention_backward_ttttttttlldbll
   :: Ptr Tensor
@@ -3847,36 +3885,6 @@ special_chebyshev_polynomial_w_out_tts _out _x _n =
   [C.throwBlock| at::Tensor* { return new at::Tensor(at::special_chebyshev_polynomial_w_out(
     *$(at::Tensor* _out)
   , *$(at::Tensor* _x)
-  , *$(at::Scalar* _n)));
-  }|]
-
-special_hermite_polynomial_h_tt
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-special_hermite_polynomial_h_tt _x _n =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::special_hermite_polynomial_h(
-    *$(at::Tensor* _x)
-  , *$(at::Tensor* _n)));
-  }|]
-
-special_hermite_polynomial_h_st
-  :: Ptr Scalar
-  -> Ptr Tensor
-  -> IO (Ptr Tensor)
-special_hermite_polynomial_h_st _x _n =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::special_hermite_polynomial_h(
-    *$(at::Scalar* _x)
-  , *$(at::Tensor* _n)));
-  }|]
-
-special_hermite_polynomial_h_ts
-  :: Ptr Tensor
-  -> Ptr Scalar
-  -> IO (Ptr Tensor)
-special_hermite_polynomial_h_ts _x _n =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::special_hermite_polynomial_h(
-    *$(at::Tensor* _x)
   , *$(at::Scalar* _n)));
   }|]
 

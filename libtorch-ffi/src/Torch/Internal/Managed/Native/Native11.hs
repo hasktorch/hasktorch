@@ -21,6 +21,12 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native11 as Unmanaged
 
 
+fft_rfft_out_tt
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+fft_rfft_out_tt = _cast2 Unmanaged.fft_rfft_out_tt
+
 fft_irfft_tlls
   :: ForeignPtr Tensor
   -> Int64
@@ -1929,25 +1935,4 @@ _linalg_svd_t
   :: ForeignPtr Tensor
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor)))
 _linalg_svd_t = _cast1 Unmanaged._linalg_svd_t
-
-_linalg_svd_out_ttttbbs
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> ForeignPtr StdString
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor)))
-_linalg_svd_out_ttttbbs = _cast7 Unmanaged._linalg_svd_out_ttttbbs
-
-_linalg_svd_out_ttttbb
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> CBool
-  -> CBool
-  -> IO (ForeignPtr (StdTuple '(Tensor,Tensor,Tensor)))
-_linalg_svd_out_ttttbb = _cast6 Unmanaged._linalg_svd_out_ttttbb
 

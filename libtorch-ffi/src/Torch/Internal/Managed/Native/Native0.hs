@@ -1861,26 +1861,26 @@ _sparse_broadcast_to_tl
 _sparse_broadcast_to_tl = _cast2 Unmanaged._sparse_broadcast_to_tl
 
 cat_ll
-  :: ForeignPtr ITensorListRef
+  :: ForeignPtr TensorList
   -> Int64
   -> IO (ForeignPtr Tensor)
 cat_ll = _cast2 Unmanaged.cat_ll
 
 cat_l
-  :: ForeignPtr ITensorListRef
+  :: ForeignPtr TensorList
   -> IO (ForeignPtr Tensor)
 cat_l = _cast1 Unmanaged.cat_l
 
 cat_out_tll
   :: ForeignPtr Tensor
-  -> ForeignPtr ITensorListRef
+  -> ForeignPtr TensorList
   -> Int64
   -> IO (ForeignPtr Tensor)
 cat_out_tll = _cast3 Unmanaged.cat_out_tll
 
 cat_out_tl
   :: ForeignPtr Tensor
-  -> ForeignPtr ITensorListRef
+  -> ForeignPtr TensorList
   -> IO (ForeignPtr Tensor)
 cat_out_tl = _cast2 Unmanaged.cat_out_tl
 
@@ -1970,9 +1970,4 @@ concatenate_out_tln
   -> ForeignPtr Dimname
   -> IO (ForeignPtr Tensor)
 concatenate_out_tln = _cast3 Unmanaged.concatenate_out_tln
-
-block_diag_l
-  :: ForeignPtr TensorList
-  -> IO (ForeignPtr Tensor)
-block_diag_l = _cast1 Unmanaged.block_diag_l
 

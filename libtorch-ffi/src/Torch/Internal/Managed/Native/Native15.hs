@@ -21,6 +21,13 @@ import Torch.Internal.Objects
 import qualified Torch.Internal.Unmanaged.Native.Native15 as Unmanaged
 
 
+random_tll
+  :: ForeignPtr Tensor
+  -> Int64
+  -> Int64
+  -> IO (ForeignPtr Tensor)
+random_tll = _cast3 Unmanaged.random_tll
+
 random_out_ttlG
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
@@ -1027,27 +1034,6 @@ _foreach_lerp_out_llls
   -> ForeignPtr Scalar
   -> IO (())
 _foreach_lerp_out_llls = _cast4 Unmanaged._foreach_lerp_out_llls
-
-_foreach_pow_out_lll
-  :: ForeignPtr TensorList
-  -> ForeignPtr TensorList
-  -> ForeignPtr TensorList
-  -> IO (())
-_foreach_pow_out_lll = _cast3 Unmanaged._foreach_pow_out_lll
-
-_foreach_pow_out_lls
-  :: ForeignPtr TensorList
-  -> ForeignPtr TensorList
-  -> ForeignPtr Scalar
-  -> IO (())
-_foreach_pow_out_lls = _cast3 Unmanaged._foreach_pow_out_lls
-
-_foreach_pow_out_llA
-  :: ForeignPtr TensorList
-  -> ForeignPtr TensorList
-  -> ForeignPtr (StdVector Scalar)
-  -> IO (())
-_foreach_pow_out_llA = _cast3 Unmanaged._foreach_pow_out_llA
 
 bucketize_out_tstbb
   :: ForeignPtr Tensor
