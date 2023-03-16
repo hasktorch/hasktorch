@@ -41,12 +41,12 @@ extra-deps:
   commit: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
 - union-find-array-0.1.0.3@sha256:242e066ec516d61f262947e5794edc7bbc11fd538a0415c03ac0c01b028cfa8a,1372
 - clay-0.14.0@sha256:382eced24317f9ed0f7a0a4789cdfc6fc8dd32895cdb0c4ea50a1613bee08af3,2128
-- git: https://github.com/fpco/inline-c
-  commit: 2d0fe9b2f0aa0e1aefc7bfed95a501e59486afb0
+- git: https://github.com/hasktorch/inline-c
+  commit: f46e09e83f3a7b7e6485bc47436462512122ff0e
   subdirs:
   - inline-c
-- git: https://github.com/fpco/inline-c
-  commit: 2d0fe9b2f0aa0e1aefc7bfed95a501e59486afb0
+- git: https://github.com/hasktorch/inline-c
+  commit: f46e09e83f3a7b7e6485bc47436462512122ff0e
   subdirs:
   - inline-c-cpp
 
