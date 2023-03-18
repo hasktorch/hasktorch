@@ -1028,9 +1028,12 @@ symeig ::
   )
 symeig upper input =
   unsafePerformIO $
-    ATen.cast3 ATen.Managed.symeig_tbb input True boolUpper
+    ATen.cast3 ATen.Managed._linalg_eigh_tsb input boolUpper True
   where
-    boolUpper = isUpper upper
+    boolUpper =
+      case upper of
+        Upper -> "U"
+        Lower -> "L"
 
 -- | symeigvalues
 --
@@ -1052,9 +1055,12 @@ symeigvalues ::
   Tensor device dtype shape'
 symeigvalues upper input = fst symeig'
   where
-    boolUpper = isUpper upper
     symeig' :: (Tensor device dtype shape', Tensor device dtype shape'')
-    symeig' = unsafePerformIO $ ATen.cast3 ATen.Managed.symeig_tbb input False boolUpper
+    symeig' = unsafePerformIO $ ATen.cast3 ATen.Managed._linalg_eigh_tsb input boolUpper True
+    boolUpper =
+      case upper of
+        Upper -> "U"
+        Lower -> "L"
 
 data EigenVectors = EnableEigenVectors | DisableEigenVectors
 
@@ -1127,7 +1133,7 @@ eig ::
     Tensor device dtype shape
   )
 eig input =
-  unsafePerformIO $ ATen.cast2 ATen.Managed.eig_tb input (enableEigenVectors @eigenvectors)
+  unsafePerformIO $ ATen.cast1 ATen.Managed.linalg_eig_t input
 
 type family SVDShapes (shape :: [Nat]) (reduced :: ReducedSVD) :: ([Nat], [Nat], [Nat]) where
   SVDShapes '[0, n] 'ThinSVD = '( '[0, 0], '[0], '[n, n])
@@ -1377,7 +1383,7 @@ solve ::
   ( Tensor device dtype m_k,
     Tensor device dtype m_m
   )
-solve b a = unsafePerformIO $ ATen.cast2 ATen.Managed.solve_tt b a
+solve b a = unsafePerformIO $ ATen.cast2 ATen.Managed.linalg_solve_ex_tt a b
 
 -- | geqrf
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
