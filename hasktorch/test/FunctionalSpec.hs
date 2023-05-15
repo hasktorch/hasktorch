@@ -97,7 +97,7 @@ spec = do
         next release. Please use :func:`torch.lstsq` instead.
   -}
   it "lstsq" $ do
-    let (x, qr) = lstsq (ones' [5, 2]) (ones' [5, 3])
+    let (x, qr) = lstsq (eye' 5 2) (eye' 5 3)
     shape x `shouldBe` [5, 2]
     shape qr `shouldBe` [5, 3]
   it "diag" $ do
