@@ -62,6 +62,14 @@
         dev-tools = final: prev: {
           haskell-nix = prev.haskell-nix // {
             custom-tools = prev.haskell-nix.custom-tools // (prev.callPackage ./nix/haskell-language-server {});
+            compiler.ghc924 = prev.haskell.compiler.ghc924 // {
+              isHaskellNixCompiler = true;
+              useLLVM = false;
+            };
+            compiler.ghc8107 = prev.haskell.compiler.ghc8107 // {
+              isHaskellNixCompiler = true;
+              useLLVM = false;
+            };
           };
         };
 
@@ -103,7 +111,7 @@
             legacyPkgs = haskell-nix.legacyPackages.${system}.appendOverlays overlays;
           };
 
-    in { inherit (hasktorch) overlays; } // (eachSystem [ "x86_64-linux" "x86_64-darwin" ] (system:
+    in { inherit (hasktorch) overlays; } // (eachSystem [ "x86_64-linux" "x86_64-darwin" "aarch64-darwin" ] (system:
       let
         mk-pkgset = generic-pkgset system;
 
