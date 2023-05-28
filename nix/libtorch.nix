@@ -1,6 +1,8 @@
 { callPackage
 , stdenv
 , fetchzip
+, fetchurl
+, unzip
 , lib
 , libcxx
 
@@ -26,10 +28,15 @@ in stdenv.mkDerivation {
   inherit version;
   pname = "libtorch";
 
-  src = fetchzip srcs."${stdenv.targetPlatform.system}-${device}" or unavailable;
+  src = fetchurl srcs."${stdenv.targetPlatform.system}-${device}" or unavailable;
+
+  unpackPhase = ''
+    unzip $src
+    cp -r torch/* .
+  '';
 
   nativeBuildInputs =
-    if stdenv.isDarwin then [ fixDarwinDylibNames ]
+    if stdenv.isDarwin then [ fixDarwinDylibNames unzip ]
     else [ patchelf ] ++ lib.optionals cudaSupport [ addOpenGLRunpath ];
 
   dontBuild = true;

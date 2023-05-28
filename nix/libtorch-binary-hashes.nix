@@ -5,6 +5,11 @@ version : builtins.getAttr version {
       url = "https://download.pytorch.org/libtorch/cpu/libtorch-macos-1.11.0.zip";
       hash = "sha256-oTbvPjrREXPQanSjxzHbgJOtY5Yzb9FFgQsUG78o6eQ=";
     };
+    aarch64-darwin-cpu = {
+      name = "libtorch-macos-1.11.0.zip";
+      url = "https://download.pytorch.org/whl/cpu/torch-1.11.0-cp310-none-macosx_11_0_arm64.whl";
+      hash = "sha256-taOGgnabVEyHXsw0vLgfutXJIhObYTGarP/P2KMvUow=";
+    };
     x86_64-linux-cpu = {
       name = "libtorch-cxx11-abi-shared-with-deps-1.11.0-cpu.zip";
       url = "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-1.11.0%2Bcpu.zip";
