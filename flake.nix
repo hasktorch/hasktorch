@@ -65,10 +65,16 @@
             compiler.ghc924 = prev.haskell.compiler.ghc924 // {
               isHaskellNixCompiler = true;
               useLLVM = false;
+              passthru = prev.haskell.compiler.ghc924.passthru // {
+                configured-src = prev.haskell-nix.compiler.ghc924.configured-src; # Needed for reinstallableLibGhc to work
+              } ;
             };
             compiler.ghc8107 = prev.haskell.compiler.ghc8107 // {
               isHaskellNixCompiler = true;
               useLLVM = false;
+              passthru = prev.haskell.compiler.ghc8107.passthru // {
+                configured-src = prev.haskell-nix.compiler.ghc8107.configured-src; # Needed for reinstallableLibGhc to work
+              } ;
             };
           };
         };
