@@ -21,6 +21,7 @@
       # System types to support.
       supportedSystems = [
         "x86_64-linux"
+        "aarch64-darwin"
       ];
 
       # Helper function to generate an attrset '{ x86_64-linux = f "x86_64-linux"; ... }'.
@@ -30,7 +31,8 @@
       nixpkgsFor =
         forAllSystems (system: import nixpkgs { inherit system; overlays = [ stacklock2nix.overlay self.overlay ]; });
 
-      deviceConfig = {cudaSupport=true;device="cuda-11";};
+#      deviceConfig = {cudaSupport=true;device="cuda-11";};
+      deviceConfig = {cudaSupport=false;device="cpu";};
     in
     {
       # A Nixpkgs overlay.
@@ -47,7 +49,7 @@
 
           # The Haskell package set to use as a base.  You should change this
           # based on the compiler version from the resolver in your stack.yaml.
-          baseHaskellPkgSet = final.haskell.packages.ghc924;
+          baseHaskellPkgSet = final.haskell.packages.ghc927;
 
           # Any additional Haskell package overrides you may want to add.
           additionalHaskellPkgSetOverrides = hfinal: hprev: {
@@ -65,6 +67,26 @@
                { doCheck = false;
                }
                hprev.tar;
+            half =
+              final.haskell.lib.compose.overrideCabal
+               { doCheck = false;
+               }
+               hprev.half;
+            sysinfo =
+              final.haskell.lib.compose.overrideCabal
+               { doCheck = false;
+               }
+               hprev.sysinfo;
+            inline-c-cpp =
+              final.haskell.lib.compose.overrideCabal
+               { doCheck = false;
+               }
+               hprev.inline-c-cpp;
+            happy =
+              final.haskell.lib.compose.overrideCabal
+               { doCheck = false;
+               }
+               hprev.happy;
             streaming-cassava =
               final.haskell.lib.compose.overrideCabal
                { preConfigure = ''
@@ -82,6 +104,10 @@
                 } hprev.lsp;
             torch = null;
           };
+
+          cabal2nixArgsOverrides = args: args // {
+            "splitmix" = verion: {};
+          };          
 
           # Additional packages that should be available for development.
           additionalDevShellNativeBuildInputs = stacklockHaskellPkgSet: [
@@ -137,10 +163,11 @@
       });
 
       packages = forAllSystems (system: {
+        hasktorch = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.hasktorch;
         examples = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.examples;
       });
 
-      defaultPackage = forAllSystems (system: self.packages.${system}.examples);
+      defaultPackage = forAllSystems (system: self.packages.${system}.hasktorch);
 
       devShells = forAllSystems (system: {
         hasktorch-dev-shell = nixpkgsFor.${system}.hasktorch-dev-shell;
