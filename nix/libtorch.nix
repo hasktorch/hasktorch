@@ -88,9 +88,9 @@ in stdenv.mkDerivation {
       for rpath in $(otool -L $f | grep rpath | awk '{print $1}');do
         install_name_tool -change $rpath $out/lib/$(basename $rpath) $f
       done
-      if otool -L $f | grep /usr/lib/libc++ >& /dev/null; then
-        install_name_tool -change /usr/lib/libc++.1.dylib ${libcxx-for-libtorch.outPath}/lib/libc++.1.0.dylib $f
-      fi
+#      if otool -L $f | grep /usr/lib/libc++ >& /dev/null; then
+#        install_name_tool -change /usr/lib/libc++.1.dylib ${libcxx-for-libtorch.outPath}/lib/libc++.1.0.dylib $f
+#      fi
     done
     for f in $out/lib/*.dylib; do
         otool -L $f

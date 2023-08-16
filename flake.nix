@@ -79,7 +79,7 @@
                hprev.sysinfo;
             inline-c-cpp =
               final.haskell.lib.compose.overrideCabal
-               { doCheck = false;
+               { doCheck = true;
                }
                hprev.inline-c-cpp;
             happy =
