@@ -141,6 +141,7 @@ library
 
  default-extensions:  Strict
                     , StrictData
+ ghc-options:       -fcompact-unwind
 
 test-suite spec
   type:               exitcode-stdio-1.0
@@ -205,6 +206,7 @@ test-suite spec
                     , lens-family-core
                     , data-default-class
                     , half
+ ghc-options:       -fcompact-unwind
 
 test-suite doctests
   if os(darwin) || flag(disable-doctest)
@@ -236,6 +238,7 @@ test-suite doctests
                     , zlib >= 0.6
                     , inline-c
                     , hasktorch
+ ghc-options:       -fcompact-unwind
 
 benchmark runtime
   type: exitcode-stdio-1.0
@@ -254,7 +257,7 @@ benchmark runtime
     , hasktorch
     , libtorch-ffi
   default-language: Haskell2010
-  ghc-options: -Wall -threaded -rtsopts
+  ghc-options: -Wall -threaded -rtsopts -fcompact-unwind
 
 
 benchmark alloc
@@ -273,4 +276,4 @@ benchmark alloc
     , hasktorch
     , libtorch-ffi
   default-language: Haskell2010
-  ghc-options: -Wall -threaded -rtsopts
+  ghc-options: -Wall -threaded -rtsopts -fcompact-unwind

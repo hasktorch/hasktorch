@@ -187,6 +187,7 @@ library
  install-includes:     csrc/hasktorch_finializer.h
                       ,csrc/hasktorch_dump.h
  include-dirs:         csrc
+ ghc-options:       -fcompact-unwind
 
 test-suite spec
   type:            exitcode-stdio-1.0
@@ -207,3 +208,4 @@ test-suite spec
     ld-options: -Wl,-keep_dwarf_unwind
   default-extensions:          Strict
                              , StrictData
+  ghc-options:       -fcompact-unwind

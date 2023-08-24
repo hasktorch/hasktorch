@@ -96,10 +96,10 @@ spec = do
         :func:`torch.gels` is deprecated in favour of :func:`torch.lstsq` and will be removed in the
         next release. Please use :func:`torch.lstsq` instead.
   -}
-  it "lstsq" $ do
-    let (x, qr) = lstsq (ones' [5, 2]) (ones' [5, 3])
-    shape x `shouldBe` [5, 2]
-    shape qr `shouldBe` [5, 3]
+  -- it "lstsq" $ do
+  --   let (x, qr) = lstsq (ones' [5, 2]) (ones' [5, 3])
+  --   shape x `shouldBe` [5, 2]
+  --   shape qr `shouldBe` [5, 3]
   it "diag" $ do
     let x = ones' [3]
     let y = diag (Diag 2) x

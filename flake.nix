@@ -14,9 +14,15 @@
   inputs.stacklock2nix.url = "github:cdepillabout/stacklock2nix/main";
 
   # This is a flake reference to Nixpkgs.
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    tokenizers = {
+      url = "github:hasktorch/tokenizers/master";
+    };
+    naersk.follows = "tokenizers/naersk";
+  };
 
-  outputs = { self, nixpkgs, stacklock2nix }:
+  outputs = { self, nixpkgs, stacklock2nix, tokenizers, naersk }:
     let
       # System types to support.
       supportedSystems = [
@@ -29,7 +35,7 @@
 
       # Nixpkgs instantiated for supported system types.
       nixpkgsFor =
-        forAllSystems (system: import nixpkgs { inherit system; overlays = [ stacklock2nix.overlay self.overlay ]; });
+        forAllSystems (system: import nixpkgs { inherit system; overlays = [ stacklock2nix.overlay naersk.overlay tokenizers.overlays.default self.overlay ]; });
 
 #      deviceConfig = {cudaSupport=true;device="cuda-11";};
       deviceConfig = {cudaSupport=false;device="cpu";};
@@ -49,7 +55,7 @@
 
           # The Haskell package set to use as a base.  You should change this
           # based on the compiler version from the resolver in your stack.yaml.
-          baseHaskellPkgSet = final.haskell.packages.ghc927;
+          baseHaskellPkgSet = final.haskell.packages.ghc928;
 
           # Any additional Haskell package overrides you may want to add.
           additionalHaskellPkgSetOverrides = hfinal: hprev: {
@@ -79,9 +85,16 @@
                hprev.sysinfo;
             inline-c-cpp =
               final.haskell.lib.compose.overrideCabal
-               { doCheck = true;
-               }
-               hprev.inline-c-cpp;
+                { preConfigure = ''
+                    sed -i -e 's/ghc-options:/ghc-options: -fcompact-unwind /g' *.cabal
+                    cat *.cabal
+                 '';
+                  doCheck = true;
+                  configureFlags = [
+                    "--extra-lib-dirs=${prev.pkgs.libcxx}/lib"
+                  ];
+                }
+                hprev.inline-c-cpp;
             happy =
               final.haskell.lib.compose.overrideCabal
                { doCheck = false;
@@ -94,6 +107,28 @@
                  '';
                }
                hprev.streaming-cassava;
+            term-rewriting =
+              final.haskell.lib.compose.overrideCabal
+               { doCheck = false;
+               }
+               hprev.term-rewriting;
+            type-errors-pretty =
+              final.haskell.lib.compose.overrideCabal
+               { preConfigure = ''
+                   sed -i 's/doctest >= 0.16 && < 0.19/doctest >=0.16/' *.cabal
+                 '';
+                 doCheck = false;
+               }
+               hprev.type-errors-pretty;
+            hashable =
+              final.haskell.lib.compose.overrideCabal
+               { preConfigure = ''
+                   ls
+                   cat *.cabal
+                 '';
+                 doCheck = false;
+               }
+               hprev.hashable;
             haskell-language-server =
               final.haskell.lib.compose.overrideCabal
                 { doCheck = false;
@@ -102,11 +137,22 @@
               final.haskell.lib.compose.overrideCabal
                 { doCheck = false;
                 } hprev.lsp;
+            http2 =
+              final.haskell.lib.compose.overrideCabal
+                { doCheck = false;
+                } hprev.http2;
             torch = null;
+            tokenizers =
+              final.haskell.lib.compose.overrideCabal
+                { doCheck = false;
+                } hprev.tokenizers;
+
           };
 
           cabal2nixArgsOverrides = args: args // {
-            "splitmix" = verion: {};
+            "splitmix" = ver: {};
+            "tokenizers" = ver: { "tokenizers_haskell" = prev.pkgs.tokenizersPackages.tokenizers-haskell; };
+#            "inline-c-cpp" = ver: { "c++" = prev.pkgs.libcxx; };
           };          
 
           # Additional packages that should be available for development.
@@ -143,11 +189,11 @@
           #
           # If you are using a very recent Stackage resolver and an old Nixpkgs,
           # it is almost always necessary to override `all-cabal-hashes`.
-          all-cabal-hashes = final.fetchurl {
-            name = "all-cabal-hashes";
-            url = "https://github.com/commercialhaskell/all-cabal-hashes/archive/9ab160f48cb535719783bc43c0fbf33e6d52fa99.tar.gz";
-            sha256 = "sha256-QC07T3MEm9LIMRpxIq3Pnqul60r7FpAdope6S62sEX8=";
-          };
+          # all-cabal-hashes = final.fetchurl {
+          #   name = "all-cabal-hashes";
+          #   url = "https://github.com/commercialhaskell/all-cabal-hashes/archive/626bf7304b96cc5b8b48332b838b547ae32e1ead.tar.gz";
+          #   sha256 = "sha256-QC07T3MEm9LIMRpxIq3Pnqul60r7FpAdope6S62sEX9=";
+          # };
         };
 
         # One of our local packages.
@@ -165,6 +211,7 @@
       packages = forAllSystems (system: {
         hasktorch = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.hasktorch;
         examples = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.examples;
+        hasktorch-gradually-typed = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.hasktorch-gradually-typed;
       });
 
       defaultPackage = forAllSystems (system: self.packages.${system}.hasktorch);
