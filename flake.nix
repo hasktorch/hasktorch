@@ -210,6 +210,7 @@
 
       packages = forAllSystems (system: {
         hasktorch = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.hasktorch;
+        codegen = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.codegen;
         examples = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.examples;
         hasktorch-gradually-typed = nixpkgsFor.${system}.hasktorch-stacklock.pkgSet.hasktorch-gradually-typed;
       });
