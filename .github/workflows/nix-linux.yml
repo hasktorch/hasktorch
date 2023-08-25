@@ -19,7 +19,7 @@ jobs:
   #         sudo apt autoclean -y || true
   #         docker rmi $(docker image ls -aq)
   #         df -h
-  #     - uses: cachix/install-nix-action@v10
+  #     - uses: cachix/install-nix-action@v22
   #     - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
   #     - run: cachix use hasktorch
   #     - run: cachix use iohk
@@ -41,7 +41,7 @@ jobs:
           df -h
           cat /proc/cpuinfo
           cat /proc/meminfo
-      - uses: cachix/install-nix-action@v18
+      - uses: cachix/install-nix-action@v22
       - uses: cachix/cachix-action@v12
         with:
           name: hasktorch
