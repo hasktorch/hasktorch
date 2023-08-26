@@ -51,7 +51,7 @@ jobs:
           free
           export NIX_BUILD_CORES=1
 
-          nix build '.#codegen $NIX_OPTIONS
-          nix build '.#hasktorch $NIX_OPTIONS
-          nix build '.#examples $NIX_OPTIONS
-          nix build '.#hasktorch-gradually-typed $NIX_OPTIONS
+          nix build .#codegen $NIX_OPTIONS
+          nix build .#hasktorch $NIX_OPTIONS
+          nix build .#examples $NIX_OPTIONS
+          nix build .#hasktorch-gradually-typed $NIX_OPTIONS
