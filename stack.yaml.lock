@@ -100,34 +100,22 @@ packages:
   original:
     hackage: clay-0.14.0@sha256:382eced24317f9ed0f7a0a4789cdfc6fc8dd32895cdb0c4ea50a1613bee08af3,2128
 - completed:
-    commit: 2d0fe9b2f0aa0e1aefc7bfed95a501e59486afb0
-    git: https://github.com/fpco/inline-c
-    name: inline-c
+    hackage: inline-c-0.9.1.10@sha256:6cf9e1b77dbbda657c382a22ba117114f4fcf44731d63258a269766f6c3027bf,3174
     pantry-tree:
-      sha256: 1c0c27a2df1c09003147fd2e6082ff4b48aeab3acd4a77a3a4d4fb16c6d65ac2
+      sha256: 76d3f9598653850382463b56418b7c205e97d8bccb7b52d2aed550712a2cb688
       size: 1309
-    subdir: inline-c
-    version: 0.9.1.5
   original:
-    commit: 2d0fe9b2f0aa0e1aefc7bfed95a501e59486afb0
-    git: https://github.com/fpco/inline-c
-    subdir: inline-c
+    hackage: inline-c-0.9.1.10
 - completed:
-    commit: 2d0fe9b2f0aa0e1aefc7bfed95a501e59486afb0
-    git: https://github.com/fpco/inline-c
-    name: inline-c-cpp
+    hackage: inline-c-cpp-0.5.0.2@sha256:2c6ddef649dcb74ff08b57a0ce6e7cf5f1ef39d59bb4848f122ce14bd139ce54,4257
     pantry-tree:
-      sha256: f0513d05b29a956b19189b6a14a930582e768ddc3967743f82fe5417169738e0
-      size: 1007
-    subdir: inline-c-cpp
-    version: 0.5.0.0
+      sha256: f8dba85601ed525f2900959494f5d1c6b705a54a9a9e10252a253f5d65bd02fc
+      size: 960
   original:
-    commit: 2d0fe9b2f0aa0e1aefc7bfed95a501e59486afb0
-    git: https://github.com/fpco/inline-c
-    subdir: inline-c-cpp
+    hackage: inline-c-cpp-0.5.0.2@sha256:2c6ddef649dcb74ff08b57a0ce6e7cf5f1ef39d59bb4848f122ce14bd139ce54,4257
 snapshots:
 - completed:
-    sha256: dcf4fc28f12d805480ddbe8eb8c370e11db12f0461d0110a4240af27ac88d725
-    size: 650255
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/22.yaml
-  original: lts-20.22
+    sha256: 5a59b2a405b3aba3c00188453be172b85893cab8ebc352b1ef58b0eae5d248a2
+    size: 650475
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/26.yaml
+  original: lts-20.26
