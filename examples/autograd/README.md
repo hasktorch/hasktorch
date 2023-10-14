@@ -1,10 +1,10 @@
 # Basic data flow through autograd
 
-This example contains a very simple multi layer model meant to understand how autograd is used in Hasktorch to compute gradients. To be able to verify the results of the model, the weights have been taken equal to 1. ReLU and Sigmoid activations have been applied and mean squared error has been used for the loss. Results can be verified with the derivation of graidents done below.
+This example contains a very simple multi layer model meant to understand how autograd is used in Hasktorch to compute gradients. To be able to verify the results of the model, the weights have been taken equal to 1. ReLU and Sigmoid activations have been applied and mean squared error has been used for the loss. Results can be verified with the derivation of gradients done below.
 
 For Hasktorch, the autograd function takes the loss along with a list of Independent Tensors (need to be specifically made here) with respect to which the derivative is to found. But for the normal operation, the tensors should be dependent tensors, as would be clear in the code.
 
-# Derivation of the gradients w.r.t. Loss
+## Derivation of the gradients w.r.t. Loss
 <div align = "center">
 
 ### Output of the model (Sigmoid Activation) :
@@ -64,7 +64,7 @@ The gradient for other weights in the layer can also be derived in a similar man
 </div>
 
 
-# Running the Example
+## Running the Example
 
 Setup environment variables (run this from the top-level hasktorch project
 directory where the `setenv` file is):
