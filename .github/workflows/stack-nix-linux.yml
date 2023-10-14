@@ -6,7 +6,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: free disk space
         run: |
           sudo swapoff -a
@@ -32,7 +32,7 @@ jobs:
           .github/workflows/setup-iohk-cache.sh
       - name: Cache .stack
         id: cache-stack
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: |
             ~/.stack

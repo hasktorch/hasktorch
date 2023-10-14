@@ -7,7 +7,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Setup packages
       run: |
         sudo apt update -qq
@@ -29,7 +29,7 @@ jobs:
       run: |
         git submodule init && git submodule update
     - name: Cache .cabal
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ~/.cabal/store
