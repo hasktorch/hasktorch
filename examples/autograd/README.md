@@ -4,6 +4,14 @@ This example contains a very simple multi layer model meant to understand how au
 
 For Hasktorch, the autograd function takes the loss along with a list of Independent Tensors (need to be specifically made here) with respect to which the derivative is to found. But for the normal operation, the tensors should be dependent tensors, as would be clear in the code.
 
+## Architecture of the neural network
+
+(Visualization created at https://alexlenail.me/NN-SVG/)
+
+<div align = "center">
+<img  src="nn.svg">
+</div>
+
 ## Derivation of the gradients w.r.t. Loss
 <div align = "center">
 
