@@ -19,7 +19,7 @@ main = do
       w2 = toDependent wi2
       h1 = relu $ (transpose2D x) `matmul` w1
       h2 = sigmoid $ h1 `matmul` w2
-      loss = (h2 -0) ^ 2
+      loss = (h2 - 0) ^ 2
   let gradients = grad loss [wi1, wi2]
 
   printTensor "The input features:" x
