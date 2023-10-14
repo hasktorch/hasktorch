@@ -23,7 +23,6 @@ jobs:
         brew install libtorch-prebuild@1.11 || true
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
     - name: Cache .stack
-      id: cache-stack
       uses: actions/cache@v3
       with:
         path: |

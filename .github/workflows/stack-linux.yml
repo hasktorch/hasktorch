@@ -27,7 +27,6 @@ jobs:
       run: |
         git submodule init && git submodule update
     - name: Cache .stack
-      id: cache-stack
       uses: actions/cache@v3
       with:
         path: |
