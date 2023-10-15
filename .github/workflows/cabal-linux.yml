@@ -8,6 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: true
     - name: Setup packages
       run: |
         sudo apt update -qq
@@ -25,9 +27,6 @@ jobs:
         ghcup install ghc 9.2.8
         ghcup set ghc 9.2.8
         ghcup install cabal
-    - name: Setup repos
-      run: |
-        git submodule init && git submodule update
     - name: Cache .cabal
       uses: actions/cache@v3
       with:
