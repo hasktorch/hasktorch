@@ -21,7 +21,8 @@ jobs:
           sudo rm -f /etc/apt/sources.list.d/sbt.list
           sudo apt update -qq
           sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install cmake curl wget unzip git libtinfo-dev python3 python3-yaml
-          (wget -qO- https://get.haskellstack.org/ | sh) || true
+        ## Stack is preinstalled on the GHA runners
+        #  (wget -qO- https://get.haskellstack.org/ | sh) || true
       - uses: cachix/install-nix-action@v18
       - uses: cachix/cachix-action@v12
         with:
