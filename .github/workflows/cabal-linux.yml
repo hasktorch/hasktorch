@@ -7,7 +7,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Setup packages
       run: |
         sudo apt update -qq
@@ -22,14 +22,14 @@ jobs:
         echo "$HOME/.cabal/bin" >> $GITHUB_PATH
         echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
         curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
-        ghcup install ghc 9.2.4
-        ghcup set ghc 9.2.4
+        ghcup install ghc 9.2.8
+        ghcup set ghc 9.2.8
         ghcup install cabal
     - name: Setup repos
       run: |
         git submodule init && git submodule update
     - name: Cache .cabal
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: |
           ~/.cabal/store

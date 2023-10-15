@@ -9,7 +9,7 @@ jobs:
   # tests:
   #   runs-on: ubuntu-latest
   #   steps:
-  #     - uses: actions/checkout@v2
+  #     - uses: actions/checkout@v4
   #     - name: free disk space
   #       run: |
   #         sudo swapoff -a
@@ -31,7 +31,7 @@ jobs:
     if: github.repository == 'hasktorch/hasktorch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: free disk space
         run: |
           sudo apt -y purge ghc* cabal-install* php* || true
