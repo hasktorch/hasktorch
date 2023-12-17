@@ -16,14 +16,33 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/hasktorch/typelevel-rewrite-rules
-    --sha256: 0nfs6qyrhc2hxskdnlhsr6rrqdqa1kw5a18d2fiybiygxy75z140
-    tag: 4176e10d4de2d1310506c0fcf6a74956d81d59b6
+    tag: adbed1de02595b055737d99be06c427f89e06daf
 
 source-repository-package
     type: git
     location: https://github.com/hasktorch/type-errors-pretty
     --sha256: 0sdw3ga7gbffyywpyx7xn8ghdw9gzsy4l68cas41hwfbkrwxwdg6
     tag: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
+
+source-repository-package
+    type: git
+    location: https://github.com/hasktorch/streaming-cassava
+    tag: 1ecc4742beae22a2fe32e445a54d1990b6200249
+
+source-repository-package
+    type: git
+    location: https://github.com/hasktorch/indexed-extras
+    tag: 6f4b48341c23ef250c30a37478994107b7d7a101
+
+source-repository-package
+    type: git
+    location: https://github.com/hasktorch/term-rewriting
+    tag: 2e67d184938bf2f162b75f0c80f362a7d9b2243c
+
+source-repository-package
+    type: git
+    location: https://github.com/hasktorch/union-find-array
+    tag: 0986bf9cd725d2d9421b1ea6555b29ee64daf95d    
 
 write-ghc-environment-files: always
 tests: true
