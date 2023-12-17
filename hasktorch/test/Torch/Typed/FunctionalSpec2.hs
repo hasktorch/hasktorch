@@ -178,7 +178,10 @@ instance
     KnownDType dtype,
     KnownDevice device,
     EigDTypeIsValid device dtype,
-    RandDTypeIsValid device dtype
+    RandDTypeIsValid device dtype,
+    KnownDType (ToComplexNumber dtype),
+    TensorOptions shape (ToComplexNumber dtype) device,
+    TensorOptions shape' (ToComplexNumber dtype) device
   ) =>
   Apply' EigSpec ((Proxy eigenvectors, (Proxy device, (Proxy dtype, Proxy n))), IO ()) (IO ())
   where
@@ -312,9 +315,8 @@ instance
     agg >> do
       b <- rand @m_k @dtype @device
       a <- rand @m_m
-      let (c, lu) = solve b a
+      let c = solve b a
       checkDynamicTensorAttributes c
-      checkDynamicTensorAttributes lu
 
 data TransposeSpec = TransposeSpec
 

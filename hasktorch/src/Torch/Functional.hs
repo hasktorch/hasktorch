@@ -1506,16 +1506,15 @@ choleskySolve upper t1 t2 = unsafePerformIO $ cast3 ATen.cholesky_solve_ttb t1 t
   where
     boolUpper = isUpper upper
 
--- | This function returns the solution to the system of linear equations represented by AX = BAX=B and the LU factorization of A, in order as a namedtuple solution, LU.
--- LU contains L and U factors for LU factorization of A
+-- | This function returns the solution to the system of linear equations represented by AX = BAX=B and the LU factorization of A, in order as a namedtuple solution.
 solve ::
   -- | input matrix
   Tensor ->
   -- | input square matrix
   Tensor ->
-  -- | output tuple with solution and LU
-  (Tensor, Tensor)
-solve b a = unsafePerformIO $ cast2 ATen.linalg_solve_ex_tt a b
+  -- | output solution
+  Tensor
+solve b a = fst $ ((unsafePerformIO $ cast2 ATen.linalg_solve_ex_tt a b) :: (Tensor, Tensor))
 
 -- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
 choleskyInverse ::

@@ -5944,20 +5944,20 @@ linalg_ldl_solve
 linalg_ldl_solve _LD _pivots _B _hermitian = unsafePerformIO $ (cast4 ATen.linalg_ldl_solve_tttb) _LD _pivots _B _hermitian
 
 linalg_lstsq
-  :: Tensor -- ^ self
+  :: Tensor -- ^ a
   -> Tensor -- ^ b
   -> Double -- ^ rcond
   -> String -- ^ driver
   -> (Tensor,Tensor,Tensor,Tensor)
-linalg_lstsq _self _b _rcond _driver = unsafePerformIO $ (cast4 ATen.linalg_lstsq_ttds) _self _b _rcond _driver
+linalg_lstsq _a _b _rcond _driver = unsafePerformIO $ (cast4 ATen.linalg_lstsq_ttds) _a _b _rcond _driver
 
 lstsq
-  :: Tensor -- ^ self
-  -> Tensor -- ^ b
-  -> (Tensor,Tensor)
-lstsq _self _b =
-  let (t0,t1,_,_) = unsafePerformIO $ (cast2 ATen.linalg_lstsq_tt) _self _b :: (Tensor,Tensor,Tensor,Tensor)
-  in (t0,t1)
+  :: Tensor -- ^ b
+  -> Tensor -- ^ a
+  -> Tensor
+lstsq _b _a =
+  let (t0,_,_,_) = unsafePerformIO $ (cast2 ATen.linalg_lstsq_tt) _a _b :: (Tensor,Tensor,Tensor,Tensor)
+  in t0
 
 linalg_matmul
   :: Tensor -- ^ self

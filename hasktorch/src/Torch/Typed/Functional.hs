@@ -1088,6 +1088,12 @@ type family EigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
     )
   EigDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
+type family ToComplexNumber (dtype :: D.DType) :: D.DType where
+  ToComplexNumber D.Half = D.ComplexHalf
+  ToComplexNumber D.Float = D.ComplexFloat
+  ToComplexNumber D.Double = D.ComplexDouble
+  ToComplexNumber other = other
+
 -- | eig
 -- Warning:
 -- torch.eig is deprecated in favor of torch.linalg.eig and will be removed in a future PyTorch release.
@@ -1102,35 +1108,33 @@ type family EigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
 --
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[3,3])
 -- >>> (eigenVals,eigenVecs) = eig @EnableEigenVectors t
--- >>> dtype &&& shape $ eigenVals -- Skip warning
--- ...
 -- >>> dtype &&& shape $ eigenVals
--- (Float,[3,2])
+-- (ComplexFloat,[3])
 -- >>> :t eigenVals
--- eigenVals :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]
+-- eigenVals :: Tensor '( 'D.CPU, 0) 'D.ComplexFloat '[3]
 -- >>> dtype &&& shape $ eigenVecs
--- (Float,[3,3])
+-- (ComplexFloat,[3,3])
 -- >>> :t eigenVecs
--- eigenVecs :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 3]
+ -- eigenVecs :: Tensor '( 'D.CPU, 0) 'D.ComplexFloat '[3, 3]
 -- >>> (eigenVals,eigenVecs) = eig @DisableEigenVectors t
 -- >>> dtype &&& shape $ eigenVals
--- (Float,[3,2])
+-- (ComplexFloat,[3])
 -- >>> dtype &&& shape $ eigenVecs
--- (Float,[0])
+-- (ComplexFloat,[3,3])
 -- >>> :t eigenVecs
--- eigenVecs :: Tensor '( 'D.CPU, 0) 'D.Float '[0]
+-- eigenVecs :: Tensor '( 'D.CPU, 0) 'D.ComplexFloat '[3, 3]
 eig ::
   forall eigenvectors n shape dtype device.
   ( KnownNat n,
     KnownEigenVectors eigenvectors,
-    shape ~ ConditionalEigenVectors eigenvectors n,
-    EigDTypeIsValid device dtype
+    EigDTypeIsValid device dtype,
+    KnownDType (ToComplexNumber dtype)
   ) =>
   -- | input matrix
   Tensor device dtype '[n, n] ->
   -- | eigenvalues and eigenvectors
-  ( Tensor device dtype '[n, 2],
-    Tensor device dtype shape
+  ( Tensor device (ToComplexNumber dtype) '[n],
+    Tensor device (ToComplexNumber dtype) '[n, n]
   )
 eig input =
   unsafePerformIO $ ATen.cast1 ATen.Managed.linalg_eig_t input
@@ -1357,17 +1361,11 @@ type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType)
 -- >>> t <- rand :: IO (CPUTensor 'D.Float '[10,10])
 -- >>> a = t `matmul` transpose2D t
 -- >>> b <- rand :: IO (CPUTensor 'D.Float '[10,3])
--- >>> (c,lu) = solve b a
--- >>> dtype &&& shape $ c -- Skip warning
--- ...
+-- >>> c = solve b a
 -- >>> dtype &&& shape $ c
 -- (Float,[10,3])
--- >>> dtype &&& shape $ lu
--- (Float,[10,10])
 -- >>> :t c
 -- c :: Tensor '( 'D.CPU, 0) 'D.Float '[10, 3]
--- >>> :t lu
--- lu :: Tensor '( 'D.CPU, 0) 'D.Float '[10, 10]
 solve ::
   forall m_k m_m dtype device.
   ( Square m_m ~ m_m,
@@ -1379,11 +1377,11 @@ solve ::
   Tensor device dtype m_k ->
   -- | the (batched) positive semidefinite matrix `a`
   Tensor device dtype m_m ->
-  -- | the (batched) outputs c and lu
-  ( Tensor device dtype m_k,
-    Tensor device dtype m_m
-  )
-solve b a = unsafePerformIO $ ATen.cast2 ATen.Managed.linalg_solve_ex_tt a b
+  -- | the (batched) outputs c
+  Tensor device dtype m_k
+solve b a =
+  let (v::Tensor device dtype m_k, _ :: Tensor device dtype m_k) = unsafePerformIO $ ATen.cast2 ATen.Managed.linalg_solve_ex_tt a b
+  in v
 
 -- | geqrf
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
