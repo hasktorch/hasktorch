@@ -169,7 +169,10 @@ instance
       (Parameters (RastriginStack (num - 1) ns dtypes devices))
       ( Parameters (RastriginLayer n dtype device)
           ++ Parameters (RastriginStack (num - 1) ns dtypes devices)
-      )
+      ),
+    1 <= num,
+    numM1 ~ num - 1,
+    0 <= numM1
   ) =>
   RastriginStackParameterized 'True num (n ': ns) (dtype ': dtypes) (device ': devices)
   where
@@ -178,7 +181,7 @@ instance
       (Parameters (RastriginLayer n dtype device) ++ Parameters (RastriginStack (num - 1) ns dtypes devices))
   rastriginStackFlattenParameters _ (RastriginK rastriginLayer rastriginStack) =
     let parameters = flattenParameters rastriginLayer
-        parameters' = flattenParameters @(RastriginStack (num - 1) ns dtypes devices) rastriginStack
+        parameters' = flattenParameters @(RastriginStack numM1 ns dtypes devices) rastriginStack
      in parameters `happendFD` parameters'
   rastriginStackReplaceParameters _ (RastriginK rastriginLayer rastriginStack) parameters'' =
     let (parameters, parameters') = hunappendFD parameters''
