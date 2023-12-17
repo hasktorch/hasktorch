@@ -3,7 +3,7 @@
 set -xe
 ghc --version
 
-curl https://www.stackage.org/lts-20.26/cabal.config |\
+curl https://www.stackage.org/lts-22.0/cabal.config |\
 sed -e 's/with-compiler: .*$//g' |\
 sed -e 's/.*inline-c.*//g' > cabal.project.freeze
 
