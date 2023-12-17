@@ -97,9 +97,8 @@ spec = do
         next release. Please use :func:`torch.lstsq` instead.
   -}
   it "lstsq" $ do
-    let (x, qr) = lstsq (eye' 5 2) (eye' 5 3)
-    shape x `shouldBe` [5, 2]
-    shape qr `shouldBe` [5, 3]
+    let x = lstsq (ones' [5, 2]) (ones' [5, 3])
+    shape x `shouldBe` [3, 2]
   it "diag" $ do
     let x = ones' [3]
     let y = diag (Diag 2) x
@@ -131,9 +130,8 @@ spec = do
   it "solve" $ do
     a <- randIO' [10, 10]
     b <- randIO' [10, 3]
-    let (x, lu) = solve b a
+    let x = solve b a
     shape x `shouldBe` [10, 3]
-    shape lu `shouldBe` [10, 10]
 
   it "cholesky decomposes" $ do
     let x = asTensor ([[4.0, 12.0, -16.0], [12.0, 37.0, -43.0], [-16.0, -43.0, 98.0]] :: [[Double]])

@@ -364,6 +364,42 @@ _empty_per_channel_affine_quantized_lttl _size _scales _zero_points _axis =
   , $(int64_t _axis)));
   }|]
 
+empty_quantized_ltoM
+  :: Ptr IntArray
+  -> Ptr Tensor
+  -> Ptr TensorOptions
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+empty_quantized_ltoM _size _qtensor _options _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_quantized(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::Tensor* _qtensor)
+  , *$(at::TensorOptions* _options)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
+empty_quantized_lto
+  :: Ptr IntArray
+  -> Ptr Tensor
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+empty_quantized_lto _size _qtensor _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_quantized(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::Tensor* _qtensor)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+empty_quantized_lt
+  :: Ptr IntArray
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+empty_quantized_lt _size _qtensor =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::empty_quantized(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::Tensor* _qtensor)));
+  }|]
+
 empty_like_toM
   :: Ptr Tensor
   -> Ptr TensorOptions
@@ -812,16 +848,6 @@ linspace_ssl _start _end _steps =
   , $(int64_t _steps)));
   }|]
 
--- linspace_ss
---   :: Ptr Scalar
---   -> Ptr Scalar
---   -> IO (Ptr Tensor)
--- linspace_ss _start _end =
---   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::linspace(
---     *$(at::Scalar* _start)
---   , *$(at::Scalar* _end)));
---   }|]
-
 logspace_ssldo
   :: Ptr Scalar
   -> Ptr Scalar
@@ -863,16 +889,6 @@ logspace_ssl _start _end _steps =
   , *$(at::Scalar* _end)
   , $(int64_t _steps)));
   }|]
-
--- logspace_ss
---   :: Ptr Scalar
---   -> Ptr Scalar
---   -> IO (Ptr Tensor)
--- logspace_ss _start _end =
---   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::logspace(
---     *$(at::Scalar* _start)
---   , *$(at::Scalar* _end)));
---   }|]
 
 ones_lNo
   :: Ptr IntArray
@@ -1468,6 +1484,24 @@ zeros_lN _size _names =
   , *$(std::vector<at::Dimname>* _names)));
   }|]
 
+_efficientzerotensor_lo
+  :: Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_efficientzerotensor_lo _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_efficientzerotensor(
+    *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_efficientzerotensor_l
+  :: Ptr IntArray
+  -> IO (Ptr Tensor)
+_efficientzerotensor_l _size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_efficientzerotensor(
+    *$(std::vector<int64_t>* _size)));
+  }|]
+
 zeros_lo
   :: Ptr IntArray
   -> Ptr TensorOptions
@@ -1516,35 +1550,305 @@ zeros_like_t _self =
     *$(at::Tensor* _self)));
   }|]
 
--- _sparse_csr_tensor_tttlo
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr IntArray
---   -> Ptr TensorOptions
---   -> IO (Ptr Tensor)
--- _sparse_csr_tensor_tttlo _crow_indices _col_indices _values _size _options =
---   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_csr_tensor(
---     *$(at::Tensor* _crow_indices)
---   , *$(at::Tensor* _col_indices)
---   , *$(at::Tensor* _values)
---   , *$(std::vector<int64_t>* _size)
---   , *$(at::TensorOptions* _options)));
---   }|]
+sparse_compressed_tensor_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_compressed_tensor_tttlo _compressed_indices _plain_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_compressed_tensor(
+    *$(at::Tensor* _compressed_indices)
+  , *$(at::Tensor* _plain_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
 
--- _sparse_csr_tensor_ttto
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr Tensor
---   -> Ptr TensorOptions
---   -> IO (Ptr Tensor)
--- _sparse_csr_tensor_ttto _crow_indices _col_indices _values _options =
---   [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_csr_tensor(
---     *$(at::Tensor* _crow_indices)
---   , *$(at::Tensor* _col_indices)
---   , *$(at::Tensor* _values)
---   , *$(at::TensorOptions* _options)));
---   }|]
+sparse_csr_tensor_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_csr_tensor_tttlo _crow_indices _col_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_csr_tensor(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+sparse_csc_tensor_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_csc_tensor_tttlo _ccol_indices _row_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_csc_tensor(
+    *$(at::Tensor* _ccol_indices)
+  , *$(at::Tensor* _row_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+sparse_bsr_tensor_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_bsr_tensor_tttlo _crow_indices _col_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_bsr_tensor(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+sparse_bsc_tensor_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_bsc_tensor_tttlo _ccol_indices _row_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_bsc_tensor(
+    *$(at::Tensor* _ccol_indices)
+  , *$(at::Tensor* _row_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+sparse_compressed_tensor_ttto
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_compressed_tensor_ttto _compressed_indices _plain_indices _values _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_compressed_tensor(
+    *$(at::Tensor* _compressed_indices)
+  , *$(at::Tensor* _plain_indices)
+  , *$(at::Tensor* _values)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+sparse_csr_tensor_ttto
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_csr_tensor_ttto _crow_indices _col_indices _values _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_csr_tensor(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+sparse_csc_tensor_ttto
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_csc_tensor_ttto _ccol_indices _row_indices _values _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_csc_tensor(
+    *$(at::Tensor* _ccol_indices)
+  , *$(at::Tensor* _row_indices)
+  , *$(at::Tensor* _values)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+sparse_bsr_tensor_ttto
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_bsr_tensor_ttto _crow_indices _col_indices _values _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_bsr_tensor(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+sparse_bsc_tensor_ttto
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+sparse_bsc_tensor_ttto _ccol_indices _row_indices _values _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::sparse_bsc_tensor(
+    *$(at::Tensor* _ccol_indices)
+  , *$(at::Tensor* _row_indices)
+  , *$(at::Tensor* _values)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_sparse_compressed_tensor_unsafe_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_sparse_compressed_tensor_unsafe_tttlo _compressed_indices _plain_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_compressed_tensor_unsafe(
+    *$(at::Tensor* _compressed_indices)
+  , *$(at::Tensor* _plain_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_sparse_compressed_tensor_unsafe_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+_sparse_compressed_tensor_unsafe_tttl _compressed_indices _plain_indices _values _size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_compressed_tensor_unsafe(
+    *$(at::Tensor* _compressed_indices)
+  , *$(at::Tensor* _plain_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)));
+  }|]
+
+_sparse_csr_tensor_unsafe_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_sparse_csr_tensor_unsafe_tttlo _crow_indices _col_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_csr_tensor_unsafe(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_sparse_csr_tensor_unsafe_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+_sparse_csr_tensor_unsafe_tttl _crow_indices _col_indices _values _size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_csr_tensor_unsafe(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)));
+  }|]
+
+_sparse_csc_tensor_unsafe_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_sparse_csc_tensor_unsafe_tttlo _ccol_indices _row_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_csc_tensor_unsafe(
+    *$(at::Tensor* _ccol_indices)
+  , *$(at::Tensor* _row_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_sparse_csc_tensor_unsafe_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+_sparse_csc_tensor_unsafe_tttl _ccol_indices _row_indices _values _size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_csc_tensor_unsafe(
+    *$(at::Tensor* _ccol_indices)
+  , *$(at::Tensor* _row_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)));
+  }|]
+
+_sparse_bsr_tensor_unsafe_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_sparse_bsr_tensor_unsafe_tttlo _crow_indices _col_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_bsr_tensor_unsafe(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_sparse_bsr_tensor_unsafe_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+_sparse_bsr_tensor_unsafe_tttl _crow_indices _col_indices _values _size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_bsr_tensor_unsafe(
+    *$(at::Tensor* _crow_indices)
+  , *$(at::Tensor* _col_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)));
+  }|]
+
+_sparse_bsc_tensor_unsafe_tttlo
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_sparse_bsc_tensor_unsafe_tttlo _ccol_indices _row_indices _values _size _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_bsc_tensor_unsafe(
+    *$(at::Tensor* _ccol_indices)
+  , *$(at::Tensor* _row_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_sparse_bsc_tensor_unsafe_tttl
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+_sparse_bsc_tensor_unsafe_tttl _ccol_indices _row_indices _values _size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_sparse_bsc_tensor_unsafe(
+    *$(at::Tensor* _ccol_indices)
+  , *$(at::Tensor* _row_indices)
+  , *$(at::Tensor* _values)
+  , *$(std::vector<int64_t>* _size)));
+  }|]
 
 sparse_coo_tensor_lo
   :: Ptr IntArray
@@ -1660,6 +1964,50 @@ _sparse_coo_tensor_with_dims_and_tensors_llltto _sparse_dim _dense_dim _size _in
   , *$(at::Tensor* _indices)
   , *$(at::Tensor* _values)
   , *$(at::TensorOptions* _options)));
+  }|]
+
+_to_copy_tobM
+  :: Ptr Tensor
+  -> Ptr TensorOptions
+  -> CBool
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+_to_copy_tobM _self _options _non_blocking _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_to_copy(
+    *$(at::Tensor* _self)
+  , *$(at::TensorOptions* _options)
+  , $(bool _non_blocking)
+  , $(at::MemoryFormat _memory_format)));
+  }|]
+
+_to_copy_tob
+  :: Ptr Tensor
+  -> Ptr TensorOptions
+  -> CBool
+  -> IO (Ptr Tensor)
+_to_copy_tob _self _options _non_blocking =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_to_copy(
+    *$(at::Tensor* _self)
+  , *$(at::TensorOptions* _options)
+  , $(bool _non_blocking)));
+  }|]
+
+_to_copy_to
+  :: Ptr Tensor
+  -> Ptr TensorOptions
+  -> IO (Ptr Tensor)
+_to_copy_to _self _options =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_to_copy(
+    *$(at::Tensor* _self)
+  , *$(at::TensorOptions* _options)));
+  }|]
+
+_to_copy_t
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+_to_copy_t _self =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(torch::_to_copy(
+    *$(at::Tensor* _self)));
   }|]
 
 tril_indices_lllo

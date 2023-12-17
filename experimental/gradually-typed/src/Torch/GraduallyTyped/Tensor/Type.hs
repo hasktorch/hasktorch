@@ -37,7 +37,7 @@ import Data.Bifunctor (bimap)
 import Data.Coerce (coerce)
 import Data.Foldable (traverse_)
 import Data.Functor ((<&>))
-import Data.Int (Int16)
+import Data.Int (Int16,Int64)
 import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty, unzip)
 import Data.Maybe (maybeToList)
 import Data.Proxy (Proxy (..))
@@ -411,7 +411,10 @@ toSparse ::
   Tensor gradient layout device dataType shape ->
   -- | sparse copy
   m (Tensor gradient ('Layout 'Sparse) device dataType shape)
-toSparse = unsafeThrowableIO . cast1 ATen.tensor_to_sparse
+toSparse input =
+  unsafeThrowableIO $ do
+   dim <- cast1 ATen.tensor_dim_c_unsafe input :: IO Int64
+   cast2 ATen.tensor_to_sparse_l input dim
 
 -- | Set the memory layout of a tensor to a given layout.
 sSetLayout ::
@@ -423,7 +426,9 @@ sSetLayout ::
 sSetLayout layout input =
   case forgetIsChecked (fromSing layout) of
     Dense -> unsafeThrowableIO . cast1 ATen.tensor_to_dense $ input
-    Sparse -> unsafeThrowableIO . cast1 ATen.tensor_to_sparse $ input
+    Sparse -> unsafeThrowableIO $ do
+      dim <- cast1 ATen.tensor_dim_c_unsafe input :: IO Int64
+      cast2 ATen.tensor_to_sparse_l input dim
 
 class SGetLayout (layout :: Layout LayoutType) where
   -- | Returns the gradually typed memory layout of the input tensor.

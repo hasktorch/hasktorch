@@ -86,6 +86,12 @@ extern "C" {
 
   void delete_tensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr);
 
+  void delete_tensortensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr);
+
+  void delete_tensortensortensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr);
+
+  void delete_tensortensortensortensorint64int64int64int64tensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor,at::Tensor>* ptr);
+
   void delete_tensortensortensortensorlist(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* ptr);
 
   void delete_tensortensortensortensorint64(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t>* ptr);
@@ -95,6 +101,16 @@ extern "C" {
   void delete_tensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor>* ptr);
 
   void delete_tensortensorcdoubleint64(std::tuple<at::Tensor,at::Tensor,double,int64_t>* ptr);
+
+  void delete_tensortensorint64int64tensor(std::tuple<at::Tensor,at::Tensor,int64_t,int64_t,at::Tensor>* ptr);
+
+  void delete_tensorlisttensor(std::tuple<std::vector<at::Tensor>,at::Tensor>* ptr);
+
+  void delete_tensortensorlist(std::tuple<at::Tensor,std::vector<at::Tensor>>* ptr);
+
+  void delete_tensortensorlisttensorlist(std::tuple<at::Tensor,std::vector<at::Tensor>,std::vector<at::Tensor>>* ptr);
+
+  void delete_tensorlisttensorlisttensorlisttensorlisttensorlist(std::tuple<std::vector<at::Tensor>,std::vector<at::Tensor>,std::vector<at::Tensor>,std::vector<at::Tensor>,std::vector<at::Tensor>>* ptr);
 
   void delete_cdoubleint64(std::tuple<double,int64_t>* ptr);
 
@@ -109,5 +125,6 @@ extern "C" {
   void delete_arrayrefscalar(at::ArrayRef<at::Scalar>* ptr);
 
   void delete_vectorscalar(std::vector<at::Scalar>* ptr);
+
 #include "hasktorch_dump.h"
 };

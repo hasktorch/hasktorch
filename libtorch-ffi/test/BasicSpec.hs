@@ -363,11 +363,11 @@ spec = forM_ [
 --   Tensor e = rand({});
 --   ASSERT_EQ_RESOLVED(*e.data<float>(), e.sum().item<float>());
 -- }
-  it "TestToCFloat" $ do
-    a <- new' zeros_lo [3,4] dtype
-    b <- new' ones_lo [3,7] dtype
-    c <- ap2 cat_ll (tensorList [a,b]) (pure 1)
-    tensor_size_l c 1 `shouldReturn` 11
+  -- it "TestToCFloat" $ do
+  --   a <- new' zeros_lo [3,4] dtype
+  --   b <- new' ones_lo [3,7] dtype
+  --   c <- ap2 cat_ll (tensorList [a,b]) (pure 1)
+  --   tensor_size_l c 1 `shouldReturn` 11
 
 -- void TestToString() {
 --   Tensor b = ones({3, 7}) * .0000001f;

@@ -101,8 +101,8 @@ library
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -fplugin GHC.NotExport.Plugin
  build-depends:       async
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.11.*
-                    , libtorch-ffi-helper == 1.11.*
+                    , libtorch-ffi == 2.0.*
+                    , libtorch-ffi-helper == 2.0.*
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
@@ -219,7 +219,7 @@ test-suite doctests
   build-depends:      doctest >=0.16.0.1 && <0.21
                     , async
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.11.*
+                    , libtorch-ffi == 2.0.*
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat

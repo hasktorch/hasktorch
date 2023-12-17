@@ -23,6 +23,8 @@ module Torch.Typed.Tensor where
 
 import Control.Arrow
 import Control.Category
+import qualified Numeric.Half as N
+import Data.Complex
 import Data.Finite
 import Data.Kind
   ( Constraint,
@@ -97,6 +99,15 @@ instance KnownDType 'D.Float where
 instance KnownDType 'D.Double where
   dtypeVal = D.Double
 
+instance KnownDType 'D.ComplexHalf where
+  dtypeVal = D.ComplexHalf
+
+instance KnownDType 'D.ComplexFloat where
+  dtypeVal = D.ComplexFloat
+
+instance KnownDType 'D.ComplexDouble where
+  dtypeVal = D.ComplexDouble
+
 type family ComputeDType (dtype' :: dtype) :: D.DType where
   ComputeDType Bool = D.Bool
   ComputeDType D.Bool = D.Bool
@@ -106,10 +117,18 @@ type family ComputeDType (dtype' :: dtype) :: D.DType where
   ComputeDType D.Int32 = D.Int32
   ComputeDType Int = D.Int64
   ComputeDType D.Int64 = D.Int64
+  ComputeDType N.Half = D.Half
+  ComputeDType D.Half = D.Half
   ComputeDType Float = D.Float
   ComputeDType D.Float = D.Float
   ComputeDType Double = D.Double
   ComputeDType D.Double = D.Double
+  ComputeDType (Complex N.Half) = D.ComplexHalf
+  ComputeDType D.ComplexHalf = D.ComplexHalf
+  ComputeDType (Complex Float) = D.ComplexFloat
+  ComputeDType D.ComplexFloat = D.ComplexFloat
+  ComputeDType (Complex Double) = D.ComplexDouble
+  ComputeDType D.ComplexDouble = D.ComplexDouble
   ComputeDType dtype' = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype')
 
 class KnownDevice (device :: (D.DeviceType, Nat)) where

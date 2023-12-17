@@ -145,6 +145,18 @@ void delete_tensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::
   delete object;
 }
 
+void delete_tensortensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* object){
+  delete object;
+}
+
+void delete_tensortensortensortensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor,at::Tensor>* object){
+  delete object;
+}
+
+void delete_tensortensortensortensorint64int64int64int64tensor(std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor,int64_t,int64_t,int64_t,int64_t,at::Tensor,at::Tensor>* object){
+  delete object;
+}
+
 void delete_tensortensortensortensorlist(std::tuple<at::Tensor,at::Tensor,at::Tensor,std::vector<at::Tensor>>* object){
   delete object;
 }
@@ -162,6 +174,26 @@ void delete_tensortensortensortensor(std::tuple<at::Tensor,at::Tensor,at::Tensor
 }
 
 void delete_tensortensorcdoubleint64(std::tuple<at::Tensor,at::Tensor,double,int64_t>* object){
+  delete object;
+}
+
+void delete_tensortensorint64int64tensor(std::tuple<at::Tensor,at::Tensor,int64_t,int64_t,at::Tensor>* object){
+  delete object;
+}
+
+void delete_tensorlisttensor(std::tuple<std::vector<at::Tensor>,at::Tensor>* object){
+  delete object;
+}
+
+void delete_tensortensorlist(std::tuple<at::Tensor,std::vector<at::Tensor>>* object){
+  delete object;
+}
+
+void delete_tensortensorlisttensorlist(std::tuple<at::Tensor,std::vector<at::Tensor>,std::vector<at::Tensor>>* object){
+  delete object;
+}
+
+void delete_tensorlisttensorlisttensorlisttensorlisttensorlist(std::tuple<std::vector<at::Tensor>,std::vector<at::Tensor>,std::vector<at::Tensor>,std::vector<at::Tensor>,std::vector<at::Tensor>>* object){
   delete object;
 }
 
@@ -290,6 +322,12 @@ showObject(int flag, void* ptr, void* fptr){
     std::cout << age << ":" << "(tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensortensortensortensortensor){
     std::cout << age << ":" << "(tensor,tensor,tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensortensortensor){
+    std::cout << age << ":" << "(tensor,tensor,tensor,tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensortensortensortensor){
+    std::cout << age << ":" << "(tensor,tensor,tensor,tensor,tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensortensortensorint64int64int64int64tensor){
+    std::cout << age << ":" << "(tensor,tensor,tensor,tensor,int,int,int,int,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensortensortensortensorlist){
     std::cout << age << ":" << "(tensor,tensor,tensor,[tensor])" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensortensortensortensorint64){
@@ -300,6 +338,16 @@ showObject(int flag, void* ptr, void* fptr){
     std::cout << age << ":" << "(tensor,tensor,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensortensorcdoubleint64){
     std::cout << age << ":" << "(tensor,tensor,double,int)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensorint64int64tensor){
+    std::cout << age << ":" << "(tensor,tensor,int,int,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensorlisttensor){
+    std::cout << age << ":" << "(tensorlist,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensorlist){
+    std::cout << age << ":" << "(tensor,tensorlist)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensorlisttensorlist){
+    std::cout << age << ":" << "(tensor,tensorlist,tensorlist)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensorlisttensorlisttensorlisttensorlisttensorlist){
+    std::cout << age << ":" << "(tensorlist,tensorlist,tensorlist,tensorlist,tensorlist)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_cdoubleint64){
     std::cout << age << ":" << "(double,int)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_cdoublecdouble){

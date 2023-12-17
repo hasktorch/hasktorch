@@ -351,7 +351,7 @@ reshape shape t = unsafePerformIO $ cast2 ATen.reshape_tl t shape
 --------------------------------------------------------------------------------
 
 toSparse :: Tensor -> Tensor
-toSparse t = unsafePerformIO $ (cast1 ATen.tensor_to_sparse) t
+toSparse t = unsafePerformIO $ (cast2 ATen.tensor_to_sparse_l) t (dimCUnsafe t)
 
 toDense :: Tensor -> Tensor
 toDense t = unsafePerformIO $ (cast1 ATen.tensor_to_dense) t

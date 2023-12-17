@@ -13,7 +13,6 @@ module Torch.Internal.Unmanaged.Type.Tensor.Tensor0 where
 
 import qualified Language.C.Inline.Cpp as C
 import qualified Language.C.Inline.Cpp.Unsafe as C
-import qualified Language.C.Inline.Unsafe as CUnsafe
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
 import qualified Data.Map as Map
@@ -114,22 +113,6 @@ tensor_dim
   -> IO (Int64)
 tensor_dim _obj =
   [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).dim(
-    );
-  }|]
-
-tensor_dim_unsafe
-  :: Ptr Tensor
-  -> IO (Int64)
-tensor_dim_unsafe _obj =
-  [C.throwBlock| int64_t { return (*$(at::Tensor* _obj)).dim(
-    );
-  }|]
-
-tensor_dim_c_unsafe
-  :: Ptr Tensor
-  -> IO (Int64)
-tensor_dim_c_unsafe _obj =
-  [CUnsafe.block| int64_t { return (*$(at::Tensor* _obj)).dim(
     );
   }|]
 
@@ -538,7 +521,7 @@ tensor_sizes
   :: Ptr Tensor
   -> IO (Ptr IntArray)
 tensor_sizes _obj =
-  [CUnsafe.block| std::vector<int64_t>* { return new std::vector<int64_t>((*$(at::Tensor* _obj)).sizes(
+  [C.throwBlock| std::vector<int64_t>* { return new std::vector<int64_t>((*$(at::Tensor* _obj)).sizes(
     ).vec());
   }|]
 
@@ -897,6 +880,15 @@ tensor_sgn_ _obj =
     ));
   }|]
 
+tensor_chalf_M
+  :: Ptr Tensor
+  -> MemoryFormat
+  -> IO (Ptr Tensor)
+tensor_chalf_M _obj _memory_format =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).chalf(
+    $(at::MemoryFormat _memory_format)));
+  }|]
+
 tensor__conj
   :: Ptr Tensor
   -> IO (Ptr Tensor)
@@ -1095,6 +1087,22 @@ tensor_addr__ttss _obj _vec1 _vec2 _beta _alpha =
   , *$(at::Tensor* _vec2)
   , *$(at::Scalar* _beta)
   , *$(at::Scalar* _alpha)));
+  }|]
+
+tensor__is_all_true
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor__is_all_true _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))._is_all_true(
+    ));
+  }|]
+
+tensor__is_any_true
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor__is_any_true _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj))._is_any_true(
+    ));
   }|]
 
 tensor_all_lb
@@ -1875,6 +1883,24 @@ tensor_cummax_l
   -> IO (Ptr (StdTuple '(Tensor,Tensor)))
 tensor_cummax_l _obj _dim =
   [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummax(
+    $(int64_t _dim)));
+  }|]
+
+tensor_cummax_n
+  :: Ptr Tensor
+  -> Ptr Dimname
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_cummax_n _obj _dim =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummax(
+    *$(at::Dimname* _dim)));
+  }|]
+
+tensor_cummin_l
+  :: Ptr Tensor
+  -> Int64
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_cummin_l _obj _dim =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).cummin(
     $(int64_t _dim)));
   }|]
 
