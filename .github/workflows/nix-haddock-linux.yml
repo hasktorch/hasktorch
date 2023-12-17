@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: free disk space
       run: |
         sudo swapoff -a
@@ -22,7 +22,7 @@ jobs:
         sudo apt autoclean -y || true
         docker rmi $(docker image ls -aq)
         df -h
-    - uses: cachix/install-nix-action@v18
+    - uses: cachix/install-nix-action@v23
     - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
     - run: cachix use hasktorch
     - run: |

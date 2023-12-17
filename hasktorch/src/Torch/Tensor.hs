@@ -312,7 +312,7 @@ indexSelect' ::
   Tensor ->
   -- | output
   Tensor
-indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (asTensor' indexList t)
+indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (_toDevice (device t) (asTensor indexList))
 
 -- | Slices the input tensor along the selected dimension at the given range.
 sliceDim ::

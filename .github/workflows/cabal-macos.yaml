@@ -5,49 +5,81 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: macOS-latest
+    env:
+      GHC: '9.2.8'
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup repo
-      run: |
-        git submodule init && git submodule update
-    - name: Setup tool-chains
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Setup packages
       run: |
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         brew install libomp || true
         pip3 install pyyaml || true
-        #brew install ghc@9.02 || true
-        #brew install cabal-install || true
         brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
         brew install libtorch-prebuild@2.0 || true
         brew tap hasktorch/tokenizers https://github.com/hasktorch/tokenizers || true
         brew install libtokenizers || true
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
 
-        echo "$HOME/.cabal/bin" >> $GITHUB_PATH
-        echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
-        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
-        ghcup install ghc 9.2.4
-        ghcup set ghc 9.2.4
-        ghcup install cabal
-    - name: Cache .cabal
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cabal/store
-          dist-newstyle
-        key: ${{ runner.os }}-cabal-ghc924-${{ hashFiles('**/fallible.cabal') }}
-        restore-keys: |
-          ${{ runner.os }}-cabal-ghc902-
-    - name: Build
+    - name: Setup Haskell
       run: |
-        #. setenv
+        echo "$HOME/.ghcup/bin" >> "${GITHUB_PATH}"
+        ghcup install ghc --set ${{ env.GHC }}
+
+      ## GHCup is preinstalled on the GHA runners. This would be the magic incantation to install it:
+      # curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+      ## Cabal is preinstalled on the GHA runners
+      # ghcup install cabal
+
+    - name: Information about the Haskell setup
+      run: |
+        echo "PATH = ${PATH}"
+        echo "GHC is $(which ghc)"
+        echo "Cabal is $(which cabal)"
+        echo "GHC_VERSION=$(ghc --numeric-version)"     >> "${GITHUB_ENV}"
+        echo "CABAL_VERSION=$(cabal --numeric-version)" >> "${GITHUB_ENV}"
+
+    - name: Generate install-plan
+      run: |
         ./setup-cabal.sh
         cabal v2-update
-        cabal v2-install hspec-discover
-        cabal v2-build --jobs=2 all
-    - name: Test
+        cabal v2-build --jobs=2 all --dry-run
+      ## The latter leaves a build plan in dist-newstyle/cache/plan.json
+
+    - name: Restore cached dependencies
+      uses: actions/cache/restore@v3
+      id:   cache
+      with:
+        # We don't cache dist-newstyle because it is fat and in practice hardly reused.
+        path: ~/.cabal/store
+        # Append the build plan to the cache key so that a new cache gets saved when dependencies update.
+        # `plan.json` is a good cache key because it does not contain time stamps (unlike `cabal.project.freeze`).
+        key:          ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-plan-${{ hashFiles('**/plan.json') }}
+        restore-keys: ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-
+
+    - name: Install dependencies
       run: |
-        #. setenv
+        cabal v2-build --jobs=2 all --only-dependencies
+
+    - name: Cache dependencies
+      if:   ${{ steps.cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v3
+      with:
+        path: ~/.cabal/store
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+
+    - name: Build
+      run: |
+        cabal v2-build --jobs=2 all
+
+    - name: Tests
+      run: |
         cabal v2-test --jobs=2 all
+
+    - name: Runs
+      run: |
         cabal v2-exec codegen-exe
         cabal exec xor-mlp
