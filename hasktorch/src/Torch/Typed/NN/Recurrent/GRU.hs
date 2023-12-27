@@ -730,8 +730,8 @@ gruForwardWithDropout,
 -- >>> model <- A.sample spec
 -- >>> :t gruForwardWithDropout @'BatchFirst model input
 -- gruForwardWithDropout @'BatchFirst model input
---   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+--   :: (Tensor '(D.CPU, 0) 'D.Float [5, 16, 60],
+--       Tensor '(D.CPU, 0) 'D.Float [6, 5, 30])
 -- >>> (a,b) = gruForwardWithDropout @'BatchFirst model input
 -- >>> ((dtype a, shape a), (dtype b, shape b))
 -- ((Float,[5,16,60]),(Float,[6,5,30]))
@@ -761,8 +761,8 @@ gruForwardWithDropout =
 -- >>> model <- A.sample spec
 -- >>> :t gruForwardWithoutDropout @'BatchFirst model input
 -- gruForwardWithoutDropout @'BatchFirst model input
---   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+--   :: (Tensor '(D.CPU, 0) 'D.Float [5, 16, 60],
+--       Tensor '(D.CPU, 0) 'D.Float [6, 5, 30])
 -- >>> (a,b) = gruForwardWithoutDropout @'BatchFirst model input
 -- >>> ((dtype a, shape a), (dtype b, shape b))
 -- ((Float,[5,16,60]),(Float,[6,5,30]))

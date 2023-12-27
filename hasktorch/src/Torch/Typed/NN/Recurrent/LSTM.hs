@@ -867,13 +867,13 @@ lstmForwardWithDropout,
 -- ^ Forward propagate the `LSTM` module and apply dropout on the outputs of each layer.
 --
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
--- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
+-- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'(D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
 -- >>> :t lstmForwardWithDropout @'BatchFirst model input
 -- lstmForwardWithDropout @'BatchFirst model input
---   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+--   :: (Tensor '(D.CPU, 0) 'D.Float [5, 16, 60],
+--       Tensor '(D.CPU, 0) 'D.Float [6, 5, 30],
+--       Tensor '(D.CPU, 0) 'D.Float [6, 5, 30])
 -- >>> (a,b,c) = lstmForwardWithDropout @'BatchFirst model input
 -- >>> ((dtype a, shape a), (dtype b, shape b), (dtype c, shape c))
 -- ((Float,[5,16,60]),(Float,[6,5,30]),(Float,[6,5,30]))
@@ -899,13 +899,13 @@ lstmForwardWithDropout =
 -- ^ Forward propagate the `LSTM` module (without applying dropout on the outputs of each layer).
 --
 -- >>> input :: CPUTensor 'D.Float '[5,16,10] <- randn
--- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'( 'D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
+-- >>> spec = LSTMWithZerosInitSpec @10 @30 @3 @'Bidirectional @'D.Float @'(D.CPU, 0) (LSTMSpec (DropoutSpec 0.5))
 -- >>> model <- A.sample spec
 -- >>> :t lstmForwardWithoutDropout @'BatchFirst model input
 -- lstmForwardWithoutDropout @'BatchFirst model input
---   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+--   :: (Tensor '(D.CPU, 0) 'D.Float [5, 16, 60],
+--       Tensor '(D.CPU, 0) 'D.Float [6, 5, 30],
+--       Tensor '(D.CPU, 0) 'D.Float [6, 5, 30])
 -- >>> (a,b,c) = lstmForwardWithoutDropout @'BatchFirst model input
 -- >>> ((dtype a, shape a), (dtype b, shape b), (dtype c, shape c))
 -- ((Float,[5,16,60]),(Float,[6,5,30]),(Float,[6,5,30]))
