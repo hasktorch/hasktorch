@@ -14,6 +14,7 @@ import qualified Codec.Compression.GZip as GZip
 import Control.Monad (forM_)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BSI
+import Foreign.Marshal.Utils (copyBytes)
 import qualified Data.ByteString.Lazy as BS.Lazy
 import Data.Kind
 import qualified Foreign.ForeignPtr as F
@@ -120,7 +121,7 @@ getImages mnist imageIdxs = UnsafeMkTensor $
     D.withTensor t $ \ptr1 -> do
       F.withForeignPtr fptr $ \ptr2 -> do
         forM_ (zip [0 .. ((natValI @n) -1)] imageIdxs) $ \(i, idx) -> do
-          BSI.memcpy
+          copyBytes
             (F.plusPtr ptr1 ((natValI @DataDim) * i))
             (F.plusPtr ptr2 (off + 16 + (natValI @DataDim) * idx))
             (natValI @DataDim)
