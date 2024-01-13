@@ -104,6 +104,8 @@ extern "C" {
 
   void delete_tensortensorint64int64tensor(std::tuple<at::Tensor,at::Tensor,int64_t,int64_t,at::Tensor>* ptr);
 
+  void delete_tensortensorint64int64tensortensor(std::tuple<at::Tensor,at::Tensor,int64_t,int64_t,at::Tensor,at::Tensor>* ptr);
+
   void delete_tensorlisttensor(std::tuple<std::vector<at::Tensor>,at::Tensor>* ptr);
 
   void delete_tensortensorlist(std::tuple<at::Tensor,std::vector<at::Tensor>>* ptr);

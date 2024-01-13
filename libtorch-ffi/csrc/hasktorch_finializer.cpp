@@ -181,6 +181,10 @@ void delete_tensortensorint64int64tensor(std::tuple<at::Tensor,at::Tensor,int64_
   delete object;
 }
 
+void delete_tensortensorint64int64tensortensor(std::tuple<at::Tensor,at::Tensor,int64_t,int64_t,at::Tensor,at::Tensor>* object){
+  delete object;
+}
+
 void delete_tensorlisttensor(std::tuple<std::vector<at::Tensor>,at::Tensor>* object){
   delete object;
 }
@@ -340,6 +344,8 @@ showObject(int flag, void* ptr, void* fptr){
     std::cout << age << ":" << "(tensor,tensor,double,int)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensortensorint64int64tensor){
     std::cout << age << ":" << "(tensor,tensor,int,int,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
+  }else if(fptr == (void*)delete_tensortensorint64int64tensortensor){
+    std::cout << age << ":" << "(tensor,tensor,int,int,tensor,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensorlisttensor){
     std::cout << age << ":" << "(tensorlist,tensor)" << ":" << std::hex << (ptr) << std::dec << std::endl;
   }else if(fptr == (void*)delete_tensortensorlist){
