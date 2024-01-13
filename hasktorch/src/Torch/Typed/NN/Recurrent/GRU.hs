@@ -232,7 +232,10 @@ instance
     HAppendFD
       (Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device))
       (Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
-      (Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) ++ Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device))
+      (Parameters (GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) ++ Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)),
+    1 <= numLayers,
+    numLayersM1 ~ numLayers - 1,
+    0 <= numLayersM1
   ) =>
   GRULayerStackParameterized 'True inputSize hiddenSize numLayers directionality dtype device
   where
@@ -242,12 +245,12 @@ instance
         ++ Parameters (GRULayer (hiddenSize * NumberOfDirections directionality) hiddenSize directionality dtype device)
   gruLayerStackFlattenParameters _ (GRULayerK gruLayer gruLayerStack) =
     let parameters = flattenParameters gruLayer
-        parameters' = flattenParameters @(GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) gruLayerStack
+        parameters' = flattenParameters @(GRULayerStack inputSize hiddenSize numLayersM1 directionality dtype device) gruLayerStack
      in parameters' `happendFD` parameters
   gruLayerStackReplaceParameters _ (GRULayerK gruLayer gruLayerStack) parameters'' =
     let (parameters', parameters) = hunappendFD parameters''
         gruLayer' = replaceParameters gruLayer parameters
-        gruLayerStack' = replaceParameters @(GRULayerStack inputSize hiddenSize (numLayers - 1) directionality dtype device) gruLayerStack parameters'
+        gruLayerStack' = replaceParameters @(GRULayerStack inputSize hiddenSize numLayersM1 directionality dtype device) gruLayerStack parameters'
      in GRULayerK gruLayer' gruLayerStack'
 
 instance
@@ -727,8 +730,8 @@ gruForwardWithDropout,
 -- >>> model <- A.sample spec
 -- >>> :t gruForwardWithDropout @'BatchFirst model input
 -- gruForwardWithDropout @'BatchFirst model input
---   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+--   :: (Tensor '(D.CPU, 0) 'D.Float [5, 16, 60],
+--       Tensor '(D.CPU, 0) 'D.Float [6, 5, 30])
 -- >>> (a,b) = gruForwardWithDropout @'BatchFirst model input
 -- >>> ((dtype a, shape a), (dtype b, shape b))
 -- ((Float,[5,16,60]),(Float,[6,5,30]))
@@ -758,8 +761,8 @@ gruForwardWithDropout =
 -- >>> model <- A.sample spec
 -- >>> :t gruForwardWithoutDropout @'BatchFirst model input
 -- gruForwardWithoutDropout @'BatchFirst model input
---   :: (Tensor '( 'D.CPU, 0) 'D.Float '[5, 16, 60],
---       Tensor '( 'D.CPU, 0) 'D.Float '[6, 5, 30])
+--   :: (Tensor '(D.CPU, 0) 'D.Float [5, 16, 60],
+--       Tensor '(D.CPU, 0) 'D.Float [6, 5, 30])
 -- >>> (a,b) = gruForwardWithoutDropout @'BatchFirst model input
 -- >>> ((dtype a, shape a), (dtype b, shape b))
 -- ((Float,[5,16,60]),(Float,[6,5,30]))

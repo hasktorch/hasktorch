@@ -19,6 +19,7 @@ where
 import qualified Control.Foldl as L
 import Control.Monad.Cont
 import Control.Monad.Trans.Control
+import Data.Kind (Type)
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as M
 import qualified Data.Set as S
@@ -76,7 +77,7 @@ collate batchSize collateFn = Select . (>-> P.mapFoldable collateFn) . L.purely 
 
 -- | An In-Memory cached dataset. See the 'cache' function for
 -- how to create a cached dataset.
-newtype CachedDataset (m :: * -> *) sample = CachedDataset {cached :: IntMap sample}
+newtype CachedDataset (m :: Type -> Type) sample = CachedDataset {cached :: IntMap sample}
 
 -- | Enumerate a given stream and store it as a 'CachedDataset'. This function should
 -- be used after a time consuming preprocessing pipeline and used in subsequent epochs

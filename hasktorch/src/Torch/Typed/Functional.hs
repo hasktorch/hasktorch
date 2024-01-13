@@ -89,7 +89,7 @@ import Prelude hiding
 
 -- $setup
 --
--- >>> :set -XOverloadedLists
+-- >>> :seti -XOverloadedLists
 
 -- | Computes the bitwise NOT of the given input tensor.
 -- The input tensor must be of integral or Boolean types.
@@ -796,7 +796,7 @@ tanh input = unsafePerformIO $ ATen.cast1 ATen.Managed.tanh_t input
 --
 -- >>> :kind! ConditionalReduction '[3,2] ReduceNone
 -- ConditionalReduction '[3,2] ReduceNone :: [Natural]
--- = '[3, 2]
+-- = [3, 2]
 -- >>> :kind! ConditionalReduction '[3,2] ReduceMean
 -- ConditionalReduction '[3,2] ReduceMean :: [Natural]
 -- = '[]
@@ -1002,11 +1002,11 @@ type family SymeigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType
 -- >>> dtype &&& shape $ eigenVals
 -- (Float,[3,2])
 -- >>> :t eigenVals
--- eigenVals :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]
+-- eigenVals :: Tensor '(D.CPU, 0) 'D.Float [3, 2]
 -- >>> dtype &&& shape $ eigenVecs
 -- (Float,[3,2,2])
 -- >>> :t eigenVecs
--- eigenVecs :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2, 2]
+-- eigenVecs :: Tensor '(D.CPU, 0) 'D.Float [3, 2, 2]
 -- >>> (eigenVals,eigenVecs) = symeig Lower t
 -- >>> dtype &&& shape $ eigenVals
 -- (Float,[3,2])
@@ -1042,7 +1042,7 @@ symeig upper input =
 -- >>> dtype &&& shape $ eigenVals
 -- (Float,[3,2])
 -- >>> :t eigenVals
--- eigenVals :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]
+-- eigenVals :: Tensor '(D.CPU, 0) 'D.Float [3, 2]
 symeigvalues ::
   forall shape shape' dtype device.
   ( shape' ~ VectorOfSquare shape,
@@ -1078,9 +1078,9 @@ type family ConditionalEigenVectors (eigenvectors :: EigenVectors) (n :: Nat) ::
   ConditionalEigenVectors DisableEigenVectors _ = '[0]
 
 type family EigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  EigDTypeIsValid '( 'D.CPU, 0) dtype =
-    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
-      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  EigDTypeIsValid '(D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '(D.CPU, 0) dtype,
+      DTypeIsNotHalf '(D.CPU, 0) dtype
     )
   EigDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
@@ -1111,18 +1111,18 @@ type family ToComplexNumber (dtype :: D.DType) :: D.DType where
 -- >>> dtype &&& shape $ eigenVals
 -- (ComplexFloat,[3])
 -- >>> :t eigenVals
--- eigenVals :: Tensor '( 'D.CPU, 0) 'D.ComplexFloat '[3]
+-- eigenVals :: Tensor '(D.CPU, 0) D.ComplexFloat '[3]
 -- >>> dtype &&& shape $ eigenVecs
 -- (ComplexFloat,[3,3])
 -- >>> :t eigenVecs
- -- eigenVecs :: Tensor '( 'D.CPU, 0) 'D.ComplexFloat '[3, 3]
+ -- eigenVecs :: Tensor '(D.CPU, 0) D.ComplexFloat [3, 3]
 -- >>> (eigenVals,eigenVecs) = eig @DisableEigenVectors t
 -- >>> dtype &&& shape $ eigenVals
 -- (ComplexFloat,[3])
 -- >>> dtype &&& shape $ eigenVecs
 -- (ComplexFloat,[3,3])
 -- >>> :t eigenVecs
--- eigenVecs :: Tensor '( 'D.CPU, 0) 'D.ComplexFloat '[3, 3]
+-- eigenVecs :: Tensor '(D.CPU, 0) D.ComplexFloat [3, 3]
 eig ::
   forall eigenvectors n shape dtype device.
   ( KnownNat n,
@@ -1160,9 +1160,9 @@ instance KnownReducedSVD FullSVD where
   reducedSVD = False
 
 type family SVDDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  SVDDTypeIsValid '( 'D.CPU, 0) dtype =
-    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
-      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  SVDDTypeIsValid '(D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '(D.CPU, 0) dtype,
+      DTypeIsNotHalf '(D.CPU, 0) dtype
     )
   SVDDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
@@ -1225,9 +1225,9 @@ svd input =
   unsafePerformIO $ ATen.cast3 ATen.Managed.svd_tbb input (reducedSVD @reduced) True
 
 type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  CholeskyDTypeIsValid '( 'D.CPU, 0) dtype =
-    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
-      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  CholeskyDTypeIsValid '(D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '(D.CPU, 0) dtype,
+      DTypeIsNotHalf '(D.CPU, 0) dtype
     )
   CholeskyDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
@@ -1256,7 +1256,7 @@ type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
 -- >>> dtype &&& shape $ u
 -- (Float,[2,2])
 -- >>> :t u
--- u :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2]
+-- u :: Tensor '(D.CPU, 0) 'D.Float [2, 2]
 cholesky ::
   forall shape shape' dtype device.
   ( shape' ~ Square shape,
@@ -1335,9 +1335,9 @@ choleskySolve upper b u =
     boolUpper = isUpper upper
 
 type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  SolveDTypeIsValid '( 'D.CPU, 0) dtype =
-    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
-      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  SolveDTypeIsValid '(D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '(D.CPU, 0) dtype,
+      DTypeIsNotHalf '(D.CPU, 0) dtype
     )
   SolveDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
@@ -1365,7 +1365,7 @@ type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType)
 -- >>> dtype &&& shape $ c
 -- (Float,[10,3])
 -- >>> :t c
--- c :: Tensor '( 'D.CPU, 0) 'D.Float '[10, 3]
+-- c :: Tensor '(D.CPU, 0) 'D.Float [10, 3]
 solve ::
   forall m_k m_m dtype device.
   ( Square m_m ~ m_m,
@@ -1469,10 +1469,10 @@ type family GetValue (shape :: [Nat]) (i :: Nat) :: Nat where
 --
 -- >>> :kind! Transpose '[3,2] 0 1
 -- Transpose '[3,2] 0 1 :: [Natural]
--- = '[2, 3]
+-- = [2, 3]
 -- >>> :kind! Transpose '[3,2,1] 1 2
 -- Transpose '[3,2,1] 1 2 :: [Natural]
--- = '[3, 1, 2]
+-- = [3, 1, 2]
 type family Transpose (shape :: [Nat]) (dim0 :: Nat) (dim1 :: Nat) :: [Nat] where
   Transpose s d0 d1 = (SetValue (SetValue s d0 (GetValue s d1)) d1 (GetValue s d0))
 
@@ -1820,7 +1820,7 @@ acos input = unsafePerformIO $ ATen.cast1 ATen.Managed.acos_t input
 -- >>> shape t
 -- [1,3,4]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 4]
 avgPool1d ::
   forall
     kernelSize
@@ -1857,7 +1857,7 @@ avgPool1d input =
 -- >>> shape t
 -- [1,3,8]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 8]
 adaptiveAvgPool1d ::
   forall outputSize channelSize inputSize batchSize dtype device.
   (All KnownNat '[channelSize, inputSize, batchSize, outputSize]) =>
@@ -1877,8 +1877,8 @@ adaptiveAvgPool1d input =
 -- [1,3,8]
 -- >>> :t tt
 -- tt
---   :: (Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8],
---       Tensor '( 'D.CPU, 0) 'D.Int64 '[1, 3, 8])
+--   :: (Tensor '(D.CPU, 0) 'D.Float [1, 3, 8],
+--       Tensor '(D.CPU, 0) D.Int64 [1, 3, 8])
 adaptiveMaxPool1d ::
   forall outputSize channelSize inputSize batchSize dtype device.
   (All KnownNat '[channelSize, inputSize, batchSize, outputSize]) =>
@@ -1900,7 +1900,7 @@ adaptiveMaxPool1d input =
 -- >>> dtype &&& shape $ t
 -- (Float,[3])
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[3]
+-- t :: Tensor '(D.CPU, 0) 'D.Float '[3]
 addmv ::
   forall shape' shape n m dtype device.
   ( KnownNat n,
@@ -2047,7 +2047,7 @@ atan input = unsafePerformIO $ ATen.cast1 ATen.Managed.atan_t input
 -- >>> dtype &&& shape $ t
 -- (Float,[5,3,4])
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 3, 4]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [5, 3, 4]
 baddbmm ::
   forall shape' shape batchSize n m k dtype device.
   ( KnownNat n,
@@ -2101,19 +2101,19 @@ bmm input other = unsafePerformIO $ ATen.cast2 ATen.Managed.bmm_tt input other
 -- >>> type Ty = BroadcastTensorsImpl '[] 'Nothing
 -- >>> :kind! Ty
 -- Ty :: Maybe ([Natural], D.DType, (D.DeviceType, Natural))
--- = 'Nothing
--- >>> type Ty = BroadcastTensorsImpl '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 3], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]] 'Nothing
+-- = Nothing
+-- >>> type Ty = BroadcastTensorsImpl '[Tensor '(D.CPU, 0) 'D.Float '[1, 3], Tensor '(D.CPU, 0) 'D.Float '[2, 1]] Nothing
 -- >>> :kind! Ty
 -- Ty :: Maybe ([Natural], D.DType, (D.DeviceType, Natural))
--- = 'Just '( '[2, 3], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = BroadcastTensorsImpl '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 3], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1], Tensor '( 'D.CPU, 0) 'D.Float '[5, 1, 1]] 'Nothing
+-- = Just '([2, 3], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = BroadcastTensorsImpl '[Tensor '(D.CPU, 0) 'D.Float '[1, 3], Tensor '(D.CPU, 0) 'D.Float '[2, 1], Tensor '(D.CPU, 0) 'D.Float '[5, 1, 1]] 'Nothing
 -- >>> :kind! Ty
 -- Ty :: Maybe ([Natural], D.DType, (D.DeviceType, Natural))
--- = 'Just '( '[5, 2, 3], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = BroadcastTensorsImpl '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 3], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1], Tensor '( 'D.CPU, 0) 'D.Float '[1, 5, 1]] 'Nothing
+-- = Just '([5, 2, 3], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = BroadcastTensorsImpl '[Tensor '(D.CPU, 0) 'D.Float '[1, 3], Tensor '(D.CPU, 0) 'D.Float '[2, 1], Tensor '(D.CPU, 0) 'D.Float '[1, 5, 1]] 'Nothing
 -- >>> :kind! Ty
 -- Ty :: Maybe ([Natural], D.DType, (D.DeviceType, Natural))
--- = 'Nothing
+-- = Nothing
 type family BroadcastTensorsImpl (tensors :: [a]) (acc :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: Maybe ([Nat], D.DType, (D.DeviceType, Nat)) where
   BroadcastTensorsImpl '[] 'Nothing = 'Nothing
   BroadcastTensorsImpl '[] ('Just '(reverseShape, dtype, device)) = 'Just '(Reverse reverseShape, dtype, device)
@@ -2142,13 +2142,13 @@ type BroadcastTensors tensors =
 --
 -- -- >>> x' :. y' :. z' :. HNil = broadcastTensors (x :. y :. z :. HNil)
 -- -- >>> :type x'
--- -- x' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2, 3]
+-- -- x' :: Tensor '(D.CPU, 0) 'D.Float '[5, 2, 3]
 -- -- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[[Float]]]) $ x'
 -- -- >>> :type y'
--- -- y' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2, 3]
+-- -- y' :: Tensor '(D.CPU, 0) 'D.Float '[5, 2, 3]
 -- -- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[[Float]]]) $ y'
 -- -- >>> :type z'
--- -- z' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2, 3]
+-- -- z' :: Tensor '(D.CPU, 0) 'D.Float '[5, 2, 3]
 -- -- >>> dtype &&& shape &&& (\t -> D.asValue (toDynamic t) :: [[[Float]]]) $ z'
 broadcastTensors ::
   forall tensors tensors'.
@@ -2189,26 +2189,26 @@ type family CatCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: ([N
 
 -- | Cat
 --
--- >>> type Ty = Cat 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[1]]
+-- >>> type Ty = Cat 0 '[Tensor '(D.CPU, 0) 'D.Float '[1]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[1], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = Cat 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[1], Tensor '( 'D.CPU, 0) 'D.Float '[2]]
+-- = '( '[1], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = Cat 0 '[Tensor '(D.CPU, 0) 'D.Float '[1], Tensor '(D.CPU, 0) 'D.Float '[2]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[3], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = Cat 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 3], Tensor '( 'D.CPU, 0) 'D.Float '[2, 3]]
+-- = '( '[3], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = Cat 0 '[Tensor '(D.CPU, 0) 'D.Float '[1, 3], Tensor '(D.CPU, 0) 'D.Float '[2, 3]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[3, 3], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = Cat 1 '[Tensor '( 'D.CPU, 0) 'D.Float '[3, 1], Tensor '( 'D.CPU, 0) 'D.Float '[3, 2]]
+-- = '([3, 3], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = Cat 1 '[Tensor '(D.CPU, 0) 'D.Float '[3, 1], Tensor '(D.CPU, 0) 'D.Float '[3, 2]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[3, 3], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = Cat 1 '[Tensor '( 'D.CPU, 0) 'D.Float '[2, 5, 4, 2], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1, 4, 2], Tensor '( 'D.CPU, 0) 'D.Float '[2, 3, 4, 2], Tensor '( 'D.CPU, 0) 'D.Float '[2, 1, 4, 2]]
+-- = '([3, 3], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = Cat 1 '[Tensor '(D.CPU, 0) 'D.Float '[2, 5, 4, 2], Tensor '(D.CPU, 0) 'D.Float '[2, 1, 4, 2], Tensor '(D.CPU, 0) 'D.Float '[2, 3, 4, 2], Tensor '(D.CPU, 0) 'D.Float '[2, 1, 4, 2]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[2, 10, 4, 2], 'D.Float, '( 'D.CPU, 0))
+-- = '([2, 10, 4, 2], 'D.Float, '(D.CPU, 0))
 type Cat dim tensors = CatCheck (CatImpl dim tensors Nothing)
 
 -- | cat
@@ -2216,22 +2216,22 @@ type Cat dim tensors = CatCheck (CatImpl dim tensors Nothing)
 -- >>> t = ones :: CPUTensor 'D.Float '[2,2]
 -- >>> t' = cat @0 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [2, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([2,2],[[1.0,1.0],[1.0,1.0]]))
 -- >>> t' = cat @1 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [2, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([2,2],[[1.0,1.0],[1.0,1.0]]))
 -- >>> t' = cat @0 (t :. t :. t :. HNil)
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[6, 2]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [6, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([6,2],[[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0],[1.0,1.0]]))
 -- >>> t' = cat @1 (t :. t :. t :. HNil)
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 6]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [2, 6]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([2,6],[[1.0,1.0,1.0,1.0,1.0,1.0],[1.0,1.0,1.0,1.0,1.0,1.0]]))
 cat ::
@@ -2290,8 +2290,8 @@ type Chunk chunks dim shape dtype device = ChunkCheck shape dim (ChunkImpl (Chun
 -- -- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
 -- -- chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
 -- --   :: HList
--- --        '[Tensor '( 'D.CPU, 0) 'D.Float '[2, 1],
--- --          Tensor '( 'D.CPU, 0) 'D.Float '[2, 1]]
+-- --        '[Tensor '(D.CPU, 0) 'D.Float '[2, 1],
+-- --          Tensor '(D.CPU, 0) 'D.Float '[2, 1]]
 -- >>> t0 :. t1 :. HNil = chunk @3 @1 (ones :: CPUTensor 'D.Float '[2, 2])
 -- >>> dtype &&& shape $ t0
 -- (Float,[2,1])
@@ -2301,9 +2301,9 @@ type Chunk chunks dim shape dtype device = ChunkCheck shape dim (ChunkImpl (Chun
 -- -- >>> :type chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
 -- -- chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
 -- --   :: HList
--- --        '[Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
--- --          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3],
--- --          Tensor '( 'D.CPU, 0) 'D.Float '[1, 0, 3]]
+-- --        '[Tensor '(D.CPU, 0) 'D.Float '[1, 0, 3],
+-- --          Tensor '(D.CPU, 0) 'D.Float '[1, 0, 3],
+-- --          Tensor '(D.CPU, 0) 'D.Float '[1, 0, 3]]
 -- >>> t0 :. t1 :. t2 :. HNil = chunk @3 @1 (ones :: CPUTensor 'D.Float '[1, 0, 3])
 -- >>> dtype &&& shape $ t0
 -- (Float,[1,0,3])
@@ -2315,11 +2315,11 @@ type Chunk chunks dim shape dtype device = ChunkCheck shape dim (ChunkImpl (Chun
 -- -- >>> :type chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
 -- -- chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
 -- --   :: HList
--- --        '[Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
--- --          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
--- --          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
--- --          Tensor '( 'D.CPU, 0) 'D.Float '[4, 4],
--- --          Tensor '( 'D.CPU, 0) 'D.Float '[3, 4]]
+-- --        '[Tensor '(D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '(D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '(D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '(D.CPU, 0) 'D.Float '[4, 4],
+-- --          Tensor '(D.CPU, 0) 'D.Float '[3, 4]]
 -- >>> t0 :. t1 :. t2 :. t3 :. t4 :. HNil = chunk @6 @0 (ones :: CPUTensor 'D.Float '[19, 4])
 -- >>> dtype &&& shape $ t0
 -- (Float,[4,4])
@@ -2456,7 +2456,7 @@ type family ConvOutputSize (inputSize :: Nat) (kernelSize :: Nat) (stride :: Nat
 --
 -- >>> t = conv1d @1 @0 (ones :: CPUTensor 'D.Float '[10, 3, 1]) (ones :: CPUTensor 'D.Float '[10]) (ones :: CPUTensor 'D.Float '[1, 3, 4])
 -- >>> :type t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 10, 4]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 10, 4]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
 -- (Float,([1,10,4],[[[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0]]]))
 conv1d ::
@@ -2509,7 +2509,7 @@ conv1d weight bias input =
 --
 -- >>> t = conv2d @'(1, 1) @'(0, 0) (ones :: CPUTensor 'D.Float '[10, 3, 1, 1]) (ones :: CPUTensor 'D.Float '[10]) (ones :: CPUTensor 'D.Float '[1, 3, 4, 5])
 -- >>> :type t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 10, 4, 5]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 10, 4, 5]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[Float]]]]) $ t
 -- (Float,([1,10,4,5],[[[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]]]]))
 conv2d ::
@@ -2571,7 +2571,7 @@ conv2d weight bias input =
 --
 -- >>> t = conv3d @'(1, 1, 1) @'(0, 0, 0) (ones :: CPUTensor 'D.Float '[10, 3, 1, 1, 1]) (ones :: CPUTensor 'D.Float '[10]) (ones :: CPUTensor 'D.Float '[1, 3, 4, 5, 6])
 -- >>> :type t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 10, 4, 5, 6]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 10, 4, 5, 6]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[[Float]]]]]) $ t
 -- (Float,([1,10,4,5,6],[[[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]]]]))
 conv3d ::
@@ -2659,7 +2659,7 @@ convTBC weight bias input =
 --
 -- >>> t = convTranspose1d @1 @0 (ones :: CPUTensor 'D.Float '[3, 10, 1]) (ones :: CPUTensor 'D.Float '[10]) (ones :: CPUTensor 'D.Float '[1, 3, 4])
 -- >>> :type t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 10, 4]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 10, 4]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
 -- (Float,([1,10,4],[[[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0]]]))
 convTranspose1d ::
@@ -2712,7 +2712,7 @@ convTranspose1d weight bias input =
 --
 -- >>> t = convTranspose2d @'(1, 1) @'(0, 0) (ones :: CPUTensor 'D.Float '[3, 10, 1, 1]) (ones :: CPUTensor 'D.Float '[10]) (ones :: CPUTensor 'D.Float '[1, 3, 4, 5])
 -- >>> :type t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 10, 4, 5]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 10, 4, 5]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[Float]]]]) $ t
 -- (Float,([1,10,4,5],[[[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0]]]]))
 convTranspose2d ::
@@ -2774,7 +2774,7 @@ convTranspose2d weight bias input =
 --
 -- >>> t = convTranspose3d @'(1, 1, 1) @'(0, 0, 0) (ones :: CPUTensor 'D.Float '[3, 10, 1, 1, 1]) (ones :: CPUTensor 'D.Float '[10]) (ones :: CPUTensor 'D.Float '[1, 3, 4, 5, 6])
 -- >>> :type t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 10, 4, 5, 6]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 10, 4, 5, 6]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[[Float]]]]]) $ t
 -- (Float,([1,10,4,5,6],[[[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]],[[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]],[[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0],[4.0,4.0,4.0,4.0,4.0,4.0]]]]]))
 convTranspose3d ::
@@ -3025,9 +3025,9 @@ diagonal t =
       (natValI @dim2)
 
 type family DotDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  DotDTypeIsValid '( 'D.CPU, 0) dtype =
-    ( DTypeIsNotBool '( 'D.CPU, 0) dtype,
-      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  DotDTypeIsValid '(D.CPU, 0) dtype =
+    ( DTypeIsNotBool '(D.CPU, 0) dtype,
+      DTypeIsNotHalf '(D.CPU, 0) dtype
     )
   DotDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
   DotDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
@@ -3070,7 +3070,7 @@ type family PaddingIdxCheck (idx :: Maybe Nat) (numEmbeds :: Nat) :: Constraint 
 -- >>> indices = fromJust [[0], [2], [0], [1]] :: CPUTensor 'D.Int64 '[4, 1]
 -- >>> t = embedding @('Just 1) False False weights indices
 -- >>> :type t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[4, 1, 2]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [4, 1, 2]
 --
 -- -- libtorch 1.7
 -- -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
@@ -3087,7 +3087,7 @@ type family PaddingIdxCheck (idx :: Maybe Nat) (numEmbeds :: Nat) :: Constraint 
 -- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
 -- >>> t = embedding @'Nothing False False weights indices
 -- >>> :type t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[4, 1, 2]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [4, 1, 2]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[Float]]]) $ t
 -- (Float,([4,1,2],[[[1.0,1.0]],[[3.0,3.0]],[[1.0,1.0]],[[2.0,2.0]]]))
 embedding ::
@@ -3191,7 +3191,7 @@ expand someBool input = unsafePerformIO $ ATen.cast3 ATen.Managed.tensor_expand_
 -- >>> dtype &&& shape $ t
 -- (Float,[6])
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[6]
+-- t :: Tensor '(D.CPU, 0) 'D.Float '[6]
 flattenAll ::
   forall shape dtype device.
   KnownShape shape =>
@@ -3377,9 +3377,9 @@ isSigned input = unsafePerformIO $ ATen.cast1 ATen.Managed.is_signed_t input
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- TODO: figure out if and when CUDNN works here, tie it also to the `device`
 --
--- >>> t = layerNorm @'[1, 2] @'[2, 1, 2] @'D.Float @'( 'D.CPU, 0) ones ones 0.01 ones
+-- >>> t = layerNorm @'[1, 2] @'[2, 1, 2] @'D.Float @'(D.CPU, 0) ones ones 0.01 ones
 -- >>> :type t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 1, 2]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [2, 1, 2]
 -- >>> dtype &&& shape $ t
 -- (Float,[2,1,2])
 layerNorm ::
@@ -3423,7 +3423,7 @@ layerNorm weight bias eps input =
 -- >>> t = fromJust [[-2, 0.5, 1], [0.5, 0, 0], [0, 1, 0], [0, 0, 0], [1, -1, 0]] :: CPUTensor 'D.Float '[5, 3]
 -- >>> t' = linear w b t
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [5, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([5,2],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]))
 linear ::
@@ -3444,13 +3444,13 @@ linear weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt 
 -- >>> t = fromJust [[-2, 0.5, 1], [0.5, 0, 0], [0, 1, 0], [0, 0, 0], [1, -1, 0]] :: CPUTensor 'D.Float '[5, 3]
 -- >>> t' = linear' w b t
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [5, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- (Float,([5,2],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]))
 -- >>> t = fromJust [[[[-2, 0.5, 1], [0.5, 0, 0], [0, 1, 0], [0, 0, 0], [1, -1, 0]], [[-2, 0.5, 1], [0.5, 0, 0], [0, 1, 0], [0, 0, 0], [1, -1, 0]]]] :: CPUTensor 'D.Float '[1, 2, 5, 3]
 -- >>> t' = linear' w b t
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 2, 5, 2]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [1, 2, 5, 2]
 -- >>> dtype &&& shape &&& (\t' -> D.asValue (toDynamic t') :: [[[[Float]]]]) $ t'
 -- (Float,([1,2,5,2],[[[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]]]))
 linear' ::
@@ -3480,7 +3480,7 @@ linear' weight bias input = unsafePerformIO $ ATen.cast3 ATen.Managed.linear_ttt
 --
 -- -- >>> t' = mkldnnLinear (toMKLDNN w) (toMKLDNN b) (toMKLDNN t)
 -- -- >>> :type t'
--- -- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[5, 2]
+-- -- t' :: Tensor '(D.CPU, 0) 'D.Float '[5, 2]
 -- -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[Float]]) $ t'
 -- -- (Float,([5,2],[[0.5,-2.25],[-0.25,1.25],[-2.0,0.0],[0.0,0.5],[1.5,2.5]]))
 mkldnnLinear ::
@@ -3669,7 +3669,7 @@ minValues input =
 -- >>> shape t
 -- [1,3,4]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 4]
 maxPool1d ::
   forall kernelSize stride padding channelSize inputSize batchSize outputSize dtype device.
   ( All
@@ -3709,7 +3709,7 @@ maxPool1d input =
 -- >>> shape t
 -- [1,3,4,5]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 4, 5]
 maxPool2d ::
   forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device.
   ( All
@@ -3751,7 +3751,7 @@ maxPool2d input =
 -- -- >>> shape t
 -- -- [1,3,4,5]
 -- -- >>> :t t
--- -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5]
+-- -- t :: Tensor '(D.CPU, 0) 'D.Float '[1, 3, 4, 5]
 mkldnnMaxPool2d ::
   forall kernelSize stride padding channelSize inputSize0 inputSize1 batchSize outputSize0 outputSize1 dtype device.
   ( All
@@ -3832,7 +3832,7 @@ quantizedMaxPool2d input =
 -- >>> shape t
 -- [1,3,4,5,6]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5, 6]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 4, 5, 6]
 maxPool3d ::
   forall
     kernelSize
@@ -3896,7 +3896,7 @@ maxPool3d input =
 -- >>> m = fromJust [[False], [True], [False]] :: CPUTensor 'D.Bool '[3, 1]
 -- >>> t' = maskedFill @Float m 0.5 t
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 3, 3]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [2, 3, 3]
 -- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[[Float]]]) $ t'
 -- (Float,([2,3,3],[[[1.0,1.0,1.0],[0.5,0.5,0.5],[1.0,1.0,1.0]],[[1.0,1.0,1.0],[0.5,0.5,0.5],[1.0,1.0,1.0]]]))
 maskedFill ::
@@ -4161,9 +4161,9 @@ prelu ::
 prelu weight input = unsafePerformIO $ ATen.cast2 ATen.Managed.prelu_tt input weight
 
 type family GeluDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
-  GeluDTypeIsValid '( 'D.CPU, 0) dtype =
-    ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
-      DTypeIsNotHalf '( 'D.CPU, 0) dtype
+  GeluDTypeIsValid '(D.CPU, 0) dtype =
+    ( DTypeIsFloatingPoint '(D.CPU, 0) dtype,
+      DTypeIsNotHalf '(D.CPU, 0) dtype
     )
   GeluDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
@@ -4262,26 +4262,26 @@ type family StackCheck (res :: Maybe ([Nat], D.DType, (D.DeviceType, Nat))) :: (
 
 -- | Stack
 --
--- >>> type Ty = Stack 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[]]
+-- >>> type Ty = Stack 0 '[Tensor '(D.CPU, 0) 'D.Float '[]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[1], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = Stack 0 '[Tensor '( 'D.CPU, 0) 'D.Float '[2,2]]
+-- = '( '[1], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = Stack 0 '[Tensor '(D.CPU, 0) 'D.Float '[2,2]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[1, 2, 2], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = Stack 1 '[Tensor '( 'D.CPU, 0) 'D.Float '[2,2]]
+-- = '([1, 2, 2], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = Stack 1 '[Tensor '(D.CPU, 0) 'D.Float '[2,2]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[2, 1, 2], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = Stack 2 '[Tensor '( 'D.CPU, 0) 'D.Float '[2,2]]
+-- = '([2, 1, 2], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = Stack 2 '[Tensor '(D.CPU, 0) 'D.Float '[2,2]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[2, 2, 1], 'D.Float, '( 'D.CPU, 0))
--- >>> type Ty = Stack 2 '[Tensor '( 'D.CPU, 0) 'D.Float '[2,2], Tensor '( 'D.CPU, 0) 'D.Float '[2,2], Tensor '( 'D.CPU, 0) 'D.Float '[2,2]]
+-- = '([2, 2, 1], 'D.Float, '(D.CPU, 0))
+-- >>> type Ty = Stack 2 '[Tensor '(D.CPU, 0) 'D.Float '[2,2], Tensor '(D.CPU, 0) 'D.Float '[2,2], Tensor '(D.CPU, 0) 'D.Float '[2,2]]
 -- >>> :kind! Ty
 -- Ty :: ([Natural], D.DType, (D.DeviceType, Natural))
--- = '( '[2, 2, 3], 'D.Float, '( 'D.CPU, 0))
+-- = '([2, 2, 3], 'D.Float, '(D.CPU, 0))
 type Stack dim tensors = StackCheck (StackImpl dim tensors 1)
 
 -- | stack
@@ -4289,28 +4289,28 @@ type Stack dim tensors = StackCheck (StackImpl dim tensors 1)
 -- >>> t = ones :: CPUTensor 'D.Float '[]
 -- >>> t' = stack @0 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[1]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float '[1]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [Float]) $ t'
 -- (Float,([1],[1.0]))
 -- >>> t = ones :: CPUTensor 'D.Float '[2,2]
 -- >>> t' = stack @0 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 2, 2]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [1, 2, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
 -- (Float,([1,2,2],[[[1.0,1.0],[1.0,1.0]]]))
 -- >>> t' = stack @1 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 1, 2]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [2, 1, 2]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
 -- (Float,([2,1,2],[[[1.0,1.0]],[[1.0,1.0]]]))
 -- >>> t' = stack @2 (t :. HNil)
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2, 1]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [2, 2, 1]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
 -- (Float,([2,2,1],[[[1.0],[1.0]],[[1.0],[1.0]]]))
 -- >>> t' = stack @2 (t :. t :. t :. HNil)
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 2, 3]
+-- t' :: Tensor '(D.CPU, 0) 'D.Float [2, 2, 3]
 -- >>> dtype &&& shape &&& (\t'' -> D.asValue (toDynamic t'') :: [[[Float]]]) $ t'
 -- (Float,([2,2,3],[[[1.0,1.0,1.0],[1.0,1.0,1.0]],[[1.0,1.0,1.0],[1.0,1.0,1.0]]]))
 stack ::
@@ -4413,13 +4413,13 @@ trunc input = unsafePerformIO $ ATen.cast1 ATen.Managed.trunc_t input
 --
 -- >>> :kind! UnsqueezeImpl '[4] 0
 -- UnsqueezeImpl '[4] 0 :: Maybe [Natural]
--- = 'Just '[1, 4]
+-- = Just [1, 4]
 -- >>> :kind! UnsqueezeImpl '[4] 1
 -- UnsqueezeImpl '[4] 1 :: Maybe [Natural]
--- = 'Just '[4, 1]
+-- = Just [4, 1]
 -- >>> :kind! UnsqueezeImpl '[4] 2
 -- UnsqueezeImpl '[4] 2 :: Maybe [Natural]
--- = 'Nothing
+-- = Nothing
 type family UnsqueezeImpl (shape :: [a]) (dim :: Nat) :: Maybe [a] where
   UnsqueezeImpl xs 0 = Just (1 ': xs)
   UnsqueezeImpl (x ': xs) dim = AppendToMaybe x (UnsqueezeImpl xs (dim - 1))
@@ -4443,12 +4443,12 @@ type Unsqueeze shape dim = UnsqueezeCheck shape dim (UnsqueezeImpl shape dim)
 -- >>> t = fromJust [1, 2, 3, 4] :: CPUTensor 'D.Int64 '[4]
 -- >>> t' = unsqueeze @0 t
 -- >>> :type t'
--- t' :: Tensor '( 'D.CPU, 0) 'D.Int64 '[1, 4]
+-- t' :: Tensor '(D.CPU, 0) D.Int64 [1, 4]
 -- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[Int]]) $ t'
 -- (Int64,([1,4],[[1,2,3,4]]))
 -- >>> t'' = unsqueeze @1 t
 -- >>> :type t''
--- t'' :: Tensor '( 'D.CPU, 0) 'D.Int64 '[4, 1]
+-- t'' :: Tensor '(D.CPU, 0) D.Int64 [4, 1]
 -- >>> dtype &&& shape &&& (\u -> D.asValue (toDynamic u) :: [[Int]]) $ t''
 -- (Int64,([4,1],[[1],[2],[3],[4]]))
 unsqueeze ::
@@ -4497,7 +4497,7 @@ type family SqueezeDimCheck (shape :: [a]) (dim :: Nat) (result :: Maybe [a]) ::
 --
 -- >>> :kind! SqueezeDim '[2,1,2] 1
 -- SqueezeDim '[2,1,2] 1 :: [Natural]
--- = '[2, 2]
+-- = [2, 2]
 type SqueezeDim shape dim = SqueezeDimCheck shape dim (SqueezeDimImpl shape dim)
 
 -- | squeeze a particular dimension
@@ -4561,7 +4561,7 @@ clone input = ATen.cast1 ATen.Managed.clone_t input
 -- >>> dtype &&& shape $ t
 -- (Float,[3,4])
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[3, 4]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [3, 4]
 addmm ::
   forall shape' shape n k m dtype device.
   ( All KnownNat '[n, k, m],
@@ -5067,19 +5067,19 @@ nonzero _input = unsafePerformIO $ (ATen.cast1 ATen.Managed.nonzero_t) _input
 --
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 4, 1] 1
 -- GatherDimImpl '[2, 1, 1] '[2, 4, 1] 1 :: Maybe [Natural]
--- = 'Just '[2, 4, 1]
+-- = Just [2, 4, 1]
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 4, 2] 1
 -- GatherDimImpl '[2, 1, 1] '[2, 4, 2] 1 :: Maybe [Natural]
--- = 'Nothing
+-- = Nothing
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 0, 1] 1
 -- GatherDimImpl '[2, 1, 1] '[2, 0, 1] 1 :: Maybe [Natural]
--- = 'Nothing
+-- = Nothing
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 1] 1
 -- GatherDimImpl '[2, 1, 1] '[2, 1] 1 :: Maybe [Natural]
--- = 'Nothing
+-- = Nothing
 -- >>> :kind! GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2
 -- GatherDimImpl '[2, 1, 1] '[2, 1, 3] 2 :: Maybe [Natural]
--- = 'Just '[2, 1, 3]
+-- = Just [2, 1, 3]
 type family GatherDimImpl (shape :: [Nat]) (shape' :: [Nat]) (dim :: Nat) :: Maybe [Nat] where
   GatherDimImpl (x ': xs) (y ': xs) 0 = If (1 <=? y) (Just (y ': xs)) Nothing
   GatherDimImpl (x ': xs) (x ': ys) dim = AppendToMaybe x (GatherDimImpl xs ys (dim - 1))
@@ -5099,7 +5099,7 @@ type family GatherDimCheck (shape :: [a]) (shape' :: [a]) (dim :: Nat) (result :
 --
 -- >>> :kind! GatherDim '[2, 1, 1] '[2, 1, 3] 2
 -- GatherDim '[2, 1, 1] '[2, 1, 3] 2 :: [Natural]
--- = '[2, 1, 3]
+-- = [2, 1, 3]
 type GatherDim shape shape' dim = GatherDimCheck shape shape' dim (GatherDimImpl shape shape' dim)
 
 -- | gather values along an axis for a specified dimension.
@@ -5444,30 +5444,30 @@ l1Loss prediction target =
 -- TODO: probably only defined for floating point tensors, or maybe numeric type is lifted?
 -- See https://pytorch.org/docs/stable/nn.functional.html?highlight=nll_loss#torch.nn.functional.nll_loss.
 --
--- >>> input <- randn @'[3, 5] @'D.Float @'( 'D.CPU, 0)
+-- >>> input <- randn @'[3, 5] @'D.Float @'(D.CPU, 0)
 -- >>> target = fromJust [1, 0, 4] :: CPUTensor 'D.Int64 '[3]
--- >>> weight = ones @'[5] @'D.Float @'( 'D.CPU, 0)
+-- >>> weight = ones @'[5] @'D.Float @'(D.CPU, 0)
 -- >>> dtype &&& shape $ nllLoss @ReduceNone @3 @5 @'[] weight (-100) (logSoftmax @1 input) target
 -- (Float,[3])
 -- >>> dtype &&& shape $ nllLoss @ReduceMean @3 @5 @'[] weight (-100) (logSoftmax @1 input) target
 -- (Float,[])
--- >>> input <- randn @'[3, 5, 2] @'D.Float @'( 'D.CPU, 0)
+-- >>> input <- randn @'[3, 5, 2] @'D.Float @'(D.CPU, 0)
 -- >>> target = fromJust [[1, 1], [0, 1], [4, 0]] :: CPUTensor 'D.Int64 '[3, 2]
--- >>> weight = ones @'[5] @'D.Float @'( 'D.CPU, 0)
+-- >>> weight = ones @'[5] @'D.Float @'(D.CPU, 0)
 -- >>> dtype &&& shape $ nllLoss @ReduceNone @3 @5 @'[2] weight (-100) (logSoftmax @1 input) target
 -- (Float,[3,2])
 -- >>> dtype &&& shape $ nllLoss @ReduceMean @3 @5 @'[2] weight (-100) (logSoftmax @1 input) target
 -- (Float,[])
--- >>> input <- randn @'[3, 5, 1, 2] @'D.Float @'( 'D.CPU, 0)
+-- >>> input <- randn @'[3, 5, 1, 2] @'D.Float @'(D.CPU, 0)
 -- >>> target = fromJust [[[1, 1]], [[0, 1]], [[4, 0]]] :: CPUTensor 'D.Int64 '[3, 1, 2]
--- >>> weight = ones @'[5] @'D.Float @'( 'D.CPU, 0)
+-- >>> weight = ones @'[5] @'D.Float @'(D.CPU, 0)
 -- >>> dtype &&& shape $ nllLoss @ReduceNone @3 @5 @'[1, 2] weight (-100) (logSoftmax @1 input) target
 -- (Float,[3,1,2])
 -- >>> dtype &&& shape $ nllLoss @ReduceMean @3 @5 @'[1, 2] weight (-100) (logSoftmax @1 input) target
 -- (Float,[])
--- >>> input <- randn @'[3, 5, 2, 1, 2] @'D.Float @'( 'D.CPU, 0)
+-- >>> input <- randn @'[3, 5, 2, 1, 2] @'D.Float @'(D.CPU, 0)
 -- >>> target = fromJust [[[[1, 1]], [[0, 2]]], [[[0, 1]], [[1, 0]]], [[[4, 0]], [[1, 2]]]] :: CPUTensor 'D.Int64 '[3, 2, 1, 2]
--- >>> weight = ones @'[5] @'D.Float @'( 'D.CPU, 0)
+-- >>> weight = ones @'[5] @'D.Float @'(D.CPU, 0)
 -- >>> dtype &&& shape $ nllLoss @ReduceNone @3 @5 @'[2, 1, 2] weight (-100) (logSoftmax @1 input) target
 -- (Float,[3,2,1,2])
 -- >>> dtype &&& shape $ nllLoss @ReduceMean @3 @5 @'[2, 1, 2] weight (-100) (logSoftmax @1 input) target
@@ -5679,7 +5679,7 @@ softShrink lambda input =
 -- >>> shape t
 -- [1,3,8,16]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 8, 16]
 adaptiveAvgPool2d ::
   forall outputSize channelSize inputSize0 inputSize1 batchSize dtype device.
   ( All
@@ -5714,7 +5714,7 @@ adaptiveAvgPool2d input =
 -- -- >>> shape t
 -- -- [1,3,8,16]
 -- -- >>> :t t
--- -- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16]
+-- -- t :: Tensor '(D.CPU, 0) 'D.Float '[1, 3, 8, 16]
 mkldnnAdaptiveAvgPool2d ::
   forall outputSize channelSize inputSize0 inputSize1 batchSize dtype device.
   ( All
@@ -5745,7 +5745,7 @@ mkldnnAdaptiveAvgPool2d input =
 -- >>> shape t
 -- [1,3,8,16,2]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16, 2]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 8, 16, 2]
 adaptiveAvgPool3d ::
   forall
     outputSize
@@ -5791,7 +5791,7 @@ adaptiveAvgPool3d input =
 -- >>> shape t
 -- [1,3,8,16]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 8, 16]
 adaptiveMaxPool2d ::
   forall outputSize channelSize inputSize0 inputSize1 batchSize dtype device.
   ( All
@@ -5824,7 +5824,7 @@ adaptiveMaxPool2d input =
 -- >>> shape t
 -- [1,3,8,16,2]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 8, 16, 2]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 8, 16, 2]
 adaptiveMaxPool3d ::
   forall
     outputSize
@@ -5871,7 +5871,7 @@ adaptiveMaxPool3d input =
 -- >>> shape t
 -- [1,3,4,5]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 4, 5]
 avgPool2d ::
   forall
     kernelSize
@@ -5924,7 +5924,7 @@ avgPool2d input =
 -- >>> shape t
 -- [1,3,4,5,6]
 -- >>> :t t
--- t :: Tensor '( 'D.CPU, 0) 'D.Float '[1, 3, 4, 5, 6]
+-- t :: Tensor '(D.CPU, 0) 'D.Float [1, 3, 4, 5, 6]
 avgPool3d ::
   forall
     kernelSize
