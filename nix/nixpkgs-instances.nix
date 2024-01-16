@@ -9,7 +9,7 @@
         overlays = [
           inputs.haskell-nix.overlay
           inputs.tokenizers.overlay
-          (import ./package.nix {cudaSupport = false;})
+          (import ./overlay.nix)
         ];
       };
       pkgsCuda = import inputs.nixpkgs {
@@ -18,12 +18,11 @@
         # and ucx are built with CUDA support)
         config.cudaSupport = true;
         config.allowUnfree = true;
-        config.cudaMajorVersion = "11";
         overlays = [
           inputs.nixgl.overlay
           inputs.haskell-nix.overlay
           inputs.tokenizers.overlay
-          (import ./package.nix {cudaSupport = true;})
+          (import ./overlay.nix)
         ];
       };
     };

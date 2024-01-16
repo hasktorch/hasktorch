@@ -56,7 +56,13 @@
             tools.haskell-language-server = "latest";
           };
       in {
-        packages.cuda = pkgsCuda.hasktorch;
+        legacyPackages = { 
+          inherit (pkgs) datasets;
+          default = pkgs.hasktorch;
+          cuda = pkgsCuda.hasktorch;
+        };
+        packages.default = pkgs.hasktorch.hsPkgs.hasktorch.components.library;
+        packages.cuda = pkgsCuda.hasktorch.hsPkgs.hasktorch.components.library;
         devShells.default = hasktorchFor pkgs;
         devShells.cuda = pkgsCuda.hasktorch.shellFor {
           name = "hasktoch-dev-shell";
