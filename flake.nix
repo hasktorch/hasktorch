@@ -12,10 +12,6 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
-    nixgl = {
-      url = "github:nix-community/nixGL";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
   nixConfig.extra-substituters = [
     "https://cuda-maintainers.cachix.org"
@@ -32,7 +28,6 @@
     haskell-nix,
     nixpkgs,
     flake-parts,
-    nixgl,
     ...
   } @ inputs:
     flake-parts.lib.mkFlake {inherit inputs;} {
@@ -40,6 +35,9 @@
       imports = [
         ./nix/nixpkgs-instances.nix
       ];
+      flake = {
+        overlay.default = import ./nix/overlay.nix;
+      };
       perSystem = {
         pkgsCuda,
         pkgs,
@@ -47,34 +45,21 @@
         ...
       }: let
         hasktorchFor = p:
-          pkgs.hasktorch.shellFor {
+          p.hasktorch.shellFor {
             name = "hasktorch-dev-shell";
             exactDeps = true;
             withHoogle = true;
-
             tools.cabal = "latest";
             tools.haskell-language-server = "latest";
           };
       in {
-        legacyPackages = { 
+        legacyPackages = {
           inherit (pkgs) datasets;
           default = pkgs.hasktorch;
           cuda = pkgsCuda.hasktorch;
         };
-        packages.default = pkgs.hasktorch.hsPkgs.hasktorch.components.library;
-        packages.cuda = pkgsCuda.hasktorch.hsPkgs.hasktorch.components.library;
         devShells.default = hasktorchFor pkgs;
-        devShells.cuda = pkgsCuda.hasktorch.shellFor {
-          name = "hasktoch-dev-shell";
-          exactDeps = true;
-          withHoogle = true;
-
-          tools.cabal = "latest";
-          tools.haskell-language-server = "latest";
-          #     shellHook = ''
-          #       export LD_LIBRARY_PATH=$(${pkgsCuda.nixgl.auto.nixGLDefault}/bin/nixGL printenv LD_LIBRARY_PATH):$LD_LIBRARY_PATH
-          #     '';
-        };
+        devShells.cuda = hasktorchFor pkgsCuda;
       };
     };
 }
