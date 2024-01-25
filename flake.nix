@@ -36,7 +36,7 @@
         ./nix/nixpkgs-instances.nix
       ];
       flake = {
-        overlay.default = import ./nix/overlay.nix;
+        overlays.default = import ./nix/overlay.nix;
       };
       perSystem = {
         pkgsCuda,
