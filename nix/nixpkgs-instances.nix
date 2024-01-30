@@ -8,7 +8,6 @@
         inherit system;
         config.cudaSupport = false;
         overlays = [
-          inputs.haskell-nix.overlay
           inputs.tokenizers.overlay
           (import ./overlay.nix)
         ];
@@ -20,7 +19,6 @@
         config.cudaSupport = true;
         config.allowUnfree = true;
         overlays = [
-          inputs.haskell-nix.overlay
           inputs.tokenizers.overlay
           (import ./overlay.nix)
         ];
