@@ -31,8 +31,9 @@ in {
       packages =
         prev.haskell.packages
         // {
-          ${ghcName} = prev.haskell.packages.${ghcName}.override {
-            overrides = hfinal: hprev: {
+          ${ghcName} =
+            prev.haskell.packages.${ghcName}.extend
+            (hfinal: hprev: {
               libtorch-ffi-helper = hfinal.callCabal2nix "libtorch-ffi-helper" ../libtorch-ffi-helper {};
               libtorch-ffi = overrideCabal (hfinal.callCabal2nix "libtorch-ffi" ../libtorch-ffi {inherit torch c10 torch_cpu;}) (_: {
                 enableLibraryProfiling = false;
@@ -48,8 +49,7 @@ in {
                   doCheck = false;
                   enableLibraryProfiling = false;
                 });
-            };
-          };
+            });
         };
     };
 }
