@@ -7,8 +7,10 @@
       pkgs = import inputs.nixpkgs {
         inherit system;
         config.cudaSupport = false;
+        config.allowBroken = true;
         overlays = [
-          inputs.tokenizers.overlay
+          inputs.tokenizers.overlays.default
+          inputs.tokenizers.inputs.naersk.overlay
           (import ./overlay.nix)
         ];
       };
@@ -17,9 +19,12 @@
         # Ensure dependencies use CUDA consistently (e.g. that openmpi, ucc,
         # and ucx are built with CUDA support)
         config.cudaSupport = true;
+        config.allowBroken = true;
         config.allowUnfree = true;
         overlays = [
-          inputs.tokenizers.overlay
+          inputs.tokenizers.overlays.default
+          inputs.tokenizers.inputs.naersk.overlay
+          inputs.naersk.overlay
           (import ./overlay.nix)
         ];
       };

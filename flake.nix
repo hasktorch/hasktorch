@@ -3,10 +3,9 @@
 
   inputs = {
     tokenizers = {
-      url = "github:hasktorch/tokenizers/flakes";
-      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:collinarnett/tokenizers/collinarnett/fix/pkgconfig";
     };
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs.follows = "tokenizers/nixpkgs";
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -40,10 +39,7 @@
         system,
         ...
       }: {
-        # Working
-        packages.default = pkgs.callPackage ./nix/package.nix {};
-        # Complains about constraints-deriving
-        packages.broken = pkgs.haskell.packages.ghc928.hasktorch;
+        packages.default = pkgs.haskell.packages.ghc928.hasktorch-gradually-typed;
       };
     };
 }

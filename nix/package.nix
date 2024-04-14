@@ -7,6 +7,8 @@
   haskell,
   python3Packages,
   stdenv,
+  pkg-config,
+  tokenizers,
   tokenizers-haskell,
 }: let
   inherit (python3Packages) torch;
@@ -29,10 +31,20 @@
         });
       codegen = hFinal.callCabal2nix "codegen" ../codegen {};
       hasktorch = haskell.lib.compose.overrideCabal (drv: {
-        # Expecting data for tests
         doCheck = false;
         enableLibraryProfiling = false;
       }) (hFinal.callCabal2nix "hasktorch" ../hasktorch {});
+
+      indexed-extras =
+        hPkgs.indexed-extras.override {
+        };
+      hasktorch-gradually-typed =
+        haskell.lib.compose.overrideCabal (drv: {
+          doCheck = false;
+          enableLibraryProfiling = false;
+        }) (hFinal.callCabal2nix "hasktorch-gradually-typed" ../experimental/gradually-typed {
+          type-errors-pretty = haskell.lib.doJailbreak (haskell.lib.dontCheck hPkgs.type-errors-pretty);
+        });
     });
 in
-  hasktorchPackages.hasktorch
+  hasktorchPackages.hasktorch-gradually-typed
