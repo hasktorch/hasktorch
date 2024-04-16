@@ -39,7 +39,16 @@
         system,
         ...
       }: {
-        packages.default = pkgs.haskell.packages.ghc928.hasktorch-gradually-typed;
+        checks = {
+          inherit
+            (pkgs.haskell.packages.ghc928)
+            codegen
+            hasktorch
+            hasktorch-gradually-typed
+            libtorch-ffi
+            libtorch-ffi-helper
+            ;
+        };
       };
     };
 }
