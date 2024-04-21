@@ -119,6 +119,9 @@ data Dim (name :: Type) (size :: Type) where
     Dim name size
   deriving (Eq, Ord, Show)
 
+instance Functor (Dim a) where
+  fmap g (Dim name size) = Dim name (g size)
+
 instance Bifunctor Dim where
   bimap f g (Dim name size) = Dim (f name) (g size)
 
