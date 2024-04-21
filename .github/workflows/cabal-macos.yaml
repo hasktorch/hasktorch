@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: macOS-latest
     env:
-      GHC: '9.2.8'
+      GHC: '9.6.4'
     steps:
 
     - uses: actions/checkout@v4

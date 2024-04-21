@@ -44,8 +44,8 @@ extra-deps:
 - git: https://github.com/hasktorch/union-find-array
   commit: 2e94a0e7bdd15d5a7425aca05d64cca8816f2a23
 - clay-0.14.0@sha256:382eced24317f9ed0f7a0a4789cdfc6fc8dd32895cdb0c4ea50a1613bee08af3,2128
-- inline-c-0.9.1.10
-- inline-c-cpp-0.5.0.2
+- streaming-cassava-0.2.0.0@sha256:aea99400ef6e7fa064bb275601503544608b8e3fbee6f6c661b019033dc40d11,1812
+
 
 allow-newer: true
 
