@@ -363,15 +363,15 @@ instance (KnownShape ('Shape dims), KnownDim dim) => KnownShape ('Shape (dim ': 
 -- GetShapes ('Shape '[ 'Dim ('Name "*") ('Size 1)]) :: [Shape
 --                                                         [Dim (Name Symbol) (Size Nat)]]
 -- = '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)]]
--- >>> :kind! GetShapes '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)], 'Shape '[ 'Dim 'UncheckedName ('Size 0)]]
--- GetShapes '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)], 'Shape '[ 'Dim 'UncheckedName ('Size 0)]] :: [Shape
+-- >>> :kind! GetShapes '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)], 'Shape '[ 'Dim UncheckedName ('Size 0)]]
+-- GetShapes '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)], 'Shape '[ 'Dim UncheckedName ('Size 0)]] :: [Shape
 --                                                                                                     [Dim
 --                                                                                                        (Name
 --                                                                                                           Symbol)
 --                                                                                                        (Size
 --                                                                                                           Nat)]]
 -- = '[ 'Shape '[ 'Dim ('Name "*") ('Size 1)],
---      'Shape '[ 'Dim 'UncheckedName ('Size 0)]]
+--      'Shape '[ 'Dim UncheckedName ('Size 0)]]
 -- >>> :kind! GetShapes ('Just ('Shape '[ 'Dim ('Name "*") ('Size 1)]))
 -- GetShapes ('Just ('Shape '[ 'Dim ('Name "*") ('Size 1)])) :: [Shape
 --                                                                 [Dim (Name Symbol) (Size Nat)]]
