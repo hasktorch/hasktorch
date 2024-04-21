@@ -1,4 +1,4 @@
-resolver: lts-22.0
+resolver: lts-22.6
 
 #compiler: ghc-8.10.7
 
@@ -26,20 +26,23 @@ extra-lib-dirs:
 extra-deps:
 - datasets-0.4.0@sha256:9bfd5b54c6c5e1e72384a890cf29bf85a02007e0a31c98753f7d225be3c7fa6a,4929
 - require-0.4.10@sha256:41b096daaca0d6be49239add1149af9f34c84640d09a7ffa9b45c55f089b5dac,3759
-- indexed-extras-0.2@sha256:e7e498023e33016fe45467dfee3c1379862e7e6654a806a965958fa1adc00304,1349
+- git: https://github.com/hasktorch/indexed-extras
+  commit: 7a0c4e918578e7620a46d4f0546fbdaec933ede0
 - normaldistribution-1.1.0.3@sha256:2615b784c4112cbf6ffa0e2b55b76790290a9b9dff18a05d8c89aa374b213477,2160
-- term-rewriting-0.4.0.2@sha256:5412f6aa29c5756634ee30e8df923c83ab9f012a4b8797c460af3d7078466764,2740
+- git: https://github.com/hasktorch/term-rewriting
+  commit: 54221f58b28c9f36db9bac437231e6142c8cca3a
 - git: https://github.com/hasktorch/tintin
   commit: 0d5afba586da01e0a54e598745676c5c56189178
 - git: https://github.com/hasktorch/tokenizers
-  commit: 9d25f0ba303193e97f8b22b9c93cbc84725886c3
+  commit: addbd197fa71eb0bf875424d015ad9d732f42eed
   subdirs:
   - bindings/haskell/tokenizers-haskell
 - git: https://github.com/hasktorch/typelevel-rewrite-rules
-  commit: 4176e10d4de2d1310506c0fcf6a74956d81d59b6
+  commit: 1f181c3073df201cec45e121f07610b0bfbb6ecd
 - git: https://github.com/hasktorch/type-errors-pretty
   commit: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
-- union-find-array-0.1.0.3@sha256:242e066ec516d61f262947e5794edc7bbc11fd538a0415c03ac0c01b028cfa8a,1372
+- git: https://github.com/hasktorch/union-find-array
+  commit: 2e94a0e7bdd15d5a7425aca05d64cca8816f2a23
 - clay-0.14.0@sha256:382eced24317f9ed0f7a0a4789cdfc6fc8dd32895cdb0c4ea50a1613bee08af3,2128
 - inline-c-0.9.1.10
 - inline-c-cpp-0.5.0.2
