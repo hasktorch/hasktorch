@@ -11,6 +11,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE GADTs #-}
+
 
 module STLC where
 
@@ -21,7 +23,7 @@ import Control.Monad.State (MonadState, modify)
 import Control.Monad.Trans.Maybe (MaybeT (..))
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Deriving (deriveEq1, deriveOrd1, deriveShow1)
-import Data.Functor.Classes (compare1, eq1, showsPrec1)
+import Data.Functor.Classes (compare1, eq1, showsPrec1, Eq1)
 import Data.Hashable (Hashable)
 import Data.Hashable.Lifted (Hashable1)
 import Data.Map (Map)
@@ -93,15 +95,15 @@ instance ToJSON a => ToJSON (Scope () Exp a)
 
 instance ToJSON a => ToJSON (Exp a)
 
-deriveEq1 ''Exp
-deriveShow1 ''Exp
-deriveOrd1 ''Exp
-
-instance Eq a => Eq (Exp a) where (==) = eq1
-
-instance Ord a => Ord (Exp a) where compare = compare1
-
-instance Show a => Show (Exp a) where showsPrec = showsPrec1
+fmap concat $ sequence
+  [ deriveEq1   ''Exp
+  , deriveOrd1  ''Exp
+  , deriveShow1 ''Exp
+  , [d| instance Eq a => Eq (Exp a) where (==) = eq1
+        instance Ord a => Ord (Exp a) where compare = compare1
+        instance Show a => Show (Exp a) where showsPrec = showsPrec1
+      |]
+  ]
 
 instance (Eq a, Hashable a) => Hashable (Exp a)
 
