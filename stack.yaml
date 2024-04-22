@@ -1,6 +1,9 @@
-resolver: lts-22.6
+resolver: lts-22.17
 
-#compiler: ghc-8.10.7
+# Use ghc-9.6.5 or higher
+# https://github.com/commercialhaskell/stack/issues/6251
+# https://gitlab.haskell.org/ghc/ghc/-/issues/24389
+compiler: ghc-9.6.5
 
 packages:
 - codegen
