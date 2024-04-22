@@ -36,8 +36,7 @@ import Type.Errors.Pretty (type (%), type (<>))
 -- LinearWithBiasF WeightShape BiasShape InputShape :: Shape
 --                                                       [Dim (Name Symbol) (Size Natural)]
 -- = 'Shape
---     '[ 'Dim ('Name "batch") ('Size 20),
---        'Dim ('Name "output") ('Size 10)]
+--     ['Dim ('Name "batch") ('Size 20), 'Dim ('Name "output") ('Size 10)]
 type family LinearWithBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (biasShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   LinearWithBiasF ('Shape '[]) _ _ = TypeError (LinearWeightDimsErrorMessage '[])
   LinearWithBiasF ('Shape '[weightDim]) _ _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
@@ -109,13 +108,13 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> :type result
 -- result
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 20),
---              'Dim ('Name "output") ('Size 10)])
+--           ['Dim ('Name "batch") ('Size 20),
+--            'Dim ('Name "output") ('Size 10)])
 linearWithBias ::
   forall gradient layout device dataType shape gradient' layout' device' dataType' shape' gradient'' layout'' device'' dataType'' shape''.
   -- | weight

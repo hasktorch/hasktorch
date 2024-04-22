@@ -336,13 +336,13 @@ instance Exception GradientError where
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 -- >>> t' <- sCheckedGradient (SGradient SWithoutGradient) t
 -- *** Exception: GradientError {geExpected = WithoutGradient, geActual = WithGradient}
 sCheckedGradient ::
@@ -378,13 +378,13 @@ checkedGradient = sCheckedGradient (sing @gradient')
 -- >>> :type uncheckedGradient t
 -- uncheckedGradient t
 --   :: Tensor
---        'UncheckedGradient
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        UncheckedGradient
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 uncheckedGradient ::
   forall gradient layout device dataType shape.
   -- | input tensor
@@ -508,13 +508,13 @@ instance Exception LayoutError where
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 -- >>> t' <- sCheckedLayout (SLayout SSparse) t
 -- *** Exception: LayoutError {leExpected = Sparse, leActual = Dense}
 sCheckedLayout ::
@@ -550,13 +550,13 @@ checkedLayout = sCheckedLayout (sing @layout')
 -- >>> :type uncheckedLayout t
 -- uncheckedLayout t
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        'UncheckedLayout
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        UncheckedLayout
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 uncheckedLayout ::
   forall gradient layout device dataType shape.
   -- | input tensor
@@ -698,13 +698,13 @@ instance Exception DeviceError where
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 -- >>> t' <- sCheckedDevice (SDevice (SCUDA @0)) t
 -- *** Exception: DeviceError {deExpected = CUDA 0, deActual = CPU}
 sCheckedDevice ::
@@ -740,13 +740,13 @@ checkedDevice = sCheckedDevice (sing @device')
 -- >>> :type uncheckedDevice t
 -- uncheckedDevice t
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        'UncheckedDevice
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        UncheckedDevice
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 uncheckedDevice ::
   forall gradient layout device dataType shape.
   -- | input tensor
@@ -932,13 +932,13 @@ instance Exception DataTypeError where
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 -- >>> t' <- checkedDataType @('DataType 'Double) t
 -- *** Exception: DataTypeError {dtExpected = Double, dtActual = Float}
 sCheckedDataType ::
@@ -974,13 +974,13 @@ checkedDataType = sCheckedDataType (sing @dataType')
 -- >>> :type uncheckedDataType t
 -- uncheckedDataType t
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
---        'UncheckedDataType
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
+--        UncheckedDataType
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 uncheckedDataType ::
   forall gradient layout device dataType shape.
   -- | input tensor
@@ -1155,24 +1155,24 @@ instance Exception ShapeError where
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 -- >>> t' <- sCheckedShape (SShape $ SUncheckedName "batch" :&: SSize @32 :|: SName @"feature" :&: SUncheckedSize 8 :|: SNil) t
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim 'UncheckedName ('Size 32),
---              'Dim ('Name "feature") 'UncheckedSize])
+--           ['Dim UncheckedName ('Size 32),
+--            'Dim ('Name "feature") UncheckedSize])
 -- >>> t' <- sCheckedShape (SShape $ SName @"batch" :&: SSize @32 :|: SName @"feature" :&: SUncheckedSize 32 :|: SNil) t
 -- *** Exception: ShapeError {seExpected = [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 32}], seActual = [Dim {dimName = "batch", dimSize = 32},Dim {dimName = "feature", dimSize = 8}]}
 sCheckedShape ::
@@ -1209,24 +1209,24 @@ checkedShape = sCheckedShape (sing @shape')
 -- >>> :type uncheckedDim @('SelectDim ('ByName "batch")) t
 -- uncheckedDim @('SelectDim ('ByName "batch")) t
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim 'UncheckedName 'UncheckedSize,
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim UncheckedName UncheckedSize,
+--            'Dim ('Name "feature") ('Size 8)])
 -- >>> t <- ones @('Gradient 'WithGradient) @('Layout 'Dense) @('Device 'CPU) @('DataType 'Float) @('Shape '[ 'Dim ('Name "batch") ('Size 32), 'Dim ('Name "feature") ('Size 8)])
 -- >>> :type uncheckedDim @('SelectDim ('ByIndex 1)) t
 -- uncheckedDim @('SelectDim ('ByIndex 1)) t
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim 'UncheckedName 'UncheckedSize])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim UncheckedName UncheckedSize])
 uncheckedDim ::
   forall selectDim gradient layout device dataType shape.
   -- | input tensor
@@ -1243,11 +1243,11 @@ uncheckedDim = coerce
 -- >>> :type uncheckedShape t
 -- uncheckedShape t
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
---        'UncheckedShape
+--        UncheckedShape
 uncheckedShape ::
   forall gradient layout device dataType shape.
   -- | input tensor
@@ -1346,12 +1346,12 @@ class TensorLike a (dType :: DType) (dims :: [Dim (Name Symbol) (Size Nat)]) | a
   --                     [ 5,  6]]
   -- >>> :type t
   -- t :: Tensor
-  --        ('Gradient 'WithoutGradient)
-  --        ('Layout 'Dense)
-  --        ('Device 'CPU)
+  --        ('Gradient WithoutGradient)
+  --        ('Layout Dense)
+  --        ('Device CPU)
   --        ('DataType 'Int64)
   --        ('Shape
-  --           '[ 'Dim ('Name "*") 'UncheckedSize, 'Dim ('Name "*") ('Size 2)])
+  --           ['Dim ('Name "*") UncheckedSize, 'Dim ('Name "*") ('Size 2)])
   sToTensor ::
     forall gradient layout device m.
     MonadThrow m =>

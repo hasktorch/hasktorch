@@ -710,3 +710,4 @@ spec' device =
             hfoldrM @IO ModeSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu (hproduct standardDTypes shapes)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO ModeSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+

@@ -85,9 +85,9 @@ type family BoolReductionF reduction selectDim shape where
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Bool)
 --        ('Shape '[])
 all ::
@@ -107,11 +107,11 @@ all = unsafeThrowableIO . ATen.cast1 ATen.all_t
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Bool)
---        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
+--        ('Shape ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 --
 -- >>> sAllDim (SUncheckedSelectDim (ByIndex 3)) t
 -- *** Exception: HasktorchException "Exception: Dimension out of range (expected to be in range of [-2, 1], but got 3)...
@@ -149,11 +149,11 @@ type AllDimF selectDim shape = BoolReductionF "all" selectDim shape
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Bool)
---        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
+--        ('Shape ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 allDim ::
   forall selectDim gradient layout device dataType shape shape' m.
   (SingI selectDim, MonadThrow m, shape' ~ AllDimF selectDim shape, Catch shape') =>
@@ -170,9 +170,9 @@ allDim = sAllDim (sing @selectDim)
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Bool)
 --        ('Shape '[])
 any ::
@@ -196,11 +196,11 @@ type AnyDimF selectDim shape = BoolReductionF "any" selectDim shape
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Bool)
---        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
+--        ('Shape ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 --
 -- >>> sAnyDim (SUncheckedSelectDim (ByIndex 3)) t
 -- *** Exception: HasktorchException "Exception: Dimension out of range (expected to be in range of [-2, 1], but got 3)...
@@ -235,11 +235,11 @@ sAnyDim selectDim tensor = unsafeThrowableIO $
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Bool)
---        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
+--        ('Shape ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 anyDim ::
   forall selectDim gradient layout device dataType shape shape' m.
   (SingI selectDim, MonadThrow m, shape' ~ AnyDimF selectDim shape, Catch shape') =>
@@ -266,13 +266,13 @@ type family MeanF (selectDims :: SelectDims [By Symbol Nat]) (shape :: Shape [Di
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 8), 'Dim ('Name "width") ('Size 1),
---              'Dim ('Name "height") ('Size 1)])
+--           ['Dim ('Name "batch") ('Size 8), 'Dim ('Name "width") ('Size 1),
+--            'Dim ('Name "height") ('Size 1)])
 --
 -- >>> sMeanDims (SUncheckedSelectDims [ByName "feature"]) t
 -- *** Exception: HasktorchException "Exception: Name 'feature' not found in Tensor['batch', 'width', 'height']...
@@ -330,13 +330,12 @@ sMeanDims bys tensor =
 -- >>> :type t'
 -- t'
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 8),
---              'Dim ('Name "feature") ('Size 1)])
+--           ['Dim ('Name "batch") ('Size 8), 'Dim ('Name "feature") ('Size 1)])
 meanDims ::
   forall selectDims gradient layout device dataType shape shape' m.
   (SingI selectDims, MonadThrow m, shape' ~ MeanF selectDims shape, Catch shape') =>
@@ -393,11 +392,11 @@ type ArgmaxF selectDim shape = BoolReductionF "argmax" selectDim shape
 -- >>> r <- argmax (SSelectDim $ SByIndex @1) t
 -- >>> :type r
 -- r :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
---        ('DataType 'Int64)
---        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
+--        ('DataType Int64)
+--        ('Shape ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1)])
 -- >>> r
 -- Tensor Int64 [2,1] [[ 0],
 --                     [ 2]]

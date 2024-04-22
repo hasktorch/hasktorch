@@ -291,7 +291,16 @@ evaluation ::
     outputs
     target
     m.
-  ( HasScatter workerDevices dataDevice input inputs,
+  ( 1 <= seqLen,
+    1 <= numEmbeds,
+    workerDevices ~ WorkerDevices,
+    modelDevice ~ ModelDevice,
+    dtype ~ 'Float,
+    inputs ~ '[Tensor '( 'CPU, 0) 'Int64 '[batchSize, seqLen]],
+    outputs ~ '[Tensor '( 'CPU, 0) dtype '[batchSize, seqLen, numEmbeds]],
+    models ~ '[Model numEmbeds modelDevice],
+    model ~ Model numEmbeds modelDevice,
+    HasScatter workerDevices dataDevice input inputs,
     HasReplicate workerDevices modelDevice model models,
     HZipWithM Concurrently ForwardConcurrentlyF models inputs outputs,
     HasGather dataDevice workerDevices outputs output,
@@ -345,7 +354,17 @@ learning ::
     gradients
     tensors
     m.
-  ( HasScatter workerDevices dataDevice input inputs,
+  ( 1 <= numEmbeds,
+    1 <= seqLen,
+    dtype ~ 'Float,
+    workerDevices ~ WorkerDevices,
+    modelDevice ~ ModelDevice,
+    dataDevice ~ DataDevice,
+    inputs ~ '[Tensor '( 'CPU, 0) 'Int64 '[batchSize, seqLen]],
+    outputs ~ '[Tensor '( 'CPU, 0) dtype '[batchSize, seqLen, numEmbeds]],
+    models ~ '[Model numEmbeds modelDevice],
+    model ~ Model numEmbeds modelDevice,
+    HasScatter workerDevices dataDevice input inputs,
     HasScatter workerDevices dataDevice target targets,
     HasReplicate workerDevices modelDevice model models,
     HZip inputs targets inputTargets,

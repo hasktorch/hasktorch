@@ -292,7 +292,7 @@ test-suite doctests
   ghc-options:         -Wall -threaded -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
-                     , doctest >=0.16.0.1 && <0.21
+                     , doctest >=0.16.0.1 && <0.23
                      , hasktorch
                      , libtorch-ffi == 2.0.*
                      , ghc-typelits-extra

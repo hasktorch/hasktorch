@@ -23,7 +23,9 @@ import Control.Monad
   )
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BSI
+import Foreign.Marshal.Utils (copyBytes)
 import Data.Int
+import Data.Kind (Type)
 import qualified Data.Vector.Storable as V
 import Data.Word
 import qualified Foreign.ForeignPtr as F
@@ -50,7 +52,7 @@ import qualified Prelude as P
 
 C.include "<stdint.h>"
 
-data MNIST (m :: * -> *) = MNIST
+data MNIST (m :: Type -> Type) = MNIST
   { batchSize :: Int,
     mnistData :: I.MnistData
   }
@@ -96,7 +98,7 @@ getImages' n dataDim mnist imageIdxs = unsafePerformIO $ do
   D.withTensor t $ \ptr1 -> do
     F.withForeignPtr fptr $ \ptr2 -> do
       forM_ (zip [0 .. (n -1)] imageIdxs) $ \(i, idx) -> do
-        BSI.memcpy
+        copyBytes
           (F.plusPtr ptr1 (dataDim * i))
           (F.plusPtr ptr2 (off + 16 + dataDim * idx))
           dataDim
@@ -542,7 +544,7 @@ fromDynImage image = unsafePerformIO $ case image of
         let (fptr, len) = V.unsafeToForeignPtr0 vec
             whc = width * height * channel * dtype_size
         F.withForeignPtr fptr $ \ptr2 -> do
-          BSI.memcpy (F.castPtr ptr1) (F.castPtr ptr2) whc
+          copyBytes (F.castPtr ptr1) (F.castPtr ptr2) whc
           return t
     createTensorU16to32 width height channel dtype vec = do
       t <- ((cast2 LibTorch.empty_lo) :: [Int] -> D.TensorOptions -> IO D.Tensor) [1, height, width, channel] $ D.withDType dtype D.defaultOpts
@@ -596,7 +598,7 @@ fromImages imgs = do
       when (height /= height') $ do
         throwIO $ userError "image's height is not the same as first image's one"
       F.withForeignPtr fptr $ \ptr2 -> do
-        BSI.memcpy (F.plusPtr (F.castPtr ptr1) (whc * idx)) ptr2 len
+        copyBytes (F.plusPtr (F.castPtr ptr1) (whc * idx)) ptr2 len
   return t
 
 writeImage :: forall p. I.Pixel p => Int -> Int -> Int -> p -> D.Tensor -> IO (I.Image p)
@@ -609,7 +611,7 @@ writeImage width height channel pixel tensor = do
       then throwIO $ userError $ "vector's length(" ++ show len ++ ") is not the same as tensor' one."
       else do
         F.withForeignPtr fptr $ \ptr2 -> do
-          BSI.memcpy (F.castPtr ptr2) (F.castPtr ptr1) len
+          copyBytes (F.castPtr ptr2) (F.castPtr ptr1) len
           return img
 
 writeBitmap :: FilePath -> D.Tensor -> IO ()

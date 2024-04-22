@@ -35,7 +35,9 @@ import qualified Numeric.LinearAlgebra as H
 import qualified Torch as T
 import qualified Torch.Functional.Internal as TI
 import qualified Torch.Internal.Unmanaged.Type.Tensor as TIU
+import qualified Torch.Internal.Unmanaged.Type.Extra as TIU
 import qualified Torch.Internal.Managed.Type.Tensor as TIM
+import qualified Torch.Internal.Managed.Type.Extra as TIM
 import qualified Torch.Jit as T
 
 import qualified System.Random.MWC as Mwc

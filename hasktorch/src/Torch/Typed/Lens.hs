@@ -18,6 +18,7 @@ module Torch.Typed.Lens where
 
 import Control.Applicative (liftA2)
 import Control.Monad.State.Strict
+import Control.Monad (forM)
 import Data.Kind
 import Data.Maybe (fromJust)
 import Data.Proxy
