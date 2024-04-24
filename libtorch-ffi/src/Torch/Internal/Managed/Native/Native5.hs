@@ -652,22 +652,6 @@ _nested_from_padded_and_nested_example_tt
   -> IO (ForeignPtr Tensor)
 _nested_from_padded_and_nested_example_tt = _cast2 Unmanaged._nested_from_padded_and_nested_example_tt
 
-_nested_view_from_buffer_tttl
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-_nested_view_from_buffer_tttl = _cast4 Unmanaged._nested_view_from_buffer_tttl
-
-_nested_view_from_buffer_copy_tttl
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> IO (ForeignPtr Tensor)
-_nested_view_from_buffer_copy_tttl = _cast4 Unmanaged._nested_view_from_buffer_copy_tttl
-
 _trilinear_tttlllll
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor
