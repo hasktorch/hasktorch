@@ -150,7 +150,6 @@ library
                      , pipes-group
                      , pipes-concurrency
                      , random
-                     , tokenizers
                      , vector
                      , vector-sized
                      , finite-typelits
@@ -161,120 +160,6 @@ library
                      , mmorph
                      , transformers
                      , hedgehog
-  if impl(ghc >= 9.0)
-    build-depends:     singletons == 3.*
-                     , singletons-base
-                     , singletons-th
-  else
-    build-depends:     singletons < 3
-
-executable linear-regression
-  hs-source-dirs:      examples/linear-regression
-  main-is:             Main.hs
-  default-language:    Haskell2010
-  ghc-options:         -W -Wall -O2 -threaded -rtsopts
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch-gradually-typed
-                     , indexed
-                     , indexed-extras
-
-executable two-layer-network
-  hs-source-dirs:      examples/two-layer-network
-  main-is:             Main.hs
-  default-language:    Haskell2010
-  ghc-options:         -W -Wall -O2 -threaded -rtsopts
-  build-depends:       base >= 4.7 && < 5
-                     , containers
-                     , hasktorch-gradually-typed
-                     , lens
-                     , normaldistribution
-                     , mtl
-                     , pipes
-                     , pipes-concurrency
-                     , random
-                     , vector-sized
-                     , text
-
-executable neural-interpreter
-  hs-source-dirs:      examples/neural-interpreter
-  main-is:             Main.hs
-  other-modules:       Dataset
-                     , Model
-                     , STLC
-                     , Gen
-                     , Monitor
-                     , Opts
-  default-language:    Haskell2010
-  ghc-options:         -W -Wall -O2 -threaded -rtsopts
-  build-depends:       aeson
-                     , base >= 4.7 && < 5
-                     , bound
-                     , bytestring
-                     , containers
-                     , deriving-compat
-                     , hasktorch-gradually-typed
-                     , hashable >= 1.3.0.0 && < 1.5.0.0
-                     , hedgehog
-                     , indexed
-                     , indexed-extras
-                     , lens
-                     , mtl
-                     , optparse-applicative
-                     , pipes
-                     , pipes-concurrency
-                     , pipes-safe
-                     , random
-                     , SafeSemaphore
-                     , stm
-                     , template-haskell
-                     , terminal-progress-bar
-                     , text
-                     , tokenizers
-                     , transformers
-                     , unordered-containers
-
-test-suite spec
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  other-modules:       Torch.GraduallyTyped.TensorSpec
-                     , Torch.GraduallyTyped.IndexingSpec
-                     , Torch.GraduallyTyped.NN.Transformer.GMultiHeadAttentionSpec
-                     , Torch.GraduallyTyped.NN.Transformer.GFeedForwardNetworkSpec
-                     , Torch.GraduallyTyped.NN.Transformer.GSelfAttentionSpec
-                     , Torch.GraduallyTyped.NN.Transformer.GCrossAttentionSpec
-                     , Torch.GraduallyTyped.NN.Transformer.GBlockSpec
-                     , Torch.GraduallyTyped.NN.Transformer.GStackSpec
-                     , Torch.GraduallyTyped.NN.Transformer.GTransformerSpec
-                     , Torch.GraduallyTyped.NN.Transformer.GLMHeadSpec
-                     , Torch.GraduallyTyped.NN.Transformer.GEncoderOnlySpec
-                     , Torch.GraduallyTyped.NN.Transformer.GEncoderDecoderSpec
-                     , Torch.GraduallyTyped.NN.Transformer.T5Spec
-                     , Torch.GraduallyTyped.NN.Transformer.BARTSpec
-                     , Torch.GraduallyTyped.NN.Transformer.PegasusSpec
-                     , Torch.GraduallyTyped.NN.Transformer.BERTSpec
-                     , Torch.GraduallyTyped.NN.Transformer.RoBERTaSpec
-                     , Torch.GraduallyTyped.NN.TransformerSpec
-  default-language:    Haskell2010
-  ghc-options:         -Wall -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
-  build-depends:       base >= 4.7 && < 5
-                     , hasktorch-gradually-typed
-                     , ghc-typelits-extra
-                     , ghc-typelits-knownnat
-                     , ghc-typelits-natnormalise
-                     , QuickCheck
-                     , containers
-                     , exceptions
-                     , hedgehog
-                     , hedgehog-quickcheck
-                     , hspec
-                     , hspec-hedgehog
-                     , HUnit-approx
-                     , lens
-                     , mtl
-                     , tokenizers
-                     , vector
-                     , vector-sized
   if impl(ghc >= 9.0)
     build-depends:     singletons == 3.*
                      , singletons-base
@@ -310,10 +195,43 @@ test-suite doctests
                      , logict
                      , parsers
                      , HUnit-approx
-                     , tokenizers
   if impl(ghc >= 9.0)
     build-depends:     singletons == 3.*
                      , singletons-base
                      , singletons-th
   else
     build-depends:     singletons < 3
+
+test-suite spec
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Spec.hs
+  other-modules:       Torch.GraduallyTyped.TensorSpec
+                     , Torch.GraduallyTyped.IndexingSpec
+  default-language:    Haskell2010
+  ghc-options:         -Wall -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch-gradually-typed
+                     , ghc-typelits-extra
+                     , ghc-typelits-knownnat
+                     , ghc-typelits-natnormalise
+                     , QuickCheck
+                     , containers
+                     , exceptions
+                     , hedgehog
+                     , hedgehog-quickcheck
+                     , hspec
+                     , hspec-hedgehog
+                     , HUnit-approx
+                     , lens
+                     , mtl
+                     , vector
+                     , vector-sized
+  if impl(ghc >= 9.0)
+    build-depends:     singletons == 3.*
+                     , singletons-base
+                     , singletons-th
+  else
+    build-depends:     singletons < 3
+
+    
