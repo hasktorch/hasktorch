@@ -184,7 +184,7 @@ test-suite spec
                     , IndexSpec
   default-language: Haskell2010
   ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
-  build-depends:      base >= 4.7 && < 5
+  build-depends:      base
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
                     , ghc-typelits-natnormalise
@@ -218,8 +218,8 @@ test-suite doctests
   default-language:   Haskell2010
   build-depends:      doctest >=0.16.0.1 && <0.23
                     , async
-                    , base >= 4.7 && < 5
-                    , libtorch-ffi == 2.0.*
+                    , base
+                    , libtorch-ffi
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
@@ -242,7 +242,7 @@ benchmark runtime
   main-is: Runtime.hs
   hs-source-dirs: bench
   build-depends:
-      base >=4.7 && <5
+      base
     , criterion
     , deepseq
     , hmatrix
@@ -262,7 +262,7 @@ benchmark alloc
   main-is: Alloc.hs
   hs-source-dirs: bench
   build-depends:
-      base >=4.7 && <5
+      base
     , deepseq
     , hmatrix
     , mwc-random
