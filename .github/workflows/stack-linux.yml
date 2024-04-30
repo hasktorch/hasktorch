@@ -19,6 +19,11 @@ jobs:
         sudo apt autoclean -y || true
         docker rmi $(docker image ls -aq)
         df -h
+    - uses: haskell-actions/setup@v2.7.1
+      with:
+        ghc-version: '9.6.5'
+        enable-stack: true
+        stack-version: 'latest'
     - name: Setup packages
       run: |
         sudo rm -f /etc/apt/sources.list.d/sbt.list
@@ -62,19 +67,19 @@ jobs:
         stack test hasktorch
         stack exec codegen-exe
         stack exec xor-mlp
-    - name: Build tutorial
-      run: |
-        stack build tintin
-        pushd hasktorch
-        stack exec tintin -- run
-        popd
-        mkdir -p public/tutorial
-        cp -r hasktorch/.stack-work/tintin/rendered/* public/tutorial
-    - name: Deploy tutorial
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-        external_repository: hasktorch/hasktorch.github.io
-        publish_branch: tutorial
-        publish_dir: ./public
+    # - name: Build tutorial
+    #   run: |
+    #     stack build tintin
+    #     pushd hasktorch
+    #     stack exec tintin -- run
+    #     popd
+    #     mkdir -p public/tutorial
+    #     cp -r hasktorch/.stack-work/tintin/rendered/* public/tutorial
+    # - name: Deploy tutorial
+    #   if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    #   uses: peaceiris/actions-gh-pages@v3
+    #   with:
+    #     deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+    #     external_repository: hasktorch/hasktorch.github.io
+    #     publish_branch: tutorial
+    #     publish_dir: ./public

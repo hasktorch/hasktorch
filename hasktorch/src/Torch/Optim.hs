@@ -3,6 +3,7 @@
 module Torch.Optim where
 
 import Control.Monad.State
+import Control.Monad (foldM)
 import System.Mem (performGC)
 import Torch.Autograd
 import Torch.Functional

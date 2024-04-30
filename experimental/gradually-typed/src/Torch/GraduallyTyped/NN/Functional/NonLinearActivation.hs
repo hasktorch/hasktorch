@@ -55,13 +55,13 @@ type family SoftmaxF (selectDim :: SelectDim (By Symbol Nat)) (shape :: Shape [D
 -- >>> :type result
 -- result
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 32),
---              'Dim ('Name "feature") ('Size 8)])
+--           ['Dim ('Name "batch") ('Size 32),
+--            'Dim ('Name "feature") ('Size 8)])
 softmax,
   logSoftmax ::
     forall selectDim gradient layout device dataType shape shape' m.

@@ -6,12 +6,17 @@ jobs:
   build:
     runs-on: macOS-latest
     env:
-      GHC: '9.2.8'
+      GHC: '9.6.4'
     steps:
 
     - uses: actions/checkout@v4
       with:
         submodules: true
+
+    - uses: haskell-actions/setup@v2.7.1
+      with:
+        ghc-version: '9.6.4'
+        cabal-version: '3.10.2.1'
 
     - name: Setup packages
       run: |
@@ -23,16 +28,6 @@ jobs:
         brew tap hasktorch/tokenizers https://github.com/hasktorch/tokenizers || true
         brew install libtokenizers || true
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
-
-    - name: Setup Haskell
-      run: |
-        echo "$HOME/.ghcup/bin" >> "${GITHUB_PATH}"
-        ghcup install ghc --set ${{ env.GHC }}
-
-      ## GHCup is preinstalled on the GHA runners. This would be the magic incantation to install it:
-      # curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
-      ## Cabal is preinstalled on the GHA runners
-      # ghcup install cabal
 
     - name: Information about the Haskell setup
       run: |

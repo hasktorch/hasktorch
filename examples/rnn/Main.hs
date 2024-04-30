@@ -6,6 +6,7 @@
 module Main where
 
 import Control.Monad.State.Strict
+import Control.Monad
 import Data.List (foldl', intersperse, scanl')
 import Elman
 import GHC.Generics

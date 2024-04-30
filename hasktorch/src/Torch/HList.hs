@@ -63,11 +63,10 @@ instance (Semigroup a, Semigroup (HList as)) => Semigroup (HList (a ': as)) wher
 
 instance Monoid (HList '[]) where
   mempty = HNil
-  mappend _ _ = HNil
 
 instance (Monoid a, Monoid (HList as)) => Monoid (HList (a ': as)) where
   mempty = mempty :. mempty
-  mappend (x :. xs) (y :. ys) = mappend x y :. mappend xs ys
+
 
 {- HLINT ignore "Redundant bracket" -}
 instance IsList (Maybe (HList '[(a :: Type)])) where

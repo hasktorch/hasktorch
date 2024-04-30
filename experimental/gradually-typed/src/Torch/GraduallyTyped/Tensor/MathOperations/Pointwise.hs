@@ -91,12 +91,12 @@ acosh = unsafePerformIO . ATen.cast1 ATen.acosh_t
 -- >>> :type result
 -- result
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "*") ('Size 4), 'Dim ('Name "feature") ('Size 4)])
+--           ['Dim ('Name "*") ('Size 4), 'Dim ('Name "feature") ('Size 4)])
 add ::
   forall gradient layout device dataType shape gradient' layout' device' dataType' shape' shape'' m.
   (MonadThrow m, shape'' ~ BroadcastShapesF shape shape', Catch shape'') =>

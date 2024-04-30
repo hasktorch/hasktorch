@@ -23,6 +23,8 @@ common config
                      , ghc-typelits-knownnat
                      , ghc-typelits-natnormalise
                      , mtl
+ default-extensions:  Strict
+                    , StrictData
 
 executable xor-mlp
   import:              config
