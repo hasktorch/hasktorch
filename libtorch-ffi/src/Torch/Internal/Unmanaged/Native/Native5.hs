@@ -1104,34 +1104,6 @@ _nested_from_padded_and_nested_example_tt _padded _nt_example =
   , *$(at::Tensor* _nt_example)));
   }|]
 
-_nested_view_from_buffer_tttl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-_nested_view_from_buffer_tttl _self _nested_size _nested_strides _offsets =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_nested_view_from_buffer(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _nested_size)
-  , *$(at::Tensor* _nested_strides)
-  , *$(std::vector<int64_t>* _offsets)));
-  }|]
-
-_nested_view_from_buffer_copy_tttl
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> IO (Ptr Tensor)
-_nested_view_from_buffer_copy_tttl _self _nested_size _nested_strides _offsets =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::_nested_view_from_buffer_copy(
-    *$(at::Tensor* _self)
-  , *$(at::Tensor* _nested_size)
-  , *$(at::Tensor* _nested_strides)
-  , *$(std::vector<int64_t>* _offsets)));
-  }|]
-
 _trilinear_tttlllll
   :: Ptr Tensor
   -> Ptr Tensor

@@ -22,6 +22,7 @@ import Torch.Internal.Unmanaged.Helper
 
 C.context $ C.cppCtx <> mempty {C.ctxTypesTable = typeTable}
 
+C.include "<fstream>"
 C.include "<vector>"
 C.include "<tuple>"
 

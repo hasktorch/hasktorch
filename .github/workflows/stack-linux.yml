@@ -19,6 +19,11 @@ jobs:
         sudo apt autoclean -y || true
         docker rmi $(docker image ls -aq)
         df -h
+    - uses: haskell-actions/setup@v2.7.1
+      with:
+        ghc-version: '9.6.5'
+        enable-stack: true
+        stack-version: 'latest'
     - name: Setup packages
       run: |
         sudo rm -f /etc/apt/sources.list.d/sbt.list
