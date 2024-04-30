@@ -48,7 +48,7 @@ jobs:
       run: |
         # export PATH=/opt/ghc/bin:$PATH
         source setenv
-        pushd deps/ ; ./get-deps.sh -a cpu -c; popd
+        pushd deps/ ; ./get-deps.sh -a cpu; popd
         stack build \
           libtorch-ffi \
           libtorch-ffi-helper \

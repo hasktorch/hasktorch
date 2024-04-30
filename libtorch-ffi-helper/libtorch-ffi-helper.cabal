@@ -18,4 +18,6 @@ library
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
- build-depends:       ghc >=8.5
+                    , ghc >=8.5
+ if os(darwin)
+   ghc-options: -optc=-Wno-int-conversion

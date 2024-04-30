@@ -20,11 +20,14 @@ packages:
 extra-include-dirs:
 - deps/libtorch/include/torch/csrc/api/include
 - deps/libtorch/include
+- /opt/homebrew/include
 
 extra-lib-dirs:
 - deps/libtorch/lib
 - deps/mklml/lib
 - deps/libtokenizers/lib
+- /opt/homebrew/lib
+- /opt/homebrew/opt/libomp/lib
 
 extra-deps:
 - datasets-0.4.0@sha256:9bfd5b54c6c5e1e72384a890cf29bf85a02007e0a31c98753f7d225be3c7fa6a,4929
