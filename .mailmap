@@ -1,0 +1,25 @@
+# Format of a line:
+#
+# Proper Name <Proper@email> commit name <commit@email>
+# \-----------+------------/ \----------+-------------/
+#             |                         |
+#          replace                     find
+#
+# <Proper@email> is never optional and cannot appear by itself.
+# Besides that, the other parts are optional (as long as 2 parts
+# are present).
+
+# Please keep this file in alphabetic order!
+
+##############################################################################
+Austin Huang <austinh@alum.mit.edu> austinvhuang
+Austin Huang <austinh@alum.mit.edu> <austinhuang@Austins-MacBook-Pro.local>
+Junji Hashimoto <junji.hashimoto@gmail.com> junji hashimoto
+Junji Hashimoto <junji.hashimoto@gmail.com> <junjihashimoto@users.noreply.github.com>
+Junji Hashimoto <junji.hashimoto@gmail.com> <junji.hashimoto@gree.net>
+Matthias Meschede <MMesch@users.noreply.github.com> MMesch
+Sam Stites <sam@stites.io> stites
+Sam Stites <sam@stites.io> <stites@users.noreply.github.com>
+Shiv Kumar <championballer08@gmail.com> championballer
+Tim Pierson <tim.pierson@gmail.com> o1lo01ol1o
+Tim Pierson <tim.pierson@gmail.com> <o1lo01ol1o@users.noreply.github.com>
