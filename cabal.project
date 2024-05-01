@@ -40,10 +40,11 @@ source-repository-package
     location: https://github.com/hasktorch/term-rewriting
     tag: 54221f58b28c9f36db9bac437231e6142c8cca3a
 
-source-repository-package
-    type: git
-    location: https://github.com/hasktorch/union-find-array
-    tag: 2e94a0e7bdd15d5a7425aca05d64cca8816f2a23
+-- 2024-04-30 fork is obsolete with union-find-array-0.1.0.4
+-- source-repository-package
+--     type: git
+--     location: https://github.com/hasktorch/union-find-array
+--     tag: 2e94a0e7bdd15d5a7425aca05d64cca8816f2a23
 
 write-ghc-environment-files: always
 tests: true
