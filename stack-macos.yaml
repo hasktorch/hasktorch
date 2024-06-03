@@ -1,0 +1,64 @@
+resolver: lts-22.17
+
+# Use ghc-9.6.5 or higher
+# https://github.com/commercialhaskell/stack/issues/6251
+# https://gitlab.haskell.org/ghc/ghc/-/issues/24389
+compiler: ghc-9.6.5
+
+packages:
+- codegen
+- libtorch-ffi
+- libtorch-ffi-helper
+- hasktorch
+- examples
+- examples/model-serving
+- experimental/bounding-box
+- experimental/dataloader-cifar10
+# - experimental/gradually-typed
+- experimental/untyped-nlp
+
+extra-include-dirs:
+- deps/libtorch/include/torch/csrc/api/include
+- deps/libtorch/include
+- /opt/homebrew/include
+
+extra-lib-dirs:
+- deps/libtorch/lib
+- deps/mklml/lib
+- deps/libtokenizers/lib
+- /opt/homebrew/lib
+- /opt/homebrew/opt/libomp/lib
+
+extra-deps:
+- datasets-0.4.0@sha256:9bfd5b54c6c5e1e72384a890cf29bf85a02007e0a31c98753f7d225be3c7fa6a,4929
+- require-0.4.10@sha256:41b096daaca0d6be49239add1149af9f34c84640d09a7ffa9b45c55f089b5dac,3759
+- git: https://github.com/hasktorch/indexed-extras
+  commit: 7a0c4e918578e7620a46d4f0546fbdaec933ede0
+- normaldistribution-1.1.0.3@sha256:2615b784c4112cbf6ffa0e2b55b76790290a9b9dff18a05d8c89aa374b213477,2160
+- git: https://github.com/hasktorch/term-rewriting
+  commit: 54221f58b28c9f36db9bac437231e6142c8cca3a
+- git: https://github.com/hasktorch/tintin
+  commit: 0d5afba586da01e0a54e598745676c5c56189178
+- git: https://github.com/hasktorch/tokenizers
+  commit: addbd197fa71eb0bf875424d015ad9d732f42eed
+  subdirs:
+  - bindings/haskell/tokenizers-haskell
+- git: https://github.com/hasktorch/typelevel-rewrite-rules
+  commit: 1f181c3073df201cec45e121f07610b0bfbb6ecd
+- git: https://github.com/hasktorch/type-errors-pretty
+  commit: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
+- git: https://github.com/hasktorch/union-find-array
+  commit: 2e94a0e7bdd15d5a7425aca05d64cca8816f2a23
+- clay-0.14.0@sha256:382eced24317f9ed0f7a0a4789cdfc6fc8dd32895cdb0c4ea50a1613bee08af3,2128
+- streaming-cassava-0.2.0.0@sha256:aea99400ef6e7fa064bb275601503544608b8e3fbee6f6c661b019033dc40d11,1812
+
+
+allow-newer: true
+
+nix:
+  shell-file: nix/stack-shell.nix
+  pure: false
+
+ghc-options:
+  libtorch-ffi: -optl-ld_classic
+#   hasktorch: -j +RTS -A128m -n2m -RTS
