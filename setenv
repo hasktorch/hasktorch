@@ -8,7 +8,7 @@ HASKTORCH_LIB_PATH="$(pwd)/deps/libtorch/lib/:$(pwd)/deps/mklml/lib/:$(pwd)/deps
 function add_vendor_lib_path {
     case "$(uname)" in
       "Darwin")
-        DYLD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$DYLD_LIBRARY_PATH
+        DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$HASKTORCH_LIB_PATH:$DYLD_LIBRARY_PATH
         export DYLD_LIBRARY_PATH
         ;;
       "Linux"|"FreeBSD")
