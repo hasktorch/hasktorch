@@ -176,10 +176,7 @@ library
   cpp-options: -DENABLE_DUMMY_MALLOC_TRIM
   if !flag(gcc)
     cxx-options:       -std=c++17
-    if impl(ghc >= 8.10)
-      ghc-options:       -optcxx-std=c++17
-    else
-      ghc-options:       -optc-std=c++17 -optc-xc++
+    ghc-options:       -optcxx-std=c++17
  default-extensions:          Strict
                             , StrictData
  cxx-sources:          csrc/hasktorch_finializer.cpp
