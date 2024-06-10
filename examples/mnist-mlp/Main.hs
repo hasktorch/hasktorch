@@ -17,6 +17,7 @@ import Pipes
 import qualified Pipes.Prelude as P
 import Torch
 import Torch.Serialize
+import System.Environment (getArgs)  
 import Torch.Typed.Vision (initMnist)
 import qualified Torch.Vision as V
 import Prelude hiding (exp)
@@ -74,7 +75,12 @@ displayImages model (testImg, testLabel) = do
 
 main :: IO ()
 main = do
-  (trainData, testData) <- initMnist "data"
+  args <- getArgs
+  let
+      dataPath = case args of
+        [] -> error $ "No data path provided"
+        _ -> head args
+  (trainData, testData) <- initMnist dataPath
   let trainMnist = V.MNIST {batchSize = 32, mnistData = trainData}
       testMnist = V.MNIST {batchSize = 1, mnistData = testData}
       spec = MLPSpec 784 64 32 10
