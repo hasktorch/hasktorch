@@ -90,25 +90,32 @@ type BatchSize = 256
 
 train' ::
   forall (device :: (DeviceType, Nat)).
-  _ =>
+  _ => String -> 
   IO ()
-train' = do
+train' dataPath = do
   let learningRate = 0.1
   manual_seed_L 123
   initModel <- sample (CNNSpec @'Float @device)
   let initOptim = mkAdam 0 0.9 0.999 (flattenParameters initModel)
-  train @BatchSize @device
+  train
+    @BatchSize @device
     initModel
     initOptim
     (\model _ input -> return $ cnn model input)
     learningRate
     "static-mnist-cnn.pt"
+    dataPath
 
 main :: IO ()
 main = do
+  args :: [String] <- getArgs
   deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
+  let
+      dataPath :: String = case args of
+        [] -> error $ "No data path provided"
+        _ -> head args
   case deviceStr of
-    Right "cpu" -> train' @'( 'CPU, 0)
-    Right "cuda:0" -> train' @'( 'CUDA, 0)
+    Right "cpu" -> train' @'( 'CPU, 0) dataPath 
+    Right "cuda:0" -> train' @'( 'CUDA, 0) dataPath
     Right device -> error $ "Unknown device setting: " ++ device
-    _ -> train' @'( 'CPU, 0)
+    _ -> train' @'( 'CPU, 0) dataPath 
