@@ -23,8 +23,34 @@
       perSystem = {
         pkgsCuda,
         pkgs,
+        self',
         ...
-      }: {
+      }: let
+        mnist = (pkgs.callPackage ./nix/datasets.nix {}).mnist;
+      in {
+        packages.examples =
+          pkgsCuda.haskell.packages.ghc965.callCabal2nix "examples"
+          ./examples {};
+        apps = {
+          mnist-mixed-precision = {
+            type = "app";
+            program = pkgsCuda.writeShellScriptBin "mnist-mixed-precision" ''
+              DEVICE=cuda:0 ${self'.packages.examples}/bin/mnist-mixed-precision ${mnist}/
+            '';
+          };
+          static-mnist-cnn = {
+            type = "app";
+            program = pkgsCuda.writeShellScriptBin "static-mnist-cnn" ''
+              DEVICE=cuda:0 ${self'.packages.examples}/bin/static-mnist-cnn ${mnist}/
+            '';
+          };
+          static-mnist-mlp = {
+            type = "app";
+            program = pkgsCuda.writeShellScriptBin "static-mnist-mlp" ''
+              DEVICE=cuda:0 ${self'.packages.examples}/bin/static-mnist-mlp ${mnist}/
+            '';
+          };
+        };
         checks = {
           inherit
             (pkgs.haskell.packages.ghc965)

@@ -33,21 +33,21 @@ in {
                 (hfinal.callCabal2nix "hasktorch-gradually-typed" ../experimental/gradually-typed {})
                 [
                   dontCheck
-                  disableLibraryProfiling
+                  #  disableLibraryProfiling
                 ];
               hasktorch =
                 lib.pipe
                 (hfinal.callCabal2nix "hasktorch" ../hasktorch {})
                 [
                   dontCheck
-                  disableLibraryProfiling
+                  #  disableLibraryProfiling
                 ];
               libtorch-ffi-helper = hfinal.callCabal2nix "libtorch-ffi-helper" ../libtorch-ffi-helper {};
               libtorch-ffi =
                 lib.pipe
                 (hfinal.callCabal2nix "libtorch-ffi" ../libtorch-ffi {inherit torch c10 torch_cpu;})
                 [
-                  disableLibraryProfiling
+                  #  disableLibraryProfiling
                   (appendConfigureFlag
                     "--extra-include-dirs=${lib.getDev torch}/include/torch/csrc/api/include")
                 ];
