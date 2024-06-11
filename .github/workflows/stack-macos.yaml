@@ -25,7 +25,10 @@ jobs:
         clang --version
         stack --version
         brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
-        brew install libtorch-prebuild@2.0 || true
+        brew install libtorch-prebuild@2.3 || true
+        brew tap hasktorch/tokenizers https://github.com/hasktorch/tokenizers || true
+        brew install libtokenizers || true
+        echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
     - name: Cache .stack
       uses: actions/cache@v3
@@ -43,7 +46,8 @@ jobs:
     - name: Build
       run: |
         #. setenv
-        stack build \
+        stack build --stack-yaml stack-macos.yaml entropy || true
+        stack build --stack-yaml stack-macos.yaml \
           libtorch-ffi \
           libtorch-ffi-helper \
           hasktorch \
@@ -55,12 +59,12 @@ jobs:
     - name: Test
       run: |
         #. setenv
-        stack test codegen
-        stack test libtorch-ffi
-        stack test hasktorch
-        stack exec codegen-exe
-        stack exec xor-mlp
-        stack exec regression
-        stack exec gaussian-process
-        stack exec vae
-        stack exec optimizers
+        stack test --stack-yaml stack-macos.yaml codegen
+        stack test --stack-yaml stack-macos.yaml libtorch-ffi
+        stack test --stack-yaml stack-macos.yaml hasktorch
+        stack exec --stack-yaml stack-macos.yaml codegen-exe
+        stack exec --stack-yaml stack-macos.yaml xor-mlp
+        stack exec --stack-yaml stack-macos.yaml regression
+        stack exec --stack-yaml stack-macos.yaml gaussian-process
+        stack exec --stack-yaml stack-macos.yaml vae
+        stack exec --stack-yaml stack-macos.yaml optimizers

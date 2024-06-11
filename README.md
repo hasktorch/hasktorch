@@ -70,11 +70,10 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
@@ -107,11 +106,10 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE="cuda:0"        # Set device to CUDA for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE="cuda:0"                 # Set device to CUDA for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
@@ -144,11 +142,10 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
@@ -183,11 +180,10 @@ $ stack test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ stack run static-mnist-cnn     # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 ### macos+stack+cpu
@@ -220,11 +216,10 @@ $ stack test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ stack run static-mnist-cnn     # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
@@ -262,11 +257,10 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
@@ -310,11 +304,10 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE="cuda:0"        # Set device to CUDA for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE="cuda:0"                 # Set device to CUDA for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 ### docker+jupyterlab+cuda11

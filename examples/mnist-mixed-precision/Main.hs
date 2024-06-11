@@ -102,6 +102,7 @@ fromLocalModel model = over (types @Tensor @a) func model
 
 main :: IO ()
 main = do
+  args <- getArgs
   deviceStr <- try (getEnv "DEVICE") :: IO (Either SomeException String)
   dtypeStr <- try (getEnv "DTYPE") :: IO (Either SomeException String)
   let device' = case deviceStr of
@@ -116,7 +117,10 @@ main = do
         Right "bfloat16" -> BFloat16
         Right type' -> error $ "Unknown dtype setting: " ++ type'
         _ -> Float
-  (trainData, testData) <- initMnist "data"
+      dataPath = case args of
+        [] -> error $ "No data path provided"
+        _ -> head args
+  (trainData, testData) <- initMnist dataPath
   let trainMnist = V.MNIST {batchSize = 32, mnistData = trainData}
       testMnist = V.MNIST {batchSize = 1, mnistData = testData}
       spec = MLPSpec 784 64 32 10

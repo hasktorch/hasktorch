@@ -24,9 +24,10 @@ jobs:
         brew install libomp || true
         pip3 install pyyaml || true
         brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
-        brew install libtorch-prebuild@2.0 || true
+        brew install libtorch-prebuild@2.3 || true
         brew tap hasktorch/tokenizers https://github.com/hasktorch/tokenizers || true
         brew install libtokenizers || true
+        echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
 
     - name: Information about the Haskell setup
@@ -37,9 +38,12 @@ jobs:
         echo "GHC_VERSION=$(ghc --numeric-version)"     >> "${GITHUB_ENV}"
         echo "CABAL_VERSION=$(cabal --numeric-version)" >> "${GITHUB_ENV}"
 
+    # - uses: mxschmitt/action-tmate@v3
+    #   timeout-minutes: 15
     - name: Generate install-plan
       run: |
         ./setup-cabal.sh
+        cat cabal.project.local
         cabal v2-update
         cabal v2-build --jobs=2 all --dry-run
       ## The latter leaves a build plan in dist-newstyle/cache/plan.json

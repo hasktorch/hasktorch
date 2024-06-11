@@ -28,6 +28,8 @@ import Control.Monad (forM)
 
 C.context $ C.cppCtx <> mempty {C.ctxTypesTable = typeTable}
 
+C.include "hasktorch_profile.h"
+
 C.include "<torch/script.h>"
 
 C.include "<torch/csrc/jit/serialization/export.h>"

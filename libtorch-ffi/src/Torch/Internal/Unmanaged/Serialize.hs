@@ -20,6 +20,7 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<vector>"
 C.include "<fstream>"
+C.include "hasktorch_profile.h"
 C.include "<torch/serialize.h>"
 C.include "<ATen/Tensor.h>"
 C.include "<ATen/core/ivalue.h>"

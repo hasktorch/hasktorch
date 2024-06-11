@@ -109,10 +109,11 @@ train ::
   ) ->
   LearningRate device 'Float ->
   String ->
+  String ->
   IO ()
-train initModel initOptim forward learningRate ptFile = do
+train initModel initOptim forward learningRate ptFile dataPath = do
   let numEpochs = 1000
-  (trainingData, testData) <- mkMnist @device @batchSize
+  (trainingData, testData) <- mkMnist dataPath
   foldLoop_
     (initModel, initOptim)
     numEpochs
@@ -157,7 +158,7 @@ train initModel initOptim forward learningRate ptFile = do
         begin = pure (0, 0)
         done = pure
 
-mkMnist :: IO (MNIST IO device batchSize, MNIST IO device batchSize)
-mkMnist = do
-  (train, test) <- initMnist "data"
+mkMnist :: String -> IO (MNIST IO device batchSize, MNIST IO device batchSize)
+mkMnist dataPath = do
+  (train, test) <- initMnist dataPath
   return (MNIST train, MNIST test)
