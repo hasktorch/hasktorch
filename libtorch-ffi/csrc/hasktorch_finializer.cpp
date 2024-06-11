@@ -1,3 +1,4 @@
+#include "hasktorch_profile.h"
 #include "hasktorch_finializer.h"
 #include <map>
 

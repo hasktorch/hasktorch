@@ -26,6 +26,8 @@ C.include "<fstream>"
 C.include "<vector>"
 C.include "<tuple>"
 
+C.include "hasktorch_profile.h"
+
 C.include "<torch/types.h>"
 
 C.include "<torch/optim.h>"
