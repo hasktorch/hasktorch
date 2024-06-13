@@ -18,8 +18,8 @@ jobs:
             nix build .#hasktorch-gradually-typed-cpu
             nix build .#libtorch-ffi-cpu
             nix build .#libtorch-ffi-helper-cpu
-            nix build .#codegen-gpu
-            nix build .#hasktorch-gpu
-            nix build .#hasktorch-gradually-typed-gpu
-            nix build .#libtorch-ffi-gpu
-            nix build .#libtorch-ffi-helper-gpu
+            nix build .#codegen-cuda
+            nix build .#hasktorch-cuda
+            nix build .#hasktorch-gradually-typed-cuda
+            nix build .#libtorch-ffi-cuda
+            nix build .#libtorch-ffi-helper-cuda
