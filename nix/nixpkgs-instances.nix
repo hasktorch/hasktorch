@@ -17,6 +17,7 @@
         # Ensure dependencies use CUDA consistently (e.g. that openmpi, ucc,
         # and ucx are built with CUDA support)
         config.cudaSupport = true;
+        config.allowBroken = true;
         config.allowUnfree = true;
         overlays = [
           (import ./overlay.nix)

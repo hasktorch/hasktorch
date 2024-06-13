@@ -21,16 +21,30 @@
         overlays.default = import ./nix/overlay.nix;
       };
       perSystem = {
-        pkgsCuda,
+        lib,
         pkgs,
         self',
+        pkgsCuda,
         ...
       }: let
         mnist = (pkgs.callPackage ./nix/datasets.nix {}).mnist;
+        mkHasktorchPackageSet = t: p:
+          lib.mapAttrs' (name: value: lib.nameValuePair "${name}-${t}" value) (lib.genAttrs [
+            "codegen"
+            "hasktorch"
+            "hasktorch-gradually-typed"
+            "libtorch-ffi"
+            "libtorch-ffi-helper"
+          ] (name: p.haskell.packages.ghc965.${name}));
       in {
-        packages.examples =
-          pkgsCuda.haskell.packages.ghc965.callCabal2nix "examples"
-          ./examples {};
+        packages =
+          {
+            examples =
+              pkgs.haskell.packages.ghc965.callCabal2nix "examples"
+              ./examples {};
+          }
+          // (mkHasktorchPackageSet "cuda" pkgsCuda)
+          // (mkHasktorchPackageSet "cpu" pkgs);
         apps = {
           mnist-mixed-precision = {
             type = "app";
@@ -50,16 +64,6 @@
               DEVICE=cuda:0 ${self'.packages.examples}/bin/static-mnist-mlp ${mnist}/
             '';
           };
-        };
-        checks = {
-          inherit
-            (pkgs.haskell.packages.ghc965)
-            codegen
-            hasktorch
-            hasktorch-gradually-typed
-            libtorch-ffi
-            libtorch-ffi-helper
-            ;
         };
       };
     };
