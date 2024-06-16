@@ -1,6 +1,15 @@
 {
   description = "Hasktorch";
 
+  nixConfig = {
+    extra-substituters = [
+      "https://hasktorch.cachix.org"
+    ];
+    extra-trusted-public-keys = [
+      "hasktorch.cachix.org-1:wLjNS6HuFVpmzbmv01lxwjdCOtWRD8pQVR3Zr/wVoQc="
+    ];
+  };
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -45,6 +54,25 @@
           }
           // (mkHasktorchPackageSet "cuda" pkgsCuda)
           // (mkHasktorchPackageSet "cpu" pkgs);
+        devShells = let
+          packages = p:
+            with p; [
+              codegen
+              hasktorch
+              hasktorch-gradually-typed
+              libtorch-ffi
+              libtorch-ffi-helper
+              cabal-install
+            ];
+        in {
+          default = self'.devShells.cpu;
+          cpu = pkgs.haskell.packages.ghc965.shellFor {
+            inherit packages;
+          };
+          cuda = pkgsCuda.haskell.packages.ghc965.shellFor {
+            inherit packages;
+          };
+        };
         apps = {
           mnist-mixed-precision = {
             type = "app";
