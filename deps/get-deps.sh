@@ -103,9 +103,9 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
         unzip cpu-libtorch-macos-latest.zip
         rm cpu-libtorch-macos-latest.zip
       else
-        wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-${VERSION}.zip
-        unzip libtorch-macos-${VERSION}.zip
-        rm libtorch-macos-${VERSION}.zip
+        wget -O libtorch-macos.zip https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-${VERSION}.zip
+        unzip libtorch-macos.zip
+        rm libtorch-macos.zip
       fi
       wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip
       unzip libtokenizers-macos.zip
