@@ -138,6 +138,7 @@ library
                     , megaparsec
                     , half
                     , constraints
+                    , auto-update
 
  default-extensions:  Strict
                     , StrictData
