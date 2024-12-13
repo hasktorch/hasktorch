@@ -2,8 +2,8 @@ cabal-version:       3.0
 name:                libtorch-ffi-helper
 version:             2.0.0.0
 -- The prefix(2.0) of this version("2.0.0.0") is the same as libtorch's one.
-synopsis:            ffi-wrapper for macos
--- description:
+synopsis:            Helpers for integrating libtorch-ffi with Hasktorch.
+description:         Provide macros and plugins for building libtorch-ffi of hasktorch.
 homepage:            https://github.com/hasktorch/hasktorch#readme
 license:             BSD-3-Clause
 author:              Austin Huang
@@ -18,6 +18,6 @@ library
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
-                    , ghc >=8.5
+                    , ghc >=8.5 && < 9.8
  if os(darwin)
    ghc-options: -optc=-Wno-int-conversion
