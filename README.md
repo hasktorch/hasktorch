@@ -4,7 +4,7 @@ Hasktorch is a library for tensors and neural networks in Haskell.
 It is an independent open source community project which leverages the core C++ libraries shared by PyTorch.
 
 This project is in active development, so expect changes to the library API as it evolves.
-We would like to invite new users to [join our Hasktorch slack space](#contributing) for questions and discussions. [Contributions/PR are encouraged](#contributing).
+We would like to invite new users to [join our Hasktorch discord space](#contributing) for questions and discussions. [Contributions/PR are encouraged](#contributing).
 
 Currently we are developing the second major release of Hasktorch (0.2). Note the 1st release, Hasktorch 0.1, on hackage is outdated and _should not_ be used.
 
@@ -359,7 +359,7 @@ gcc: error: hasktorch/dist-newstyle/build/x86_64-linux/ghc-8.8.3/libtorch-ffi-1.
 
 We welcome new contributors.
 
-Contact us for access to the [hasktorch slack channel][slack].
+Contact us for access to the [hasktorch discord channel][discord].
 You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinvhuang][austin-twitter],
 [@SamStites][sam-twitter], [@tscholak][torsten-twitter], or [@junjihashimoto3][junji-twitter].
 
@@ -370,6 +370,7 @@ You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinv
 [junji-twitter]:https://twitter.com/junjihashimoto3
 [slack]:https://hasktorch.slack.com
 [gitter-dh]:https://gitter.im/dataHaskell/Lobby
+[discord]:https://discord.gg/a5Sw5x6RnG
 
 ## Notes for library developers
 
