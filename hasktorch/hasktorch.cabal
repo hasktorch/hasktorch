@@ -1,9 +1,10 @@
 name:                hasktorch
-version:             0.2.0.0
-synopsis:            Functional differentiable programming in Haskell
--- description:
+version:             0.2.0.1
+synopsis:            Haskell bindings to libtorch, supporting both typed and untyped tensors.
+description:         Hasktorch is a library for tensors and neural networks in Haskell. It is an independent open source community project which leverages the core C++ libraries shared by PyTorch.
 homepage:            https://github.com/hasktorch/hasktorch#readme
 license:             BSD3
+license-file:        LICENSE
 author:              Hasktorch Contributor Team
 maintainer:          hasktorch@gmail.com
 copyright:           2019 Austin Huang
@@ -14,7 +15,7 @@ cabal-version:       1.24
 custom-setup
   setup-depends:
       base >= 4.9 && < 5
-    , Cabal
+    , Cabal >= 3.10.1.0 && < 3.16
     , cabal-doctest >=1.0.9 && <1.1
 
 Flag disable-doctest
@@ -99,45 +100,45 @@ library
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -fplugin GHC.NotExport.Plugin
- build-depends:       async
+ build-depends:       async >= 2.2.5 && < 2.3
                     , base >= 4.7 && < 5
                     , libtorch-ffi == 2.0.*
                     , libtorch-ffi-helper == 2.0.*
-                    , finite-typelits
-                    , ghc-typelits-extra
-                    , ghc-typelits-knownnat
-                    , ghc-typelits-natnormalise
-                    , mtl
+                    , finite-typelits >= 0.1 && < 0.3
+                    , ghc-typelits-extra >= 0.4.6 && < 0.5
+                    , ghc-typelits-knownnat >= 0.7.9 && < 0.8
+                    , ghc-typelits-natnormalise >= 0.7.9 && < 0.8
+                    , mtl >= 2.3.1 && < 2.4
+                    , safe-exceptions >= 0.1.7 && < 0.2
+                    , random >= 1.2.1 && < 1.3
+                    , reflection >= 2.1 && < 2.2
+                    , stm >= 2.5.1 && < 2.6
+                    , JuicyPixels >= 3.3 && < 3.4
+                    , vector >= 0.13 && < 0.14
+                    , bytestring >= 0.11.5 && < 0.12
                     , safe-exceptions
-                    , random
-                    , reflection
-                    , stm
-                    , JuicyPixels
-                    , vector
-                    , bytestring
-                    , safe-exceptions
-                    , zlib >= 0.6
-                    , pipes >= 4.3
-                    , pipes-group
-                    , pipes-concurrency
-                    , pipes-safe
-                    , pipes-bytestring
-                    , pipes-csv
-                    , lens-family-core
-                    , cassava
-                    , lifted-async
-                    , monad-control
-                    , foldl
-                    , transformers-base
-                    , array
-                    , data-default-class
-                    , containers
-                    , inline-c
-                    , vector-sized
-                    , template-haskell
-                    , megaparsec
-                    , half
-                    , constraints
+                    , zlib >= 0.6 && < 0.8
+                    , pipes >= 4.3.16 && < 4.4
+                    , pipes-group >= 1.0.12 && < 1.1
+                    , pipes-concurrency >= 2.0.14 && < 2.1
+                    , pipes-safe >= 2.3.5 && < 2.4
+                    , pipes-bytestring >= 2.1.7 && < 2.2
+                    , pipes-csv >= 1.4.3 && < 1.5
+                    , lens-family-core >= 2.1.3 && < 2.2
+                    , cassava >= 0.5.3 && < 0.6
+                    , lifted-async >= 0.10.2 && < 0.11
+                    , monad-control >= 1.0.3 && < 1.1
+                    , foldl >= 1.4 && < 1.5
+                    , transformers-base >= 0.4.6 && < 0.5
+                    , array >= 0.5.5 && < 0.6
+                    , data-default-class >= 0.1 && < 0.3
+                    , containers >= 0.6.7 && < 0.7
+                    , inline-c >= 0.9.1 && < 0.10
+                    , vector-sized >= 1.5 && < 1.7
+                    , template-haskell >= 2.20.0 && < 2.21
+                    , megaparsec >= 9.5 && < 9.8
+                    , half >= 0.3 && < 0.4
+                    , constraints >= 0.14 && < 0.15
 
  default-extensions:  Strict
                     , StrictData
