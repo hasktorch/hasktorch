@@ -79,6 +79,13 @@ hasMKL  =
     ));
   }|]
 
+hasMPS
+  :: IO (CBool)
+hasMPS  =
+  [C.throwBlock| bool { return (at::hasMPS(
+    ));
+  }|]
+
 hasLAPACK
   :: IO (CBool)
 hasLAPACK  =

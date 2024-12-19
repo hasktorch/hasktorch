@@ -26,8 +26,19 @@ C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 C.include "<ATen/ScalarType.h>"
 C.include "<ATen/core/Reduction.h>"
 C.include "<c10/core/Layout.h>"
+C.include "<torch/version.h>"
 
+torchVersionMajor :: CInt
+torchVersionMajor = [C.pure| int { TORCH_VERSION_MAJOR } |]
 
+torchVersionMinor :: CInt
+torchVersionMinor = [C.pure| int { TORCH_VERSION_MINOR } |]
+
+torchVersionPatch :: CInt
+torchVersionPatch = [C.pure| int { TORCH_VERSION_PATCH } |]
+
+torchVersion :: String
+torchVersion = show torchVersionMajor ++ "." ++ show torchVersionMinor ++ "." ++ show torchVersionPatch
 
 kByte :: ScalarType
 kByte = [C.pure| int8_t { (int8_t) at::ScalarType::Byte } |]
@@ -86,6 +97,9 @@ kCPU = [C.pure| int16_t { (int16_t) at::DeviceType::CPU } |]
 kCUDA :: DeviceType
 kCUDA = [C.pure| int16_t { (int16_t) at::DeviceType::CUDA } |]
 
+kMPS :: DeviceType
+kMPS = [C.pure| int16_t { (int16_t) at::DeviceType::MPS } |]
+
 kMKLDNN :: DeviceType
 kMKLDNN = [C.pure| int16_t { (int16_t) at::DeviceType::MKLDNN } |]
 
@@ -129,6 +143,9 @@ bCPU = [C.pure| int { (int) at::Backend::CPU } |]
 
 bCUDA :: Backend
 bCUDA = [C.pure| int { (int) at::Backend::CUDA } |]
+
+bMPS :: Backend
+bMPS = [C.pure| int { (int) at::Backend::MPS } |]
 
 bHIP :: Backend
 bHIP = [C.pure| int { (int) at::Backend::HIP } |]
