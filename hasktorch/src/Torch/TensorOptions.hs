@@ -35,8 +35,14 @@ withDType dtype opts =
 
 withDevice :: Device -> TensorOptions -> TensorOptions
 withDevice Device {..} opts = unsafePerformIO $ do
-  hasCUDA <- cast0 ATen.hasCUDA
-  withDevice' deviceType deviceIndex hasCUDA opts
+  case deviceType of
+    CPU -> pure opts
+    CUDA -> do
+      hasCUDA <- cast0 ATen.hasCUDA
+      withDevice' deviceType deviceIndex hasCUDA opts
+    MPS -> do
+      hasMPS <- cast0 ATen.hasMPS
+      withDevice' deviceType deviceIndex hasMPS opts
   where
     withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
     withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
@@ -44,9 +50,9 @@ withDevice Device {..} opts = unsafePerformIO $ do
     withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di -- careful, this somehow implies deviceType = CUDA
     withDevice' ::
       DeviceType -> Int16 -> Bool -> TensorOptions -> IO TensorOptions
-    withDevice' CPU 0 False opts = pure opts
-    withDevice' CPU 0 True opts = pure opts >>= withDeviceType CPU
+    withDevice' CPU 0 _ opts = pure opts >>= withDeviceType CPU
     withDevice' CUDA di True opts | di >= 0 = pure opts >>= withDeviceIndex di
+    withDevice' MPS 0 True opts = pure opts >>= withDeviceType MPS
     withDevice' dt di _ _ =
       error $ "cannot move tensor to \"" <> show dt <> ":" <> show di <> "\""
 

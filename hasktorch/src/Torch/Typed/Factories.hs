@@ -90,6 +90,7 @@ type family RandDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) 
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
   RandDTypeIsValid '( 'D.CUDA, _) dtype = ()
+  RandDTypeIsValid '( 'D.MPS, 0) dtype = ()
   RandDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 rand ::

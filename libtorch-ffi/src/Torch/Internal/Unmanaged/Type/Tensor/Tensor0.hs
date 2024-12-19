@@ -92,6 +92,13 @@ tensor_cuda _obj =
     ));
   }|]
 
+tensor_mps
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_mps _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).to("mps"));
+  }|]
+
 tensor_data_ptr
   :: Ptr Tensor
   -> IO (Ptr ())
@@ -178,6 +185,14 @@ tensor_is_cuda
   -> IO (CBool)
 tensor_is_cuda _obj =
   [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_cuda(
+    );
+  }|]
+
+tensor_is_mps
+  :: Ptr Tensor
+  -> IO (CBool)
+tensor_is_mps _obj =
+  [C.throwBlock| bool { return (*$(at::Tensor* _obj)).is_mps(
     );
   }|]
 
