@@ -61,6 +61,11 @@ tensor_cuda
   -> IO (ForeignPtr Tensor)
 tensor_cuda = cast1 Unmanaged.tensor_cuda
 
+tensor_mps
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+tensor_mps = cast1 Unmanaged.tensor_mps
+
 tensor_data_ptr
   :: ForeignPtr Tensor
   -> IO (Ptr ())
@@ -116,6 +121,11 @@ tensor_is_cuda
   :: ForeignPtr Tensor
   -> IO (CBool)
 tensor_is_cuda = cast1 Unmanaged.tensor_is_cuda
+
+tensor_is_mps
+  :: ForeignPtr Tensor
+  -> IO (CBool)
+tensor_is_mps = cast1 Unmanaged.tensor_is_mps
 
 tensor_is_hip
   :: ForeignPtr Tensor

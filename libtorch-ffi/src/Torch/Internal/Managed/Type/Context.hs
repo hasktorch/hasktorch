@@ -58,6 +58,10 @@ hasMKL
   :: IO (CBool)
 hasMKL = _cast0 Unmanaged.hasMKL
 
+hasMPS
+  :: IO (CBool)
+hasMPS = _cast0 Unmanaged.hasMPS
+
 hasLAPACK
   :: IO (CBool)
 hasLAPACK = _cast0 Unmanaged.hasLAPACK

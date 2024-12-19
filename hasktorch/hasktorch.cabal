@@ -1,5 +1,5 @@
 name:                hasktorch
-version:             0.2.0.1
+version:             0.2.1.0
 synopsis:            Haskell bindings to libtorch, supporting both typed and untyped tensors.
 description:         Hasktorch is a library for tensors and neural networks in Haskell. It is an independent open source community project which leverages the core C++ libraries shared by PyTorch.
 homepage:            https://github.com/hasktorch/hasktorch#readme
@@ -102,8 +102,8 @@ library
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -fplugin GHC.NotExport.Plugin
  build-depends:       async >= 2.2.5 && < 2.3
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 2.0.*
-                    , libtorch-ffi-helper == 2.0.*
+                    , libtorch-ffi == 2.0.1.*
+                    , libtorch-ffi-helper == 2.0.0.*
                     , finite-typelits >= 0.1 && < 0.3
                     , ghc-typelits-extra >= 0.4.6 && < 0.5
                     , ghc-typelits-knownnat >= 0.7.9 && < 0.8

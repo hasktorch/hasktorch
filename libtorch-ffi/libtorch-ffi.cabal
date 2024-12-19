@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                libtorch-ffi
-version:             2.0.0.1
+version:             2.0.1.0
 -- The prefix(2.0) of this version("2.0.0.0") is the same as libtorch's one.
 synopsis:            Haskell bindings for PyTorch
 description:         This package provides Haskell bindings to libtorch, the C++ library underlying PyTorch, specifically designed for the Hasktorch ecosystem.
@@ -194,6 +194,7 @@ test-suite spec
 --  libtorch-1.3 does not work this grad-function. But grad of higher level api works.
 --                 , BackwardSpec
                  , CudaSpec
+                 , MpsSpec
                  , GeneratorSpec
   default-language: Haskell2010
   build-depends:       base

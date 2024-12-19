@@ -84,7 +84,11 @@ retryWithGC' count func =
       else throwIO a
   where
     msgOutOfMemory :: String
+#ifdef darwin_HOST_OS
+    msgOutOfMemory = "MPS backend out of memory"
+#else
     msgOutOfMemory = "Exception: CUDA out of memory."
+#endif
 {-# INLINE retryWithGC' #-}
 
 retryWithGC :: IO a -> IO a

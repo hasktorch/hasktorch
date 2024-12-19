@@ -347,6 +347,10 @@ type family StandardFloatingPointDTypeValidation (device :: (D.DeviceType, Nat))
     ( DTypeIsFloatingPoint '( 'D.CPU, 0) dtype,
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
+  StandardFloatingPointDTypeValidation '( 'D.MPS, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.MPS, 0) dtype,
+      DTypeIsNotHalf '( 'D.MPS, 0) dtype
+    )
   StandardFloatingPointDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
   StandardFloatingPointDTypeValidation '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 

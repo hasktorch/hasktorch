@@ -157,6 +157,7 @@ type family SumDType (dtype :: D.DType) :: D.DType where
 type family SumDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   SumDTypeIsValid '( 'D.CPU, 0) dtype = DTypeIsNotHalf '( 'D.CPU, 0) dtype
   SumDTypeIsValid '( 'D.CUDA, _) dtype = ()
+  SumDTypeIsValid '( 'D.MPS, 0) dtype = ()
   SumDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | sumAll
@@ -249,6 +250,7 @@ floor input = unsafePerformIO $ ATen.cast1 ATen.Managed.floor_t input
 type family MinMaxDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   MinMaxDTypeIsValid '( 'D.CPU, 0) dtype = DTypeIsNotHalf '( 'D.CPU, 0) dtype
   MinMaxDTypeIsValid '( 'D.CUDA, _) dtype = ()
+  MinMaxDTypeIsValid '( 'D.MPS, 0) dtype = ()
   MinMaxDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | min
@@ -939,6 +941,7 @@ type family FstSquareDim (shape :: [Nat]) :: Nat where
 type family InverseShapeIsValid (device :: (D.DeviceType, Nat)) (shape :: [Nat]) :: Constraint where
   InverseShapeIsValid '( 'D.CPU, 0) _ = ()
   InverseShapeIsValid '( 'D.CUDA, _) shape = AllDimsPositive shape
+  InverseShapeIsValid '( 'D.MPS, 0) shape = AllDimsPositive shape
 
 type family InverseDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   InverseDTypeIsValid '( 'D.CPU, 0) dtype =
@@ -948,6 +951,10 @@ type family InverseDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTyp
   InverseDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
       DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  InverseDTypeIsValid '( 'D.MPS, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.MPS, 0) dtype,
+      DTypeIsNotHalf '( 'D.MPS, 0) dtype
     )
   InverseDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
@@ -980,6 +987,10 @@ type family SymeigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType
   SymeigDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
       DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  SymeigDTypeIsValid '( 'D.MPS, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.MPS, 0) dtype,
+      DTypeIsNotHalf '( 'D.MPS, 0) dtype
     )
   SymeigDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
@@ -1086,6 +1097,10 @@ type family EigDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
       DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
     )
+  EigDTypeIsValid '( 'D.MPS, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.MPS, 0) dtype,
+      DTypeIsNotHalf '( 'D.MPS, 0) dtype
+    )
   EigDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 type family ToComplexNumber (dtype :: D.DType) :: D.DType where
@@ -1168,6 +1183,10 @@ type family SVDDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
       DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
     )
+  SVDDTypeIsValid '(D.MPS, 0) dtype =
+    ( DTypeIsFloatingPoint '(D.MPS, 0) dtype,
+      DTypeIsNotHalf '(D.MPS, 0) dtype
+    )
   SVDDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | Singular Value Decomposition
@@ -1232,6 +1251,10 @@ type family CholeskyDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
   CholeskyDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
       DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  CholeskyDTypeIsValid '(D.MPS, 0) dtype =
+    ( DTypeIsFloatingPoint '(D.MPS, 0) dtype,
+      DTypeIsNotHalf '(D.MPS, 0) dtype
     )
   CholeskyDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
@@ -1342,6 +1365,10 @@ type family SolveDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType)
   SolveDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
       DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  SolveDTypeIsValid '( 'D.MPS, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.MPS, 0) dtype,
+      DTypeIsNotHalf '( 'D.MPS, 0) dtype
     )
   SolveDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
@@ -3030,6 +3057,7 @@ type family DotDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
       DTypeIsNotHalf '(D.CPU, 0) dtype
     )
   DotDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+  DotDTypeIsValid '( 'D.MPS, 0) dtype = DTypeIsFloatingPoint '( 'D.MPS, 0) dtype
   DotDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | dot product
@@ -4168,6 +4196,10 @@ type family GeluDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType) 
   GeluDTypeIsValid '( 'D.CUDA, deviceIndex) dtype =
     ( DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype,
       DTypeIsNotHalf '( 'D.CUDA, deviceIndex) dtype
+    )
+  GeluDTypeIsValid '( 'D.MPS, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.MPS, 0) dtype,
+      DTypeIsNotHalf '( 'D.MPS, 0) dtype
     )
   GeluDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
