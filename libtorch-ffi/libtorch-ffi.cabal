@@ -148,6 +148,7 @@ library
                     , sysinfo >= 0.1.1 && < 0.2
                     , async >= 2.2.5 && < 2.3
                     , libtorch-ffi-helper >= 2.0.0 && < 2.1
+                    , text >= 2.0.2 && < 2.1
  ghc-options:       -fplugin GHC.NotExport.Plugin
  extra-libraries:     c10
                     , torch
