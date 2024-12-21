@@ -17,7 +17,6 @@ jobs:
         sudo apt -y purge ghc* cabal-install* php* || true
         sudo apt autoremove -y || true
         sudo apt autoclean -y || true
-        docker rmi $(docker image ls -aq)
         df -h
     - uses: haskell-actions/setup@v2.7.1
       with:

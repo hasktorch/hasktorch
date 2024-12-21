@@ -25,6 +25,7 @@ import Torch.Internal.Type
 C.context $ C.cppCtx <> mempty { C.ctxTypesTable = typeTable }
 
 C.include "<ATen/detail/CUDAHooksInterface.h>"
+C.include "<ATen/detail/MPSHooksInterface.h>"
 C.include "<ATen/CPUGeneratorImpl.h>"
 C.include "<ATen/core/Generator.h>"
 
@@ -33,6 +34,8 @@ C.include "<vector>"
 
 newCUDAGenerator _device_index = getDefaultCUDAGenerator _device_index >>= generator_clone
 
+newMPSGenerator = getDefaultMPSGenerator >>= generator_clone
+
 newCPUGenerator
   :: Word64
   -> IO (Ptr Generator)
@@ -40,8 +43,6 @@ newCPUGenerator _seed_in =
   [C.throwBlock| at::Generator* { return new at::Generator(at::detail::createCPUGenerator(
     $(uint64_t _seed_in)));
   }|]
-
-
 
 generator_set_current_seed
   :: Ptr Generator
@@ -104,12 +105,25 @@ generator_is_hip _obj =
   [C.throwBlock| bool { return ((*$(at::Generator* _obj)).device().is_hip());
   }|]
 
+generator_is_mps
+  :: Ptr Generator
+  -> IO CBool
+generator_is_mps _obj =
+  [C.throwBlock| bool { return ((*$(at::Generator* _obj)).device().is_mps());
+  }|]
+
 getDefaultCUDAGenerator
   :: Word16
   -> IO (Ptr Generator)
 getDefaultCUDAGenerator _device_index =
   [C.throwBlock| at::Generator* { return new at::Generator(at::detail::getCUDAHooks().getDefaultCUDAGenerator(
     $(uint16_t _device_index)));
+  }|]
+
+getDefaultMPSGenerator
+  :: IO (Ptr Generator)
+getDefaultMPSGenerator =
+  [C.throwBlock| at::Generator* { return new at::Generator(at::detail::getMPSHooks().getDefaultMPSGenerator());
   }|]
 
 getDefaultCPUGenerator
