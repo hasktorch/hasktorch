@@ -1,5 +1,5 @@
 name:                hasktorch
-version:             0.2.1.0
+version:             0.2.1.1
 synopsis:            Haskell bindings to libtorch, supporting both typed and untyped tensors.
 description:         Hasktorch is a library for tensors and neural networks in Haskell. It is an independent open source community project which leverages the core C++ libraries shared by PyTorch.
 homepage:            https://github.com/hasktorch/hasktorch#readme
@@ -17,6 +17,10 @@ custom-setup
       base >= 4.9 && < 5
     , Cabal >= 3.10.1.0 && < 3.16
     , cabal-doctest >=1.0.9 && <1.1
+
+extra-source-files: test/data/numpy_rawfile
+                  , test/data/mnist-sample-labels-idx1-ubyte.gz
+                  , test/data/mnist-sample-images-idx3-ubyte.gz
 
 Flag disable-doctest
  Description: Disable doctest. ToDo: This flag is to avoid relocation-error of ghci for macos.
