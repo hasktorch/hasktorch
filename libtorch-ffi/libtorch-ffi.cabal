@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                libtorch-ffi
-version:             2.0.1.0
+version:             2.0.1.1
 -- The prefix(2.0) of this version("2.0.0.0") is the same as libtorch's one.
 synopsis:            Haskell bindings for PyTorch
 description:         This package provides Haskell bindings to libtorch, the C++ library underlying PyTorch, specifically designed for the Hasktorch ecosystem.
@@ -184,6 +184,7 @@ library
  c-sources:            csrc/hasktorch_dump.c
  install-includes:     csrc/hasktorch_finializer.h
                       ,csrc/hasktorch_dump.h
+                      ,csrc/hasktorch_profile.h
  include-dirs:         csrc
 
 test-suite spec
