@@ -64,7 +64,7 @@ bsToChars :: ByteString -> String
 bsToChars = T.unpack . T.decodeUtf8With T.lenientDecode
 
 unsafeThrowableIO :: forall a m. MonadThrow m => IO a -> m a
-unsafeThrowableIO a = unsafePerformIO $ (pure <$> a) `catch` (\(CppStdException _ msg _) -> pure . throwM $ HasktorchException (bsToChars msg))
+unsafeThrowableIO a = unsafePerformIO $ (pure <$> a) `catch` (\(CppStdException _ msg _) -> pure . throwM $ HasktorchException ("Exception: " <> bsToChars msg))
 
 prettyException :: IO a -> IO a
 prettyException func =
