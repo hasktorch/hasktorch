@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Torch.Internal.GC where
 
@@ -19,12 +20,18 @@ import Control.Monad (when)
 import Data.List (isPrefixOf)
 import Foreign.C.Types
 import GHC.ExecutionStack
-import Language.C.Inline.Cpp.Exceptions
+import Language.C.Inline.Cpp.Exception
 import System.Environment (lookupEnv)
 import System.IO (hPutStrLn, stderr)
 import System.IO.Unsafe (unsafePerformIO)
 import System.Mem (performGC)
 import System.SysInfo
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding.Error as T
+import qualified Data.Text as T
+import           Data.ByteString (ByteString)
+import qualified Data.ByteString as B
+
 
 foreign import ccall unsafe "hasktorch_finalizer.h showWeakPtrList"
   c_showWeakPtrList :: CInt -> IO ()
@@ -53,29 +60,32 @@ newtype HasktorchException = HasktorchException String
 
 instance Exception HasktorchException
 
+bsToChars :: ByteString -> String
+bsToChars = T.unpack . T.decodeUtf8With T.lenientDecode
+
 unsafeThrowableIO :: forall a m. MonadThrow m => IO a -> m a
-unsafeThrowableIO a = unsafePerformIO $ (pure <$> a) `catch` (\(CppStdException msg) -> pure . throwM $ HasktorchException msg)
+unsafeThrowableIO a = unsafePerformIO $ (pure <$> a) `catch` (\(CppStdException _ msg _) -> pure . throwM $ HasktorchException ("Exception: " <> bsToChars msg))
 
 prettyException :: IO a -> IO a
 prettyException func =
-  func `catch` \a@(CppStdException message) -> do
+  func `catch` \a@(CppStdException _ message _) -> do
     flag <- lookupEnv "HASKTORCH_DEBUG"
     when (flag /= Just "0") $ do
       mst <- showStackTrace
       case mst of
         Just st -> hPutStrLn stderr st
         Nothing -> hPutStrLn stderr "Cannot show stacktrace"
-      hPutStrLn stderr message
+      B.hPutStr stderr message
     throwIO a
 {-# INLINE prettyException #-}
 
 retryWithGC' :: Int -> IO a -> IO a
 retryWithGC' count func =
-  func `catch` \a@(CppStdException message) ->
-    if isPrefixOf msgOutOfMemory message
+  func `catch` \a@(CppStdException _ message _) ->
+    if B.isPrefixOf msgOutOfMemory message
       then
         if count <= 0
-          then throwIO $ userError $ "Too many calls to performGC, " ++ message
+          then throwIO $ userError $ bsToChars $ "Too many calls to performGC, " <> message
           else do
             performGC
             mallocTrim 0
@@ -83,8 +93,11 @@ retryWithGC' count func =
             retryWithGC' (count -1) func
       else throwIO a
   where
-    msgOutOfMemory :: String
+#ifdef darwin_HOST_OS
+    msgOutOfMemory = "MPS backend out of memory"
+#else
     msgOutOfMemory = "Exception: CUDA out of memory."
+#endif
 {-# INLINE retryWithGC' #-}
 
 retryWithGC :: IO a -> IO a

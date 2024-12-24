@@ -54,6 +54,11 @@ mkGenerator device seed =
       ATen.generator_set_current_seed genPtr seed
       genenerator <- newTVarIO (Right genPtr)
       return $ UnsafeGenerator genenerator
+    Device MPS _ -> do
+      genPtr <- ATen.newMPSGenerator
+      ATen.generator_set_current_seed genPtr seed
+      genenerator <- newTVarIO (Right genPtr)
+      return $ UnsafeGenerator genenerator
 
 type RandomGenFunc = ForeignPtr ATen.IntArray -> ForeignPtr ATen.Generator -> ForeignPtr ATen.TensorOptions -> IO (ForeignPtr ATen.Tensor)
 
@@ -67,7 +72,10 @@ generatorFactory func size options (UnsafeGenerator generator) =
           let device =
                 if generatorIsCuda v'
                   then Device {deviceType = CUDA, deviceIndex = fromIntegral $ generatorDevice v'}
-                  else Device {deviceType = CPU, deviceIndex = 0}
+                  else
+                    if generatorIsMps v'
+                    then Device {deviceType = MPS, deviceIndex = 0}
+                    else Device {deviceType = CPU, deviceIndex = 0}
               seed = generatorSeed v'
           writeTVar generator $ seed `seq` deviceType device `seq` deviceIndex device `seq` Left (seed, device)
           return $ Right v'
@@ -80,6 +88,10 @@ generatorFactory func size options (UnsafeGenerator generator) =
           gen <- ATen.newCUDAGenerator (fromIntegral idx)
           ATen.generator_set_current_seed gen seed
           return gen
+        Device MPS _ -> do
+          gen <- ATen.newMPSGenerator
+          ATen.generator_set_current_seed gen seed
+          return gen
     tensor <- cast3 func size genPtr options
     nextGenenerator <- newTVarIO (Right genPtr)
     return (tensor, UnsafeGenerator nextGenenerator)
@@ -89,6 +101,9 @@ generatorFactory func size options (UnsafeGenerator generator) =
 
     generatorIsCuda :: ForeignPtr ATen.Generator -> Bool
     generatorIsCuda gen = unsafePerformIO $ cast1 ATen.generator_is_cuda gen
+
+    generatorIsMps :: ForeignPtr ATen.Generator -> Bool
+    generatorIsMps gen = unsafePerformIO $ cast1 ATen.generator_is_mps gen
 
     generatorDevice :: ForeignPtr ATen.Generator -> Int
     generatorDevice gen = unsafePerformIO $ cast1 ATen.generator_get_device gen

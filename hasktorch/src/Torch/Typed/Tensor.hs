@@ -140,6 +140,9 @@ instance (KnownNat n) => KnownDevice '( 'D.CPU, n) where
 instance (KnownNat n) => KnownDevice '( 'D.CUDA, n) where
   deviceVal = D.Device D.CUDA (natValInt16 @n)
 
+instance (KnownNat n) => KnownDevice '( 'D.MPS, n) where
+  deviceVal = D.Device D.MPS (natValInt16 @n)
+
 type Size = Type -> Type
 
 type Shape = [Type -> Type]
@@ -206,6 +209,8 @@ data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) 
 type CPUTensor = Tensor '( 'D.CPU, 0)
 
 type CUDATensor deviceIndex = Tensor '( 'D.CUDA, deviceIndex)
+
+type MPSTensor deviceIndex = Tensor '( 'D.MPS, 0)
 
 data UnknownShapeTensor device dtype = forall shape. UnknownShapeTensor (Tensor device dtype shape)
 
@@ -310,6 +315,7 @@ someDevice D.Device {..} = case someNatVal (fromIntegral deviceIndex) of
   Just (SomeNat (Proxy :: Proxy n)) -> case deviceType of
     D.CPU -> SomeDevice $ Proxy @'( 'D.CPU, n)
     D.CUDA -> SomeDevice $ Proxy @'( 'D.CUDA, n)
+    D.MPS -> SomeDevice $ Proxy @'( 'D.MPS, n)
 
 withTensor ::
   D.Tensor ->
@@ -381,6 +387,7 @@ type family BasicArithmeticDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
   BasicArithmeticDTypeIsValid '( 'D.CUDA, _) dtype = ()
+  BasicArithmeticDTypeIsValid '( 'D.MPS, 0) dtype = ()
   BasicArithmeticDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 add,
@@ -408,6 +415,7 @@ type family ComparisonDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.D
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
   ComparisonDTypeIsValid '( 'D.CUDA, _) dtype = ()
+  ComparisonDTypeIsValid '( 'D.MPS, 0) dtype = ()
   ComparisonDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 gt,
@@ -468,6 +476,7 @@ type family MatMulDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
   MatMulDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+  MatMulDTypeIsValid '( 'D.MPS, 0) dtype = DTypeIsFloatingPoint '( 'D.MPS, 0) dtype
   MatMulDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | matrix multiplication
@@ -635,6 +644,14 @@ toCUDA ::
   Tensor device dtype shape ->
   CUDATensor 0 dtype shape
 toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
+
+-- | move tensor to the first MPS device
+-- TODO: what if this fails?
+toMPS ::
+  forall device' device shape dtype.
+  Tensor device dtype shape ->
+  MPSTensor 0 dtype shape
+toMPS t = UnsafeMkTensor $ D.toMPS (toDynamic t)
 
 -- | move tensor to device
 -- TODO: what if this fails?

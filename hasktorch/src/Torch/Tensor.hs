@@ -134,11 +134,19 @@ device t = unsafePerformIO $ do
     then do
       isCUDA <- cast1 ATen.tensor_is_cuda t :: IO Bool
       if isCUDA then cuda <$> cast1 ATen.tensor_get_device t else pure cpu
-    else pure cpu
+    else do
+      hasMPS <- cast0 ATen.hasMPS :: IO Bool
+      if hasMPS
+        then do
+        isMPS <- cast1 ATen.tensor_is_mps t :: IO Bool
+        if isMPS then pure mps else pure cpu
+      else
+        pure cpu
   where
     cpu = Device {deviceType = CPU, deviceIndex = 0}
     cuda :: Int -> Device
     cuda di = Device {deviceType = CUDA, deviceIndex = fromIntegral di}
+    mps = Device {deviceType = MPS, deviceIndex = 0}
 
 -- | Returns the data type of the input tensor
 dtype ::
@@ -221,7 +229,10 @@ _toDevice ::
   -- | output
   Tensor
 _toDevice device' t = unsafePerformIO $ do
-  hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
+  hasDevice <- case deviceType device' of
+    CPU -> pure True
+    CUDA -> cast0 ATen.hasCUDA
+    MPS -> cast0 ATen.hasMPS
   let device = Torch.Tensor.device t
   t' <-
     toDevice'
@@ -229,7 +240,7 @@ _toDevice device' t = unsafePerformIO $ do
       (deviceType device')
       (deviceIndex device)
       (deviceIndex device')
-      hasCUDA
+      hasDevice
   check
     (deviceType device')
     (deviceType $ Torch.Tensor.device t')
@@ -241,6 +252,8 @@ _toDevice device' t = unsafePerformIO $ do
     toDevice' CUDA CUDA di di' True | di /= di' = getOpts t >>= withDeviceIndex di' >>= to t -- copy from di to di'
     toDevice' CPU CUDA 0 di' True | di' >= 0 = getOpts t >>= withDeviceIndex di' >>= to t -- copy from cpu:0 to cuda:di'
     toDevice' CUDA CPU di 0 True | di >= 0 = getOpts t >>= withDeviceType CPU >>= to t -- copy from cuda:di to cpu:0
+    toDevice' CPU MPS 0 0 True = getOpts t >>= withDeviceType MPS >>= to t -- copy from cpu:0 to mps:0'
+    toDevice' MPS CPU 0 0 True = getOpts t >>= withDeviceType CPU >>= to t -- copy from mps:0 to cpu:0
     toDevice' dt dt' di di' _ =
       error $
         "cannot move tensor from \""
@@ -364,6 +377,9 @@ toCPU t = unsafePerformIO $ (cast1 ATen.tensor_cpu) t
 
 toCUDA :: Tensor -> Tensor
 toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
+
+toMPS :: Tensor -> Tensor
+toMPS t = unsafePerformIO $ (cast1 ATen.tensor_mps) t
 
 --------------------------------------------------------------------------------
 -- Indexing support
