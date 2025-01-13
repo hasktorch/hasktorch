@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                libtorch-ffi
-version:             2.0.1.1
+version:             2.0.1.2
 -- The prefix(2.0) of this version("2.0.0.0") is the same as libtorch's one.
 synopsis:            Haskell bindings for PyTorch
 description:         This package provides Haskell bindings to libtorch, the C++ library underlying PyTorch, specifically designed for the Hasktorch ecosystem.
@@ -142,13 +142,13 @@ library
                     , inline-c >= 0.9.1.10 && < 0.10
                     , optparse-applicative >= 0.14.3.0 && < 0.19
                     , containers >= 0.6.7 && < 0.7
-                    , template-haskell >= 2.20.0 && < 2.21
-                    , bytestring >= 0.11.5 && < 0.12
+                    , template-haskell >= 2.20.0 && < 2.22
+                    , bytestring >= 0.11.5 && < 0.13
                     , safe-exceptions >= 0.1.7 && < 0.2
                     , sysinfo >= 0.1.1 && < 0.2
                     , async >= 2.2.5 && < 2.3
                     , libtorch-ffi-helper >= 2.0.0 && < 2.1
-                    , text >= 2.0.2 && < 2.1
+                    , text >= 2.0.2 && < 2.2
  ghc-options:       -fplugin GHC.NotExport.Plugin
  extra-libraries:     c10
                     , torch
