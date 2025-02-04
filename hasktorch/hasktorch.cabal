@@ -41,6 +41,8 @@ library
                     , Torch.Optim
                     , Torch.Optim.CppOptim
                     , Torch.Vision
+                    , Torch.Monad
+                    , Torch.Typed.Monad
                     , Torch.NN
                     , Torch.NN.Recurrent.Cell.Elman
                     , Torch.NN.Recurrent.Cell.GRU
