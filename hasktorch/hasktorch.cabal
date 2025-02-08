@@ -179,6 +179,7 @@ test-suite spec
                     , Torch.Typed.NN.TransformerSpec
                     , Torch.Typed.VisionSpec
                     , Torch.Typed.NamedTensorSpec
+                    , Torch.Typed.SerializeSpec
                     , SerializeSpec
                     , RandomSpec
                     , VisionSpec

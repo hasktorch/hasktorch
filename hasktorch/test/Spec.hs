@@ -37,6 +37,7 @@ import qualified Torch.Typed.OptimSpec
 import qualified Torch.Typed.TensorSpec0
 import qualified Torch.Typed.TensorSpec1
 import qualified Torch.Typed.VisionSpec
+import qualified Torch.Typed.SerializeSpec
 
 main :: IO ()
 main = hspec $ do
@@ -76,4 +77,5 @@ main = hspec $ do
   Torch.Typed.TensorSpec0.spec
   Torch.Typed.TensorSpec1.spec
   Torch.Typed.VisionSpec.spec
+  Torch.Typed.SerializeSpec.spec
 
