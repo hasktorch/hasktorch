@@ -70,3 +70,23 @@ loadParameters model filePath = do
   tensors <- load @tensors filePath
   params <- hmapM' MakeIndependent tensors
   pure $ replaceParameters model params
+
+loadParametersWithSpec ::
+  forall spec model parameters tensors dtype device.
+  ( Randomizable spec model,
+    Parameterized model,
+    parameters ~ Parameters model,
+    HMap' ToDependent parameters tensors,
+    HMapM' IO MakeIndependent tensors parameters,
+    HFoldrM IO TensorListFold [D.ATenTensor] tensors [D.ATenTensor],
+    Apply TensorListUnfold [D.ATenTensor] (HUnfoldMRes IO [D.ATenTensor] tensors),
+    HUnfoldM IO TensorListUnfold (HUnfoldMRes IO [D.ATenTensor] tensors) tensors
+  ) =>
+  spec ->
+  FilePath ->
+  IO model
+loadParametersWithSpec spec filePath = do
+  model <- sample spec
+  tensors <- load @tensors filePath
+  params <- hmapM' MakeIndependent tensors
+  pure $ replaceParameters model params
