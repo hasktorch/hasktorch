@@ -34,6 +34,20 @@ import Torch.Typed
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 
+
+data
+  MLPSpec
+    (inputFeatures :: Nat)
+    (outputFeatures :: Nat)
+    (hiddenFeatures :: Nat)
+    (dtype :: DType)
+    (device :: (DeviceType, Nat))
+  where
+  MLPSpec ::
+    forall inputFeatures outputFeatures hiddenFeatures dtype device.
+    MLPSpec inputFeatures outputFeatures hiddenFeatures dtype device
+  deriving (Show, Eq)
+
 data
   MLP
     (inputFeatures :: Nat)
@@ -47,11 +61,32 @@ data
   }
   deriving (Show, Generic, Parameterized)
 
+instance
+  ( KnownNat inputFeatures,
+    KnownNat outputFeatures,
+    KnownNat hiddenFeatures,
+    KnownDType dtype,
+    KnownDevice device,
+    RandDTypeIsValid device dtype
+  ) =>
+  Randomizable
+    (MLPSpec inputFeatures outputFeatures hiddenFeatures dtype device)
+    (MLP inputFeatures outputFeatures hiddenFeatures dtype device)
+  where
+  sample _ =
+    MLP
+      <$> sample LinearSpec
+      <*> sample LinearSpec
+      <*> sample LinearSpec
+
 saveMLP :: MLP 10 3 4 'D.Float '(D.CPU, 0) -> FilePath -> IO ()
 saveMLP model filePath = saveParameters model filePath 
 
 loadMLP :: MLP 10 3 4 'D.Float '(D.CPU, 0) -> FilePath -> IO (MLP 10 3 4 'D.Float '(D.CPU, 0))
 loadMLP model filePath = loadParameters model filePath 
+
+loadMLPWithSpec :: MLPSpec 10 3 4 'D.Float '(D.CPU, 0) -> FilePath -> IO (MLP 10 3 4 'D.Float '(D.CPU, 0))
+loadMLPWithSpec spec filePath = loadParametersWithSpec spec filePath 
 
 spec :: Spec
 spec = pure ()
