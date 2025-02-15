@@ -1,5 +1,6 @@
 final: prev: let
-  inherit (final) lib libtorch-bin;
+  inherit (final) lib;
+  inherit (final.python3Packages) pytorch;
   inherit
     (final.haskell.lib)
     overrideCabal
@@ -12,6 +13,7 @@ final: prev: let
     doJailbreak
     dontCheck
     ;
+    libtorch-bin = pytorch.dev;
   torch = libtorch-bin;
   c10 = libtorch-bin;
   torch_cpu = libtorch-bin;
