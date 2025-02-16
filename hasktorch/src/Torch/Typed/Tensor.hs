@@ -513,6 +513,27 @@ selectIdx ::
   Tensor device dtype shape'
 selectIdx t idx = UnsafeMkTensor $ D.select (natValI @dim) (getFiniteI idx) (toDynamic t)
 
+type family CheckIndexSelectDim (dim :: Nat) (shape :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
+  CheckIndexSelectDim dim shape 'Nothing = TypeError (Text "Dim " :<>: ShowType dim :<>: Text " not found in shape " :<>: ShowType shape)
+  CheckIndexSelectDim dim shape ('Just shape') = shape'
+
+type IndexSelectDim (dim :: Nat) (shape :: [Nat]) (numIndices :: Nat) = CheckIndexSelectDim dim shape (ReplaceDim dim shape numIndices)
+
+-- | Returns a new tensor which indexes the input tensor along dimension dim using the entries in index which is a tensor of datatype Int64.
+-- The returned tensor has the same number of dimensions as the original tensor (input).
+-- The dimth dimension has the same size as the length of index; other dimensions have the same size as in the original tensor.
+-- 
+-- See https://pytorch.org/docs/stable/generated/torch.index_select.html for more information.
+indexSelectDim ::
+  forall (dim :: Nat) (shape :: [Nat]) (shape' :: [Nat]) (indexLength :: Nat) dtype device.
+  ( KnownNat dim,
+    shape' ~ IndexSelectDim dim shape indexLength
+  ) =>
+  Tensor device D.Int64 '[indexLength]
+  -> Tensor device dtype shape
+  -> Tensor device dtype shape'
+indexSelectDim index inputs = UnsafeMkTensor $ D.indexSelect (natValI @dim) (toDynamic index) (toDynamic inputs)
+
 type family Numel (shape :: [Nat]) :: Nat where
   Numel '[] = 1
   Numel (h ': t) = h * (Numel t)
