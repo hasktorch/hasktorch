@@ -180,9 +180,9 @@ library
     ghc-options:       -optcxx-std=c++17
  default-extensions:          Strict
                             , StrictData
- cxx-sources:          csrc/hasktorch_finializer.cpp
+ cxx-sources:          csrc/hasktorch_finalizer.cpp
  c-sources:            csrc/hasktorch_dump.c
- install-includes:     csrc/hasktorch_finializer.h
+ install-includes:     csrc/hasktorch_finalizer.h
                       ,csrc/hasktorch_dump.h
                       ,csrc/hasktorch_profile.h
  include-dirs:         csrc
