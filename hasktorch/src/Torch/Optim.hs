@@ -101,11 +101,11 @@ instance Optimizer GDM where
 
 -- | State representation for Adam Optimizer
 data Adam = Adam
-  { beta1 :: Float, -- 1st moment forgetting factor
-    beta2 :: Float, -- 2nd moment forgetting factor
-    m1 :: [Tensor], -- 1st moment
-    m2 :: [Tensor], -- 2nd moment
-    iter :: Int -- iteration
+  { beta1 :: !Float, -- 1st moment forgetting factor
+    beta2 :: !Float, -- 2nd moment forgetting factor
+    m1 :: ![Tensor], -- 1st moment
+    m2 :: ![Tensor], -- 2nd moment
+    iter :: !Int -- iteration
   }
   deriving (Show)
 
@@ -142,6 +142,8 @@ adam lr (Gradients gradients) parameters Adam {..} = (parameters', Adam beta1 be
     -- decaying averages of 1st & 2nd moments
     f1 m1 dp = mulScalar beta1 m1 + mulScalar (1 - beta1) dp
     f2 m2 dp = mulScalar beta2 m2 + mulScalar (1 - beta2) (dp * dp)
+    !_ = forceInPlace m1'
+    !_ = forceInPlace m2'
     m1' = zipWith f1 m1 gradients
     m2' = zipWith f2 m2 gradients
     -- bias adjustment
@@ -155,6 +157,10 @@ adam lr (Gradients gradients) parameters Adam {..} = (parameters', Adam beta1 be
 
 instance Optimizer Adam where
   step = adam
+
+forceInPlace :: [a] -> [a]
+forceInPlace [] = ()
+forceInPlace (x : xs) = seq x (forceInPlace xs)
 
 --
 -- Adagrad
