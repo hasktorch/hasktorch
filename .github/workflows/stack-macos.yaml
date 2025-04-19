@@ -9,9 +9,9 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: true
-    - uses: haskell-actions/setup@v2.7.1
+    - uses: haskell-actions/setup@v2.7.10
       with:
-        ghc-version: '9.6.5'
+        ghc-version: '9.6.6'
         enable-stack: true
         stack-version: 'latest'
     - name: Setup tool-chains
@@ -31,7 +31,7 @@ jobs:
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
         #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
     - name: Cache .stack
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.stack

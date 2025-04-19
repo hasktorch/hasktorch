@@ -7,7 +7,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      GHC: '9.6.4'
+      GHC: '9.6.6'
     steps:
 
     - uses: actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
       ## The latter leaves a build plan in dist-newstyle/cache/plan.json
 
     - name: Restore cached dependencies
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@v4
       id:   cache
       with:
         # We don't cache dist-newstyle because it is fat and in practice hardly reused.
@@ -71,7 +71,7 @@ jobs:
 
     - name: Cache dependencies
       if:   ${{ steps.cache.outputs.cache-hit != 'true' }}
-      uses: actions/cache/save@v3
+      uses: actions/cache/save@v4
       with:
         path: ~/.cabal/store
         key: ${{ steps.cache.outputs.cache-primary-key }}
@@ -99,7 +99,7 @@ jobs:
         cabal v2-bench hasktorch:alloc   --benchmark-options='--output benchmark-alloc.html'
 
     - name: Archive benchmark results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: benchmark-report
         path: hasktorch/benchmark*.html

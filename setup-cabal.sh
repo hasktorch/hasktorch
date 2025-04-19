@@ -5,7 +5,7 @@ ghc --version
 
 #curl https://www.stackage.org/lts-21.25/cabal.config |\
 
-curl https://www.stackage.org/lts-22.17/cabal.config | \
+curl https://www.stackage.org/lts-22.43/cabal.config | \
 sed -e 's/with-compiler: .*$//g' |\
 sed -e 's/.*inline-c.*//g' > cabal.project.freeze
 
@@ -46,7 +46,7 @@ package *
   extra-lib-dirs: /opt/homebrew/opt/libomp/lib
 
 package libtorch-ffi
-    ghc-options: ${GHC_OPTIONS} -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEM_GB} -RTS 
+    ghc-options: ${GHC_OPTIONS} -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEM_GB} -RTS
 
 package hasktorch
     ghc-options: -j${USED_NUM_CPU} +RTS -A128m -n2m -M${USED_MEMX2_GB} -RTS
