@@ -24,7 +24,10 @@ import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
 import qualified Data.Vector as V
+import qualified Data.Vector.Sized as S
 import Data.Word (Word8)
+import GHC.TypeLits
+import Data.Finite
 import Foreign.C.Types
 import Foreign.ForeignPtr
 import Foreign.Ptr
@@ -51,6 +54,7 @@ import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import Torch.Lens
 import Torch.TensorOptions
+import qualified Data.Vector.Sized as SV
 
 type ATenTensor = ForeignPtr ATen.Tensor
 
@@ -698,6 +702,45 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
   _pokeElemOff ptr offset v@(x : _) =
     let width = product (_dims x)
      in forM_ (zip [0 ..] v) $ \(i, d) ->
+          if product (_dims d) == width -- This validation may be slow.
+            then (_pokeElemOff @a) ptr (offset + i * width) d
+            else throwIO $ userError $ "There are lists having different length."
+
+instance {-# OVERLAPPING #-} (KnownNat n, TensorLike a) => TensorLike (SV.Vector n a) where
+  asTensor' v opts = unsafePerformIO $ do
+    t <- ((cast2 LibTorch.empty_lo) :: [Int] -> TensorOptions -> IO Tensor) (_dims v) $ withDType (_dtype @a) opts
+    withTensor t $ \ptr -> do
+      _pokeElemOff ptr 0 v
+    return t
+
+  asTensor v = asTensor' v defaultOpts
+
+  _asValue t = unsafePerformIO $ do
+    if _dtype @a == dtype t
+      then do
+        withTensor t $ \ptr -> do
+          _peekElemOff ptr 0 (shape t)
+      else throwIO $ userError $ "The infered DType of asValue is " ++ show (_dtype @a) ++ ", but the DType of tensor on memory is " ++ show (dtype t) ++ "."
+
+  _dtype = _dtype @a
+
+  _dims v = (SV.length v) : (_dims (SV.index v 0))
+  _deepDims v = Just $ _dims v
+
+
+  _peekElemOff ptr offset [] = throwIO $ userError $ "Sized vector's size is zero."
+  _peekElemOff ptr offset (d : dims) =
+    let width = product dims
+     in do
+      v <- fmap SV.fromList $ forM [0 .. (d -1)] $ \i ->
+            _peekElemOff ptr (offset + i * width) dims
+      case v of
+        Nothing -> throwIO $ userError $ "Sized vector is not corrent."
+        Just v' -> return v'
+
+  _pokeElemOff ptr offset v =
+    let width = product (_dims v)
+     in forM_ (zip [0 ..] (SV.toList v)) $ \(i, d) ->
           if product (_dims d) == width -- This validation may be slow.
             then (_pokeElemOff @a) ptr (offset + i * width) d
             else throwIO $ userError $ "There are lists having different length."
