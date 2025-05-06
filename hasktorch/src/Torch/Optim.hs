@@ -13,6 +13,8 @@ import Torch.NN
 import Torch.Tensor
 import Torch.TensorFactories
 import Prelude hiding (sqrt)
+import GHC.Generics (Generic)
+import Control.DeepSeq (NFData, force)
 
 type LearningRate = Tensor
 
@@ -108,7 +110,9 @@ data Adam = Adam
     m2 :: [Tensor], -- 2nd moment
     iter :: Int -- iteration
   }
-  deriving (Show)
+  deriving (Show, Generic)
+
+instance NFData Adam
 
 mkAdam ::
   Int ->
@@ -143,8 +147,9 @@ adam lr (Gradients gradients) parameters Adam {..} = (parameters', Adam beta1 be
     -- decaying averages of 1st & 2nd moments
     f1 m1 dp = mulScalar beta1 m1 + mulScalar (1 - beta1) dp
     f2 m2 dp = mulScalar beta2 m2 + mulScalar (1 - beta2) (dp * dp)
-    !m1' = forceInPlace $ zipWith f1 m1 gradients
-    !m2' = forceInPlace $ zipWith f2 m2 gradients
+    -- force to prevent spine laziness. See https://github.com/hasktorch/hasktorch/pull/728
+    m1' = force $ zipWith f1 m1 gradients
+    m2' = force $ zipWith f2 m2 gradients
     -- bias adjustment
     a beta = divScalar (1 - beta ^ (iter + 1))
     a1 = fmap (a beta1) m1'
@@ -156,10 +161,6 @@ adam lr (Gradients gradients) parameters Adam {..} = (parameters', Adam beta1 be
 
 instance Optimizer Adam where
   step = adam
-
-forceInPlace :: [a] -> [a]
-forceInPlace [] = []
-forceInPlace (x : xs) = seq x (forceInPlace xs)
 
 --
 -- Adagrad
