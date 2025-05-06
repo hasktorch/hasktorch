@@ -101,11 +101,11 @@ instance Optimizer GDM where
 
 -- | State representation for Adam Optimizer
 data Adam = Adam
-  { beta1 :: !Float, -- 1st moment forgetting factor
-    beta2 :: !Float, -- 2nd moment forgetting factor
-    m1 :: ![Tensor], -- 1st moment
-    m2 :: ![Tensor], -- 2nd moment
-    iter :: !Int -- iteration
+  { beta1 :: Float, -- 1st moment forgetting factor
+    beta2 :: Float, -- 2nd moment forgetting factor
+    m1 :: [Tensor], -- 1st moment
+    m2 :: [Tensor], -- 2nd moment
+    iter :: Int -- iteration
   }
   deriving (Show)
 
