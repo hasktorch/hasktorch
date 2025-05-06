@@ -142,10 +142,8 @@ adam lr (Gradients gradients) parameters Adam {..} = (parameters', Adam beta1 be
     -- decaying averages of 1st & 2nd moments
     f1 m1 dp = mulScalar beta1 m1 + mulScalar (1 - beta1) dp
     f2 m2 dp = mulScalar beta2 m2 + mulScalar (1 - beta2) (dp * dp)
-    !_ = forceInPlace m1'
-    !_ = forceInPlace m2'
-    m1' = zipWith f1 m1 gradients
-    m2' = zipWith f2 m2 gradients
+    !m1' = forceInPlace $ zipWith f1 m1 gradients
+    !m2' = forceInPlace $ zipWith f2 m2 gradients
     -- bias adjustment
     a beta = divScalar (1 - beta ^ (iter + 1))
     a1 = fmap (a beta1) m1'
@@ -159,7 +157,7 @@ instance Optimizer Adam where
   step = adam
 
 forceInPlace :: [a] -> [a]
-forceInPlace [] = ()
+forceInPlace [] = []
 forceInPlace (x : xs) = seq x (forceInPlace xs)
 
 --
