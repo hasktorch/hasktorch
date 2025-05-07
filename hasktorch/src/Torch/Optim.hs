@@ -1,5 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Torch.Optim where
 
