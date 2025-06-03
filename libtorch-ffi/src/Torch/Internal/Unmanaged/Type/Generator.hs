@@ -28,6 +28,7 @@ C.include "<ATen/detail/CUDAHooksInterface.h>"
 C.include "<ATen/detail/MPSHooksInterface.h>"
 C.include "<ATen/CPUGeneratorImpl.h>"
 C.include "<ATen/core/Generator.h>"
+C.include "<torch/version.h>"
 
 C.include "<vector>"
 
@@ -116,14 +117,23 @@ getDefaultCUDAGenerator
   :: Word16
   -> IO (Ptr Generator)
 getDefaultCUDAGenerator _device_index =
-  [C.throwBlock| at::Generator* { return new at::Generator(at::detail::getCUDAHooks().getDefaultCUDAGenerator(
-    $(uint16_t _device_index)));
+  [C.throwBlock| at::Generator* {
+#if TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR < 7
+return new at::Generator(at::detail::getCUDAHooks().getDefaultCUDAGenerator($(uint16_t _device_index)));
+#else
+return new at::Generator(at::detail::getCUDAHooks().getDefaultGenerator($(uint16_t _device_index)));
+#endif
   }|]
 
 getDefaultMPSGenerator
   :: IO (Ptr Generator)
 getDefaultMPSGenerator =
-  [C.throwBlock| at::Generator* { return new at::Generator(at::detail::getMPSHooks().getDefaultMPSGenerator());
+  [C.throwBlock| at::Generator* {
+#if TORCH_VERSION_MAJOR == 2 && TORCH_VERSION_MINOR < 7
+return new at::Generator(at::detail::getMPSHooks().getDefaultMPSGenerator());
+#else
+return new at::Generator(at::detail::getMPSHooks().getDefaultGenerator());
+#endif
   }|]
 
 getDefaultCPUGenerator

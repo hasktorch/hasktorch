@@ -426,13 +426,13 @@ upsample_nearest2d_out_ttldd
   -> IO (ForeignPtr Tensor)
 upsample_nearest2d_out_ttldd = _cast5 Unmanaged.upsample_nearest2d_out_ttldd
 
-upsample_nearest2d_out_ttld
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-upsample_nearest2d_out_ttld = _cast4 Unmanaged.upsample_nearest2d_out_ttld
+-- upsample_nearest2d_out_ttld
+--   :: ForeignPtr Tensor
+--   -> ForeignPtr Tensor
+--   -> ForeignPtr IntArray
+--   -> CDouble
+--   -> IO (ForeignPtr Tensor)
+-- upsample_nearest2d_out_ttld = _cast4 Unmanaged.upsample_nearest2d_out_ttld
 
 upsample_nearest2d_out_ttl
   :: ForeignPtr Tensor

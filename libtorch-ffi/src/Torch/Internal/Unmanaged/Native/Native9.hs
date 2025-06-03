@@ -3622,21 +3622,21 @@ upsample_bilinear2d_out_ttlbdd _out _self _output_size _align_corners _scales_h 
   , $(double _scales_w)));
   }|]
 
-upsample_bilinear2d_out_ttlbd
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> CBool
-  -> CDouble
-  -> IO (Ptr Tensor)
-upsample_bilinear2d_out_ttlbd _out _self _output_size _align_corners _scales_h =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_bilinear2d_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)
-  , $(bool _align_corners)
-  , $(double _scales_h)));
-  }|]
+-- upsample_bilinear2d_out_ttlbd
+--   :: Ptr Tensor
+--   -> Ptr Tensor
+--   -> Ptr IntArray
+--   -> CBool
+--   -> CDouble
+--   -> IO (Ptr Tensor)
+-- upsample_bilinear2d_out_ttlbd _out _self _output_size _align_corners _scales_h =
+--   [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_bilinear2d_out(
+--     *$(at::Tensor* _out)
+--   , *$(at::Tensor* _self)
+--   , *$(std::vector<int64_t>* _output_size)
+--   , $(bool _align_corners)
+--   , $(double _scales_h)));
+--   }|]
 
 upsample_bilinear2d_out_ttlb
   :: Ptr Tensor
