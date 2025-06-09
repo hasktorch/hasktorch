@@ -49,10 +49,6 @@ import qualified Criterion.Main as C
 #define N3 1000
 
 
-instance NFData T.Tensor
-  where
-    rnf (T.Unsafe _) = ()
-
 instance NFData (ForeignPtr a)
   where
     rnf v = v `seq` ()
