@@ -2079,14 +2079,14 @@ upsample_bilinear2d_out_ttlbdd
   -> IO (ForeignPtr Tensor)
 upsample_bilinear2d_out_ttlbdd = _cast6 Unmanaged.upsample_bilinear2d_out_ttlbdd
 
-upsample_bilinear2d_out_ttlbd
-  :: ForeignPtr Tensor
-  -> ForeignPtr Tensor
-  -> ForeignPtr IntArray
-  -> CBool
-  -> CDouble
-  -> IO (ForeignPtr Tensor)
-upsample_bilinear2d_out_ttlbd = _cast5 Unmanaged.upsample_bilinear2d_out_ttlbd
+-- upsample_bilinear2d_out_ttlbd
+--   :: ForeignPtr Tensor
+--   -> ForeignPtr Tensor
+--   -> ForeignPtr IntArray
+--   -> CBool
+--   -> CDouble
+--   -> IO (ForeignPtr Tensor)
+-- upsample_bilinear2d_out_ttlbd = _cast5 Unmanaged.upsample_bilinear2d_out_ttlbd
 
 upsample_bilinear2d_out_ttlb
   :: ForeignPtr Tensor

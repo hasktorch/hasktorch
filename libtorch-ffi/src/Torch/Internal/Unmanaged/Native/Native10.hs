@@ -746,19 +746,19 @@ upsample_nearest2d_out_ttldd _out _self _output_size _scales_h _scales_w =
   , $(double _scales_w)));
   }|]
 
-upsample_nearest2d_out_ttld
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> Ptr IntArray
-  -> CDouble
-  -> IO (Ptr Tensor)
-upsample_nearest2d_out_ttld _out _self _output_size _scales_h =
-  [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d_out(
-    *$(at::Tensor* _out)
-  , *$(at::Tensor* _self)
-  , *$(std::vector<int64_t>* _output_size)
-  , $(double _scales_h)));
-  }|]
+-- upsample_nearest2d_out_ttld
+--   :: Ptr Tensor
+--   -> Ptr Tensor
+--   -> Ptr IntArray
+--   -> CDouble
+--   -> IO (Ptr Tensor)
+-- upsample_nearest2d_out_ttld _out _self _output_size _scales_h =
+--   [C.throwBlock| at::Tensor* { return new at::Tensor(at::upsample_nearest2d_out(
+--     *$(at::Tensor* _out)
+--   , *$(at::Tensor* _self)
+--   , *$(std::vector<int64_t>* _output_size)
+--   , $(double _scales_h)));
+--   }|]
 
 upsample_nearest2d_out_ttl
   :: Ptr Tensor
