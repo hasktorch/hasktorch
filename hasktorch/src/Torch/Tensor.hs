@@ -51,11 +51,15 @@ import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import Torch.Lens
 import Torch.TensorOptions
+import Control.DeepSeq (NFData, rnf)
 
 type ATenTensor = ForeignPtr ATen.Tensor
 
 -- do not use the constructor
 newtype Tensor = Unsafe ATenTensor
+
+instance NFData Tensor where
+  rnf (Unsafe _) = ()
 
 instance Castable Tensor ATenTensor where
   cast (Unsafe aten_tensor) f = f aten_tensor
