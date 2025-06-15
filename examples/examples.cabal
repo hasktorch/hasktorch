@@ -142,6 +142,18 @@ executable serialization
   build-depends:       bytestring
                      , serialise
 
+executable kmeans
+  import:              config
+  hs-source-dirs:      kmeans
+  other-modules:       Plot
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       base >= 4.7 && < 5
+                     , text
+                     , hvega
+                     , hasktorch
+                     , libtorch-ffi
+
 executable optimizers
   hs-source-dirs:      optimizers
   main-is:             Main.hs
