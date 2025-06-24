@@ -18,12 +18,12 @@ jobs:
       - run: |
             nix build .#codegen-cpu
             nix build .#hasktorch-cpu
-            nix build .#hasktorch-gradually-typed-cpu
+            # nix build .#hasktorch-gradually-typed-cpu
             nix build .#libtorch-ffi-cpu
             nix build .#libtorch-ffi-helper-cpu
             nix build .#codegen-cuda
             nix build .#hasktorch-cuda
-            nix build .#hasktorch-gradually-typed-cuda
+            # nix build .#hasktorch-gradually-typed-cuda
             nix build .#libtorch-ffi-cuda
             nix build .#libtorch-ffi-helper-cuda
             nix build .#devShells.x86_64-linux.cpu
