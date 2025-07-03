@@ -74,12 +74,12 @@
     name: self
     type: const Tensor &
   - annotation: null
-    default: 'c10::nullopt'
+    default: 'std::nullopt'
     dynamic_type: ScalarType
     is_nullable: true
     kwarg_only: true
     name: dtype
-    type: c10::optional<ScalarType>
+    type: std::optional<ScalarType>
   method_of:
   - Type
   - Tensor
@@ -120,12 +120,12 @@
     name: keepdim
     type: bool
   - annotation: null
-    default: 'c10::nullopt'
+    default: 'std::nullopt'
     dynamic_type: ScalarType
     is_nullable: true
     kwarg_only: true
     name: dtype
-    type: c10::optional<ScalarType>
+    type: std::optional<ScalarType>
   method_of:
   - Type
   - Tensor
