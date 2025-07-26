@@ -1,5 +1,7 @@
 {-# LANGUAGE ExtendedDefaultRules #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module TensorSpec (spec) where
 
@@ -17,10 +19,31 @@ import Torch.Tensor
 import Torch.TensorFactories
 import Torch.TensorOptions
 import Test.QuickCheck.Arbitrary
+import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Generic as VG
 
 instance Arbitrary Half where
   arbitrary = arbitrarySizedFractional
   shrink    = shrinkDecimal
+
+instance (Arbitrary a, VS.Storable a) => Arbitrary (VS.Vector a) where
+  arbitrary = do
+    n  <- choose (0, 20)           -- limit length to at most 20
+    xs <- vectorOf n arbitrary    -- exactly n randomly generated `a`s
+    return (VS.fromList xs)
+
+  shrink v = [ VS.fromList xs
+             | xs <- shrink (VS.toList v) ]
+
+instance (Arbitrary a, VS.Storable a, VG.Vector VU.Vector a) => Arbitrary (VU.Vector a) where
+  arbitrary = do
+    n  <- choose (0, 20)           -- limit length to at most 20
+    xs <- vectorOf n arbitrary    -- exactly n randomly generated `a`s
+    return (VG.fromList xs)
+
+  shrink v = [ VG.fromList xs
+             | xs <- shrink (VG.toList v) ]
 
 spec :: Spec
 spec = do
@@ -64,6 +87,15 @@ spec = do
     it "TensorLike Complex Double" $
       property $
         \x -> asValue (asTensor x) `shouldBe` (x :: Complex Double)
+    it "TensorLike Storable Vector Float" $
+      property $
+        \x -> asValue (asTensor x) `shouldBe` (x :: VS.Vector Float)
+    it "TensorLike Storable Vector Double" $
+      property $
+        \x -> asValue (asTensor x) `shouldBe` (x :: VS.Vector Double)
+    it "TensorLike Unboxed Vector Double" $
+      property $
+        \x -> asValue (asTensor x) `shouldBe` (x :: VU.Vector Double)
 
     it "Compare internal expression of c++ with Storable expression of haskell" $ do
       show (asTensor [True, False, True, False])

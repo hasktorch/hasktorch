@@ -24,12 +24,17 @@ import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
 import qualified Data.Vector as V
+import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Generic as VG
 import Data.Word (Word8)
 import Foreign.C.Types
 import Foreign.ForeignPtr
+import Foreign.Marshal.Utils (copyBytes)
 import Foreign.Ptr
 import Foreign.Storable
 import GHC.Generics
+import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
 import Numeric
 import System.IO.Unsafe
 import Torch.DType
@@ -705,6 +710,45 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
           if product (_dims d) == width -- This validation may be slow.
             then (_pokeElemOff @a) ptr (offset + i * width) d
             else throwIO $ userError $ "There are lists having different length."
+
+instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike (VS.Vector a) where
+  asTensor v = unsafePerformIO $ do
+    t <- ((cast2 ATen.new_empty_tensor) :: [Int] -> TensorOptions -> IO Tensor) [VS.length v] $ withDType (_dtype @a) defaultOpts
+    _withTensor t $ \ptr -> do
+      VS.unsafeWith v $ \vptr -> do
+        copyBytes
+          (castPtr ptr)
+          (castPtr vptr)
+          (VS.length v * (sizeOf (undefined :: a)))
+    return t
+
+  _asValue t = unsafePerformIO $
+    let len = head (shape t)
+    in
+      withTensor t $ \ptr -> do
+        fp <- mallocPlainForeignPtrBytes (len * (sizeOf (undefined :: a)))
+        withForeignPtr fp $ \vptr -> do
+          copyBytes
+            (castPtr vptr)
+            (castPtr ptr)
+            (len * (sizeOf (undefined :: a)))
+        return $ VS.unsafeFromForeignPtr fp 0 len
+
+  _dtype = reflect (Proxy :: Proxy a)
+  _dims v = [VS.length v]
+  _deepDims v = Just [VS.length v]
+  _peekElemOff = error "Not implemented for storable vector"
+  _pokeElemOff = error "Not implemented for storable vector"
+
+instance {-# OVERLAPPING #-} (Reifies a DType, Storable a, VG.Vector VU.Vector a) => TensorLike (VU.Vector a) where
+  asTensor v = asTensor (VG.convert v :: VS.Vector a)
+  _asValue t = VG.convert (_asValue t :: VS.Vector a)
+
+  _dtype = reflect (Proxy :: Proxy a)
+  _dims v = [VG.length v]
+  _deepDims v = Just [VG.length v]
+  _peekElemOff = error "Not implemented for unboxed vector"
+  _pokeElemOff = error "Not implemented for unboxed vector"
 
 class AsTensors as where
   toTensors :: as -> V.Vector Tensor

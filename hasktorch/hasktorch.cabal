@@ -211,6 +211,7 @@ test-suite spec
                     , lens-family-core
                     , data-default-class
                     , half
+                    , vector
 
 test-suite doctests
   if os(darwin) || flag(disable-doctest)
