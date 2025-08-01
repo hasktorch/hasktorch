@@ -125,6 +125,7 @@ data TenType
   | TensorAQ -- Tensor(a)?
   | TensorAQ' -- Tensor(a!)?
   | TensorQ -- Tensor?
+  | OptionalTensor -- std::optional<at::Tensor>
   | TensorAVector -- Tensor(a)[]
   | TensorOptions
   | TensorList
@@ -382,6 +383,7 @@ typ =
         <|> ((lexm $ try (string "at::TensorList") <|> string "TensorList") >> (pure $ TenType TensorList))
         <|> try ((lexm $ string "Tensor[]") >> (pure $ TenType TensorList))
         <|> try ((lexm $ string "Tensor?[]") >> (pure $ TenType TensorList))
+        <|> try ((lexm $ try (string "const std::optional<at::Tensor> &") <|> string "std::optional<at::Tensor>") >> (pure $ TenType OptionalTensor))
         <|> try ((lexm $ try (string "const c10::List<std::optional<at::Tensor>> &") <|> try (string "const c10::List<std::optional<Tensor>> &") <|> try (string "const c10::List<c10::optional<at::Tensor>> &") <|> string "const c10::List<c10::optional<Tensor>> &") >> (pure $ TenType C10ListTensor))
         <|> try ((lexm $ string "const at::ITensorListRef &") >> (pure $ TenType ITensorListRef))
         <|> try ((lexm $ string "Tensor(a)[]") >> (pure $ TenType TensorAVector))

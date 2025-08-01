@@ -6,6 +6,10 @@ void delete_tensor(at::Tensor* tensor){
   delete tensor;
 }
 
+void delete_optionaltensor(std::optional<at::Tensor>* tensor){
+  delete tensor;
+}
+
 void delete_tensorlist(std::vector<at::Tensor>* tensors){
   delete tensors;
 }

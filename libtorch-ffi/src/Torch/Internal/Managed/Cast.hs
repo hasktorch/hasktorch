@@ -20,6 +20,7 @@ import Torch.Internal.Managed.Type.IValueList
 import Torch.Internal.Managed.Type.C10Tuple
 import Torch.Internal.Managed.Type.C10Dict
 import Torch.Internal.Managed.Type.StdVector
+import Torch.Internal.Managed.Type.StdOptional
 
 instance Castable Int (ForeignPtr IntArray) where
   cast xs f = do
@@ -141,3 +142,18 @@ instance Castable [(ForeignPtr IValue,ForeignPtr IValue)] (ForeignPtr (C10Dict '
     forM_ xs $ \(k,v) -> (c10Dict_insert l k v)
     f l
   uncast xs f = f =<< c10Dict_toList xs
+
+instance Castable (Maybe (ForeignPtr Tensor)) (ForeignPtr (StdOptional Tensor)) where
+  cast Nothing f = do
+    optionalTensor <- stdOptionalTensor_empty
+    f optionalTensor
+  cast (Just tensor) f = do
+    optionalTensor <- stdOptionalTensor_create tensor
+    f optionalTensor
+  uncast optionalTensor f = do
+    hasValue <- stdOptionalTensor_has_value optionalTensor
+    if hasValue /= 0
+      then do
+        tensor <- stdOptionalTensor_value optionalTensor
+        f (Just tensor)
+      else f Nothing

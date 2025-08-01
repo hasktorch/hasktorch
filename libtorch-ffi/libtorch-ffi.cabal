@@ -80,6 +80,7 @@ library
                     , Torch.Internal.Unmanaged.Type.TensorIndex
                     , Torch.Internal.Unmanaged.Type.StdString
                     , Torch.Internal.Unmanaged.Type.StdArray
+                    , Torch.Internal.Unmanaged.Type.StdOptional
                     , Torch.Internal.Unmanaged.Type.Context
 --                    , Torch.Internal.Unmanaged.Type.ConstQuantizerPtr
                     , Torch.Internal.Unmanaged.Type.Extra
@@ -140,6 +141,7 @@ library
                     , Torch.Internal.Managed.Type.C10Tuple
                     , Torch.Internal.Managed.Type.Module
                     , Torch.Internal.Managed.Type.StdVector
+                    , Torch.Internal.Managed.Type.StdOptional
                     , Torch.Internal.Unmanaged.Autograd
                     , Torch.Internal.Unmanaged.TensorFactories
                     , Torch.Internal.Unmanaged.Serialize

@@ -22,6 +22,7 @@ import Torch.Internal.Managed.Type.IntArray
 import Torch.Internal.Managed.Type.Scalar
 import Torch.Internal.Managed.Type.Tuple
 import Torch.Internal.Managed.Type.Context
+import Torch.Internal.Managed.Type.StdOptional
 import Torch.Internal.Managed.Native
 
 intArray :: [Int64] -> IO (ForeignPtr IntArray)
@@ -407,6 +408,23 @@ spec = forM_ [
     forM_ [0..(num-1)] $ \i -> do
       ap2 tensor_equal_t (at1 tensor i) (ap2 mul_ts (pure one) (newScalar_i (fromIntegral i))) `shouldReturn` 1
     at1 tensor 314 `shouldThrow` anyException
+
+  it "TestOptionalTensorEmpty" $ do
+    optTensor <- stdOptionalTensor_empty
+    hasValue <- stdOptionalTensor_has_value optTensor
+    hasValue `shouldBe` 0
+
+  it "TestOptionalTensorCreate" $ do
+    tensor <- new' ones_lo [2, 3] dtype
+    optTensor <- stdOptionalTensor_create tensor
+    hasValue <- stdOptionalTensor_has_value optTensor
+    hasValue `shouldBe` 1
+
+  it "TestOptionalTensorValue" $ do
+    tensor <- new' ones_lo [2, 3] dtype
+    optTensor <- stdOptionalTensor_create tensor
+    extractedTensor <- stdOptionalTensor_value optTensor
+    tensor_numel extractedTensor `shouldReturn` 6
 
 
 -- void TestIndexingByZerodimTensor() {
