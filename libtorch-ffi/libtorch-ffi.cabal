@@ -10,7 +10,18 @@ author:              Austin Huang
 maintainer:          hasktorch@gmail.com
 copyright:           2018 Austin Huang
 category:            Codegen
-build-type:          Simple
+build-type:          Custom
+
+custom-setup
+  setup-depends:
+    base >= 4.7 && < 5,
+    Cabal >= 3.0 && < 4,
+    directory >= 1.3 && < 2,
+    filepath >= 1.4 && < 2,
+    process >= 1.6 && < 2,
+    temporary >= 1.3 && < 2,
+    http-conduit >= 2.3 && < 3,
+    bytestring >= 0.10 && < 1
 
 Flag cuda
  Description: A flag to link libtorch_cuda.
@@ -149,7 +160,10 @@ library
                     , async >= 2.2.5 && < 2.3
                     , libtorch-ffi-helper >= 2.0.0 && < 2.1
                     , text >= 2.0.2 && < 2.2
- ghc-options:       -fplugin GHC.NotExport.Plugin
+ if os(darwin)
+  ghc-options:       -fplugin GHC.NotExport.Plugin -optl-ld_classic
+ else
+  ghc-options:       -fplugin GHC.NotExport.Plugin
  extra-libraries:     c10
                     , torch
                     , torch_cpu
@@ -205,5 +219,6 @@ test-suite spec
                      , safe-exceptions
   if os(darwin)
     ld-options: -Wl,-keep_dwarf_unwind
+    ghc-options: -optl-ld_classic
   default-extensions:          Strict
                              , StrictData
