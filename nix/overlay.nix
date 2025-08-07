@@ -33,10 +33,10 @@ in {
               });
               hasktorch-gradually-typed =
                 lib.pipe
-                (hfinal.callCabal2nix "hasktorch-gradually-typed" ../experimental/gradually-typed {}).overrideAttrs (old: {
+                ((hfinal.callCabal2nix "hasktorch-gradually-typed" ../experimental/gradually-typed {}).overrideAttrs (old: {
                   XDG_CACHE_HOME = "$TMPDIR";
                   LIBTORCH_HOME  = "$TMPDIR/libtorch";
-                });
+                }))
                 [
                   dontCheck
                   #  disableLibraryProfiling
@@ -44,10 +44,6 @@ in {
               hasktorch =
                 lib.pipe
                 (hfinal.callCabal2nix "hasktorch" ../hasktorch {})
-                .overrideAttrs (old: {
-                  XDG_CACHE_HOME = "$TMPDIR";
-                  LIBTORCH_HOME  = "$TMPDIR/libtorch";
-                });
                 [
                   dontCheck
                   #  disableLibraryProfiling
@@ -58,12 +54,12 @@ in {
               });
               libtorch-ffi =
                 lib.pipe
-                (hfinal.callCabal2nix "libtorch-ffi" ../libtorch-ffi {
+                ((hfinal.callCabal2nix "libtorch-ffi" ../libtorch-ffi {
                   inherit torch c10 torch_cpu;
                   }).overrideAttrs (old: {
                     XDG_CACHE_HOME = "$TMPDIR";
                     LIBTORCH_HOME  = "$TMPDIR/libtorch";
-                  });
+                  }))
                 [
                   #  disableLibraryProfiling
                   (appendConfigureFlag
