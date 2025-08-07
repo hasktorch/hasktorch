@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+import Data.List (isPrefixOf)
 import Distribution.Simple
 import Distribution.Simple.Program
 import Distribution.Simple.Setup
@@ -23,29 +23,33 @@ import GHC.IO.Exception (IOException)
 main :: IO ()
 main = defaultMainWithHooks $ simpleUserHooks
   { preConf = \_ _ -> do
-      _ <- ensureTokenizers
       pure emptyHookedBuildInfo
   , confHook = \(gpd, hbi) flags -> do
-      tokenizersDir <- getGlobalTokenizersDir
-      let tokLibDir    = tokenizersDir </> "lib"
-          tokInclude   = tokenizersDir </> "include"
-      let updatedFlags = flags
-            { configExtraLibDirs     = tokLibDir : configExtraLibDirs flags
-            , configExtraIncludeDirs = tokInclude : configExtraIncludeDirs flags
-            }
-      lbi <- confHook simpleUserHooks (gpd, hbi) updatedFlags
-      return $ case buildOS of
-        OSX   -> lbi { withPrograms = addRPath tokLibDir (withPrograms lbi) }
-        Linux -> lbi { withPrograms = addRPath tokLibDir (withPrograms lbi) }
-        _     -> lbi
+      mTokenizersDir <- ensureTokenizers
+      case mTokenizersDir of
+        Nothing -> do
+          putStrLn "libtokenizers not found, skipping configuration."
+          confHook simpleUserHooks (gpd, hbi) flags
+        Just tokenizersDir -> do
+          let tokLibDir    = tokenizersDir </> "lib"
+              tokInclude   = tokenizersDir </> "include"
+          let updatedFlags = flags
+                { configExtraLibDirs     = tokLibDir : configExtraLibDirs flags
+                , configExtraIncludeDirs = tokInclude : configExtraIncludeDirs flags
+                }
+          lbi <- confHook simpleUserHooks (gpd, hbi) updatedFlags
+          return $ case buildOS of
+            OSX   -> lbi { withPrograms = addRPath tokLibDir (withPrograms lbi) }
+            Linux -> lbi { withPrograms = addRPath tokLibDir (withPrograms lbi) }
+            _     -> lbi
   }
 
 -- === tokenizers settings ===
 tokenizersVersion :: String
 tokenizersVersion = "v0.1"
 
-getGlobalTokenizersDir :: IO FilePath
-getGlobalTokenizersDir = do
+getLocalUserTokenizersDir :: IO FilePath
+getLocalUserTokenizersDir = do
   mHome <- lookupEnv "TOKENIZERS_HOME"
   base  <- case mHome of
     Just h  -> pure h
@@ -59,20 +63,46 @@ platformTag = case (buildOS, buildArch) of
   (Linux,  X86_64)  -> "linux-x86_64"
   _ -> error $ "Unsupported platform: " <> show (buildOS, buildArch)
 
--- === tokenizers download ===
-ensureTokenizers :: IO FilePath
+ensureTokenizers :: IO (Maybe FilePath)
 ensureTokenizers = do
+  isSandbox <- isNixSandbox
+  if isSandbox
+    then return Nothing
+    else download
+
+isNixSandbox :: IO Bool
+isNixSandbox = do
+  nix <- lookupEnv "NIX_BUILD_TOP"
+  case nix of
+    Just path -> do
+      let isNixPath = any (`isPrefixOf` path) ["/build", "/private/tmp/nix-build"]
+      if isNixPath
+        then do
+          putStrLn "Nix sandbox detected; skipping libtorch download."
+          return True
+        else do
+          return False
+    Nothing -> return False
+
+download :: IO (Maybe FilePath)
+download = do
   skip   <- lookupEnv "TOKENIZERS_SKIP_DOWNLOAD"
-  if skip /= Nothing then getGlobalTokenizersDir else do
-    dest   <- getGlobalTokenizersDir
-    let marker = dest </> ".ok"
-    exists <- doesFileExist marker
-    present<- doesDirectoryExist dest
-    if present && exists then pure dest else do
-      putStrLn $ "tokenizers not found, installing to " <> dest
-      downloadAndExtractTokenizersTo dest
-      writeFile marker ""
-      pure dest
+  case skip of
+    Just _ -> do
+      putStrLn "TOKENIZERS_SKIP_DOWNLOAD set; assuming libtokenizers exists globally."
+      return Nothing
+    Nothing -> do
+      dest   <- getLocalUserTokenizersDir
+      let marker = dest </> ".ok"
+      exists <- doesFileExist marker
+      present<- doesDirectoryExist dest
+      if present && exists
+        then pure $ Just dest
+        else do
+          putStrLn $ "tokenizers not found, installing to " <> dest
+          downloadAndExtractTokenizersTo dest
+          writeFile marker ""
+          pure $ Just dest
 
 downloadAndExtractTokenizersTo :: FilePath -> IO ()
 downloadAndExtractTokenizersTo dest = do
@@ -86,9 +116,14 @@ downloadAndExtractTokenizersTo dest = do
     LBS.writeFile outPath (getResponseBody res)
     putStrLn "Extracting tokenizers..."
     callProcess "unzip" ["-q", outPath, "-d", tmpDir]
-    let src = if doesDirectoryExist (tmpDir </> "libtokenizers-") then head (filter ("libtokenizers-" `isPrefixOf`) <$> listDirectory tmpDir) else tmpDir
-    (renameDirectory (tmpDir </> src) dest) `catch` \(_::IOException) -> copyTree (tmpDir </> src) dest
-    putStrLn "tokenizers installed."
+    let unpacked = tmpDir </> "libtokenizers"
+    exists <- doesDirectoryExist unpacked
+    let src = if exists then unpacked else tmpDir
+    -- We want to move the directory since this operation is atomic.
+    -- If that doesn't work we fall back to copying.
+    (renameDirectory src dest) `catch` (\(_::IOException) -> copyTree src dest)
+    putStrLn "tokenizers extracted successfully (global cache)."
+
 
 computeTokenizersURL :: IO (String, String)
 computeTokenizersURL = do
@@ -111,3 +146,8 @@ copyTree src dest = do
     isDir <- doesDirectoryExist s
     if isDir then copyTree s d else copyFile s d
 
+addRPath :: FilePath -> ProgramDb -> ProgramDb
+addRPath libDir progDb =
+  userSpecifyArgs (programName ldProgram)
+  ["-Wl,-rpath," ++ libDir]
+  progDb
