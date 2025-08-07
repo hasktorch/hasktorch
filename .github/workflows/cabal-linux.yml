@@ -16,14 +16,12 @@ jobs:
 
     - name: Setup packages
       run: |
-        sudo apt update -qq
-        sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
-        sudo bash -c "echo deb [trusted=yes] https://apt-hasktorch.com/apt ./ > /etc/apt/sources.list.d/libtorch.list"
+        sudo apt-get update -qq
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
         sudo rm -f /etc/apt/sources.list.d/sbt.list
-        sudo apt update -qq
-        sudo apt -y purge ghc* cabal-install* php* || true
-        sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev devscripts debhelper python3-pip cmake curl wget unzip git libtinfo-dev python3 python3-yaml
-        sudo apt -y install libtorch=2.0.0+cpu-1 libtokenizers=0.1-1
+        sudo apt-get update -qq
+        sudo apt-get -y purge ghc* cabal-install* php* || true
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev devscripts debhelper python3-pip cmake curl wget unzip git libtinfo6 libncurses-dev python3 python3-yaml
 
     - name: Setup Haskell
       run: |
@@ -47,7 +45,7 @@ jobs:
 
     - name: Generate install-plan
       run: |
-        # source setenv
+        source setenv
         ./setup-cabal.sh
         cabal v2-update
         cabal v2-build --jobs=2 all --dry-run
@@ -66,7 +64,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        # source setenv
+        source setenv
         cabal v2-build --jobs=2 all --only-dependencies
 
     - name: Cache dependencies
@@ -78,17 +76,17 @@ jobs:
 
     - name: Build
       run: |
-        # source setenv
+        source setenv
         cabal v2-build --jobs=2 all
 
     - name: Tests
       run: |
-        # source setenv
+        source setenv
         cabal v2-test --jobs=2 all
 
     - name: Runs
       run: |
-        # source setenv
+        source setenv
         cabal v2-exec codegen-exe
         cabal v2-exec xor-mlp
 

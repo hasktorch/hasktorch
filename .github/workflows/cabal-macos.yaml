@@ -23,12 +23,8 @@ jobs:
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         brew install libomp || true
         pip3 install pyyaml || true
-        brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
-        brew install libtorch-prebuild@2.3 || true
-        brew tap hasktorch/tokenizers https://github.com/hasktorch/tokenizers || true
-        brew install libtokenizers || true
+        source setenv
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-        #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
 
     - name: Information about the Haskell setup
       run: |
@@ -42,6 +38,8 @@ jobs:
     #   timeout-minutes: 15
     - name: Generate install-plan
       run: |
+        source setenv
+        echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
         ./setup-cabal.sh
         cat cabal.project.local
         cabal v2-update

@@ -24,12 +24,9 @@ jobs:
         #wget -qO- https://get.haskellstack.org/ | sh || true
         clang --version
         stack --version
-        brew tap hasktorch/libtorch-prebuild https://github.com/hasktorch/homebrew-libtorch-prebuild || true
-        brew install libtorch-prebuild@2.3 || true
-        brew tap hasktorch/tokenizers https://github.com/hasktorch/tokenizers || true
-        brew install libtokenizers || true
+        source setenv
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-        #pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
+        ./setup-cabal.sh
     - name: Cache .stack
       uses: actions/cache@v4
       with:
