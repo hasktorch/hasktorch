@@ -7,7 +7,7 @@ RUN apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-p
 RUN add-apt-repository -y ppa:hvr/ghc
 RUN apt-get update -qq && apt-get upgrade
 RUN apt-get -y purge ghc* cabal-install* || true
-RUN apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev ghc-8.6.5 cabal-install-3.0 devscripts debhelper python3-pip cmake curl wget unzip git libtinfo-dev python3 python3-yaml
+RUN apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev ghc-8.6.5 cabal-install-3.0 devscripts debhelper python3-pip cmake curl wget unzip git libtinfo6-dev python3 python3-yaml
 
 COPY . /hasktorch
 
