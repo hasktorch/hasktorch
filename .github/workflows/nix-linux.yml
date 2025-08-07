@@ -16,8 +16,6 @@ jobs:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
-            export XDG_CACHE_HOME=$TMPDIR
-            export LIBTORCH_HOME=$TMPDIR/libtorch
             nix build .#codegen-cpu
             nix build .#hasktorch-cpu
             nix build .#hasktorch-gradually-typed-cpu
