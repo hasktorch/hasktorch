@@ -25,6 +25,7 @@ jobs:
         clang --version
         stack --version
         source setenv
+        ./deps/get-deps.sh
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
         ./setup-cabal.sh
     - name: Cache .stack
