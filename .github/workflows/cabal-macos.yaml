@@ -25,7 +25,6 @@ jobs:
         pip3 install pyyaml || true
         source setenv
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-        pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
 
     - name: Information about the Haskell setup
       run: |
@@ -41,7 +40,6 @@ jobs:
       run: |
         source setenv
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
-        pushd deps/ ; ./get-deps.sh -a cpu -c ;popd
         ./setup-cabal.sh
         cat cabal.project.local
         cabal v2-update
