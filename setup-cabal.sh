@@ -31,7 +31,7 @@ USED_MEMX2_GB=`echo $USED_NUM_CPU | awk '{print ($1 * 2)"G"}'`
 cat <<EOF > cabal.project.local
 
 package libtorch-ffi
-  extra-include-dirs: $XDG_CACHE_HOME/libtorch//include/torch/csrc/api/include
+  extra-include-dirs: $XDG_CACHE_HOME/libtorch/include/torch/csrc/api/include
   extra-include-dirs: $XDG_CACHE_HOME/libtorch/include
   extra-lib-dirs: $XDG_CACHE_HOME/libtorch/lib
   extra-include-dirs: /opt/homebrew/include
