@@ -45,7 +45,6 @@ jobs:
 
     - name: Generate install-plan
       run: |
-        source setenv
         ./setup-cabal.sh
         cabal v2-update
         cabal v2-build --jobs=2 all --dry-run
@@ -64,7 +63,6 @@ jobs:
 
     - name: Install dependencies
       run: |
-        source setenv
         cabal v2-build --jobs=2 all --only-dependencies
 
     - name: Cache dependencies
@@ -76,23 +74,19 @@ jobs:
 
     - name: Build
       run: |
-        source setenv
         cabal v2-build --jobs=2 all
 
     - name: Tests
       run: |
-        source setenv
         cabal v2-test --jobs=2 all
 
     - name: Runs
       run: |
-        source setenv
         cabal v2-exec codegen-exe
         cabal v2-exec xor-mlp
 
     - name: Benchmark
       run: |
-        # source setenv
         cabal v2-bench hasktorch:runtime --benchmark-options='--output benchmark-runtime.html'
         cabal v2-bench hasktorch:alloc   --benchmark-options='--output benchmark-alloc.html'
 
