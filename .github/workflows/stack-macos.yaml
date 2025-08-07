@@ -25,7 +25,7 @@ jobs:
         clang --version
         stack --version
         set -euo pipefail
-        export XDG_CACHE_HOME=$TMPDIR/xdg-cache
+        export XDG_CACHE_HOME=/tmp/xdg-cache
         source setenv
         ./deps/get-deps.sh
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
