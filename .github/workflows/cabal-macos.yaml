@@ -38,6 +38,8 @@ jobs:
     #   timeout-minutes: 15
     - name: Generate install-plan
       run: |
+        set -euo pipefail
+        export XDG_CACHE_HOME=$TMPDIR/xdg-cache
         ./deps/get-deps.sh
         source setenv
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"

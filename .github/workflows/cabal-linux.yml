@@ -45,6 +45,8 @@ jobs:
 
     - name: Generate install-plan
       run: |
+        set -euo pipefail
+        export XDG_CACHE_HOME=$TMPDIR/xdg-cache
         source setenv
         ./deps/get-deps.sh
         ./setup-cabal.sh
