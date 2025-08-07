@@ -23,6 +23,7 @@ main :: IO ()
 main = defaultMainWithHooks $ addDoctestsUserHook "doctests" $  simpleUserHooks
   { preConf = \_ _ -> do
       _ <- ensureLibtorch 
+      _ <- ensureLibtokenizers
       pure emptyHookedBuildInfo
   , confHook = \(gpd, hbi) flags -> do
       libtorchDir <- getGlobalLibtorchDir
@@ -53,6 +54,16 @@ getGlobalLibtorchDir = do
   flavor <- getCudaFlavor
   pure $ base </> libtorchVersion </> platformTag </> flavor
 
+getGlobalLibtokenizersDir :: IO FilePath
+getGlobalLibtokenizersDir = do
+  mHome <- lookupEnv "LIBTOKENIZERS_HOME"
+  case mHome of
+    Just h  -> pure h
+    Nothing -> do
+      -- XDG cache (Linux/macOS). Falls back to ~/.cache
+      cache <- getXdgDirectory XdgCache "libtokenizers"
+      pure cache
+
 platformTag :: FilePath
 platformTag =
   case (buildOS, buildArch) of
@@ -82,7 +93,8 @@ ensureLibtorch = do
         then pure dest
         else do
           putStrLn $ "libtorch not found in global cache, installing to " <> dest
-          downloadAndExtractLibtorchTo dest
+          torchResources <- computeTorchURL
+          downloadAndExtractLibTo torchResources dest
           -- Create an idempotence marker that checks
           -- if we've already downloaded torch.
           -- Since we'll be moving everything this will
@@ -90,10 +102,34 @@ ensureLibtorch = do
           writeFile marker ""
           pure dest
 
-downloadAndExtractLibtorchTo :: FilePath -> IO ()
-downloadAndExtractLibtorchTo dest = do
+ensureLibtokenizers :: IO FilePath
+ensureLibtokenizers = do
+  skip <- lookupEnv "LIBTOKENIZERS_SKIP_DOWNLOAD"
+  case skip of
+    Just _ -> do
+      putStrLn "LIBTOKENIZERS_SKIP_DOWNLOAD set; assuming libtokenizers exists globally."
+      getGlobalLibtokenizersDir
+    Nothing -> do
+      dest <- getGlobalLibtokenizersDir
+      let marker = dest </> ".ok"
+      exists <- doesFileExist marker
+      present <- doesDirectoryExist dest
+      if present && exists
+        then pure dest
+        else do
+          putStrLn $ "libtokenizers not found in global cache, installing to " <> dest
+          tokenizerResources <- computeTokenizerURL
+          downloadAndExtractLibTo tokenizerResources dest
+          -- Create an idempotence marker that checks
+          -- if we've already downloaded torch.
+          -- Since we'll be moving everything this will
+          -- be the our main reference.
+          writeFile marker ""
+          pure dest
+
+downloadAndExtractLibTo :: (String, String) -> FilePath -> IO ()
+downloadAndExtractLibTo (url, fileName) dest = do
   createDirectoryIfMissing True dest
-  (url, fileName) <- computeURL
   putStrLn $ "Downloading libtorch from: " ++ url
   withSystemTempDirectory "libtorch-download" $ \tmpDir -> do
     let downloadPath = tmpDir </> fileName
@@ -108,7 +144,7 @@ downloadAndExtractLibtorchTo dest = do
     -- We want to move the directory since this operation is atomic.
     -- If that doesn't work we fall back to copying.
     (renameDirectory src dest) `catch` (\(_::IOException) -> copyTree src dest)
-    putStrLn "libtorch extracted successfully (global cache)."
+    putStrLn "library extracted successfully (global cache)."
 
 copyTree :: FilePath -> FilePath -> IO ()
 copyTree src dest = do
@@ -121,8 +157,17 @@ copyTree src dest = do
           if isDir then copyTree s d else copyFile s d
         ) entries
 
-computeURL :: IO (String, String)
-computeURL = do
+computeTokenizerURL :: IO (String, String)
+computeTokenizerURL = do
+  pure $ case buildOS of
+    OSX -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip"
+           , "libtokenizers-macos.zip" )
+    Linux -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip"
+           , "libtokenizers-macos.zip" )
+    Windows -> error "Windows not supported by this setup"
+
+computeTorchURL :: IO (String, String)
+computeTorchURL = do
   flavor <- getCudaFlavor
   let v = libtorchVersion
   pure $ case buildOS of

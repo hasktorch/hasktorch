@@ -27,41 +27,43 @@ in {
             prev.haskell.packages.${ghcName}.extend
             (hfinal: hprev: {
               # Hasktorch Packages
-              codegen = hfinal.callCabal2nix "codegen" ../codegen {
-                export XDG_CACHE_HOME=$TMPDIR
-                export LIBTORCH_HOME=$TMPDIR/libtorch
-              };
+              codegen = (hfinal.callCabal2nix "codegen" ../codegen {}).overrideAttrs (old: {
+                XDG_CACHE_HOME = "$TMPDIR";
+                LIBTORCH_HOME  = "$TMPDIR/libtorch";
+              });
               hasktorch-gradually-typed =
                 lib.pipe
-                (hfinal.callCabal2nix "hasktorch-gradually-typed" ../experimental/gradually-typed {
-                  export XDG_CACHE_HOME=$TMPDIR
-                  export LIBTORCH_HOME=$TMPDIR/libtorch
-                })
+                (hfinal.callCabal2nix "hasktorch-gradually-typed" ../experimental/gradually-typed {}).overrideAttrs (old: {
+                  XDG_CACHE_HOME = "$TMPDIR";
+                  LIBTORCH_HOME  = "$TMPDIR/libtorch";
+                });
                 [
                   dontCheck
                   #  disableLibraryProfiling
                 ];
               hasktorch =
                 lib.pipe
-                (hfinal.callCabal2nix "hasktorch" ../hasktorch {
-                  export XDG_CACHE_HOME=$TMPDIR
-                  export LIBTORCH_HOME=$TMPDIR/libtorch
-                })
+                (hfinal.callCabal2nix "hasktorch" ../hasktorch {})
+                .overrideAttrs (old: {
+                  XDG_CACHE_HOME = "$TMPDIR";
+                  LIBTORCH_HOME  = "$TMPDIR/libtorch";
+                });
                 [
                   dontCheck
                   #  disableLibraryProfiling
                 ];
-              libtorch-ffi-helper = hfinal.callCabal2nix "libtorch-ffi-helper" ../libtorch-ffi-helper {
-                export XDG_CACHE_HOME=$TMPDIR
-                export LIBTORCH_HOME=$TMPDIR/libtorch
-              };
+              libtorch-ffi-helper = (hfinal.callCabal2nix "libtorch-ffi-helper" ../libtorch-ffi-helper {}).overrideAttrs (old: {
+                XDG_CACHE_HOME = "$TMPDIR";
+                LIBTORCH_HOME  = "$TMPDIR/libtorch";
+              });
               libtorch-ffi =
                 lib.pipe
                 (hfinal.callCabal2nix "libtorch-ffi" ../libtorch-ffi {
                   inherit torch c10 torch_cpu;
-                  export XDG_CACHE_HOME=$TMPDIR
-                  export LIBTORCH_HOME=$TMPDIR/libtorch
-                  })
+                  }).overrideAttrs (old: {
+                    XDG_CACHE_HOME = "$TMPDIR";
+                    LIBTORCH_HOME  = "$TMPDIR/libtorch";
+                  });
                 [
                   #  disableLibraryProfiling
                   (appendConfigureFlag

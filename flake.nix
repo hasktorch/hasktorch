@@ -46,14 +46,14 @@
             "libtorch-ffi-helper"
           ] (name: p.haskell.packages.ghc965.${name}));
       in {
-        packages =
+        packages = rec
           {
             examples =
-              pkgs.haskell.packages.ghc965.callCabal2nix "examples"
-              ./examples {
-                export XDG_CACHE_HOME=$TMPDIR
-                export LIBTORCH_HOME=$TMPDIR/libtorch
-              };
+              (pkgs.haskell.packages.ghc965.callCabal2nix "examples" ./examples {})
+              .overrideAttrs (old: {
+                XDG_CACHE_HOME = "$TMPDIR";
+                LIBTORCH_HOME  = "$TMPDIR/libtorch";
+              });
           }
           // (mkHasktorchPackageSet "cuda" pkgsCuda)
           // (mkHasktorchPackageSet "cpu" pkgs);
