@@ -16,14 +16,14 @@ jobs:
 
     - name: Setup packages
       run: |
-        sudo apt update -qq
-        sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
-        sudo bash -c "echo deb [trusted=yes] https://apt-hasktorch.com/apt ./ > /etc/apt/sources.list.d/libtorch.list"
+        sudo apt-get update -qq && sudo apt-get upgrade
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
+        sudo bash -c "echo deb [trusted=yes] https://apt-hasktorch.com/apt-get ./ > /etc/apt/sources.list.d/libtorch.list"
         sudo rm -f /etc/apt/sources.list.d/sbt.list
-        sudo apt update -qq
-        sudo apt -y purge ghc* cabal-install* php* || true
-        sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev devscripts debhelper python3-pip cmake curl wget unzip git libtinfo-dev python3 python3-yaml
-        sudo apt -y install libtorch=2.0.0+cpu-1 libtokenizers=0.1-1
+        sudo apt-get update -qq && sudo apt-get upgrade
+        sudo apt-get -y purge ghc* cabal-install* php* || true
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev devscripts debhelper python3-pip cmake curl wget unzip git libtinfo-dev python3 python3-yaml
+        sudo apt-get -y install libtorch=2.0.0+cpu-1 libtokenizers=0.1-1
 
     - name: Setup Haskell
       run: |
