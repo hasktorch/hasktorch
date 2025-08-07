@@ -38,7 +38,6 @@ jobs:
     #   timeout-minutes: 15
     - name: Generate install-plan
       run: |
-        set -euo pipefail
         export XDG_CACHE_HOME=/tmp/xdg-cache
         ./deps/get-deps.sh
         source setenv
