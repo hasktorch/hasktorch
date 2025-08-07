@@ -147,12 +147,12 @@ echo "Generate ATen files."
 if [ ! -e pytorch ] ; then
     git clone https://github.com/pytorch/pytorch.git
 else
-    pushd ./deps/pytorch
+    pushd ./pytorch
     git pull origin v$VERSION
     popd
 fi
 
-pushd ./deps/pytorch
+pushd ./pytorch
 git checkout v$VERSION
 
 if [[ ! -d build ]]; then
@@ -204,5 +204,5 @@ esac
 popd
 
 pushd ./spec
-  ln -fs ../deps/pytorch/build/aten/src/ATen/Declarations.yaml
+  ln -fs ../pytorch/build/aten/src/ATen/Declarations.yaml
 popd
