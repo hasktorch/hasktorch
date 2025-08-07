@@ -17,7 +17,8 @@ jobs:
     - name: Setup tool-chains
       run: |
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        brew install libomp || true
+        brew install libomp python || true
+        python3 -m pip install --upgrade pip
         pip3 install pyyaml || true
         ## Stack is preinstalled on the GHA runners
         #wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh || true

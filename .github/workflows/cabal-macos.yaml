@@ -21,7 +21,8 @@ jobs:
     - name: Setup packages
       run: |
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        brew install libomp || true
+        brew install libomp python || true
+        python3 -m pip install --upgrade pip
         pip3 install pyyaml || true
         source setenv
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
