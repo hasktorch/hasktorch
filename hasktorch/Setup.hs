@@ -54,16 +54,6 @@ getGlobalLibtorchDir = do
   flavor <- getCudaFlavor
   pure $ base </> libtorchVersion </> platformTag </> flavor
 
-getGlobalLibtokenizersDir :: IO FilePath
-getGlobalLibtokenizersDir = do
-  mHome <- lookupEnv "LIBTOKENIZERS_HOME"
-  case mHome of
-    Just h  -> pure h
-    Nothing -> do
-      -- XDG cache (Linux/macOS). Falls back to ~/.cache
-      cache <- getXdgDirectory XdgCache "libtokenizers"
-      pure cache
-
 platformTag :: FilePath
 platformTag =
   case (buildOS, buildArch) of
@@ -108,9 +98,11 @@ ensureLibtokenizers = do
   case skip of
     Just _ -> do
       putStrLn "LIBTOKENIZERS_SKIP_DOWNLOAD set; assuming libtokenizers exists globally."
-      getGlobalLibtokenizersDir
+      getXdgDirectory XdgCache
     Nothing -> do
-      dest <- getGlobalLibtokenizersDir
+      -- This will unpack to libtokenizers so no need to
+      -- to create a custom directory in cache
+      dest <- getXdgDirectory XdgCache
       let marker = dest </> ".ok"
       exists <- doesFileExist marker
       present <- doesDirectoryExist dest
