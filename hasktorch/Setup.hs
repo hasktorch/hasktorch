@@ -98,11 +98,11 @@ ensureLibtokenizers = do
   case skip of
     Just _ -> do
       putStrLn "LIBTOKENIZERS_SKIP_DOWNLOAD set; assuming libtokenizers exists globally."
-      getXdgDirectory XdgCache
+      getXdgDirectory XdgCache ""
     Nothing -> do
       -- This will unpack to libtokenizers so no need to
       -- to create a custom directory in cache
-      dest <- getXdgDirectory XdgCache
+      dest <- getXdgDirectory XdgCache ""
       let marker = dest </> ".ok"
       exists <- doesFileExist marker
       present <- doesDirectoryExist dest
