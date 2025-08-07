@@ -21,7 +21,7 @@ jobs:
         sudo rm -f /etc/apt/sources.list.d/sbt.list
         sudo apt-get update -qq
         sudo apt-get -y purge ghc* cabal-install* php* || true
-        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev devscripts debhelper python3-pip cmake curl wget unzip git libtinfo6-dev python3 python3-yaml
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev devscripts debhelper python3-pip cmake curl wget unzip git libtinfo6 libncurses-dev python3 python3-yaml
 
     - name: Setup Haskell
       run: |
