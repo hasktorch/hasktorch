@@ -170,13 +170,13 @@ computeTorchURL = do
                  , "libtorch-macos-x86_64.zip" )
       _       -> error "Unsupported macOS arch"
     Linux -> case flavor of
-      "cpu"  -> ( "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2Bcpu.zip"
+      "cpu"  -> ( "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "+cpu.zip"
                 , "libtorch-linux.zip" )
-      "cu117"-> ( "https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2Bcu117.zip"
+      "cu117"-> ( "https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "+cu117.zip"
                 , "libtorch-linux-cu117.zip" )
-      "cu118"-> ( "https://download.pytorch.org/libtorch/cu118/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2Bcu118.zip"
+      "cu118"-> ( "https://download.pytorch.org/libtorch/cu118/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "+cu118.zip"
                 , "libtorch-linux-cu118.zip" )
-      "cu121"-> ( "https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2Bcu121.zip"
+      "cu121"-> ( "https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "+cu121.zip"
                 , "libtorch-linux-cu121.zip" )
       _      -> error $ "Unsupported CUDA version: " ++ flavor
     Windows -> error "Windows not supported by this setup"
