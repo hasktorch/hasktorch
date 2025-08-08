@@ -1,5 +1,5 @@
-import Distribution.Extra.Doctest        (addDoctestsUserHook)
 import Distribution.Simple
+import Distribution.Simple.Program
 import Distribution.Simple.Setup
 import Distribution.Simple.LocalBuildInfo
 import Distribution.Types.LocalBuildInfo
@@ -20,7 +20,7 @@ import GHC.IO.Exception
 import Control.Exception
 
 main :: IO ()
-main = defaultMainWithHooks $ addDoctestsUserHook "doctests" $  simpleUserHooks
+main = defaultMainWithHooks $ simpleUserHooks
   { preConf = \_ _ -> do
       _ <- ensureLibtorch 
       pure emptyHookedBuildInfo
@@ -28,6 +28,7 @@ main = defaultMainWithHooks $ addDoctestsUserHook "doctests" $  simpleUserHooks
       libtorchDir <- getGlobalLibtorchDir
       let libDir     = libtorchDir </> "lib"
           includeDir = libtorchDir </> "include"
+      
       let updatedFlags = flags
             { configExtraLibDirs      = libDir : configExtraLibDirs flags
             , configExtraIncludeDirs  =
@@ -35,7 +36,14 @@ main = defaultMainWithHooks $ addDoctestsUserHook "doctests" $  simpleUserHooks
                 : (includeDir </> "torch" </> "csrc" </> "api" </> "include")
                 : configExtraIncludeDirs flags
             }
-      confHook simpleUserHooks (gpd, hbi) updatedFlags
+      -- Call the default configuration hook with updated flags
+      lbi <- confHook simpleUserHooks (gpd, hbi) updatedFlags
+      -- For macOS, add the -ld_classic flag to the linker
+      return $
+        case buildOS of
+          OSX -> lbi { withPrograms = addRPath libDir $ addLdClassicFlag (withPrograms lbi) }
+          Linux -> lbi { withPrograms = addRPath libDir (withPrograms lbi) }
+          _ -> lbi
   }
 
 libtorchVersion :: String
@@ -143,3 +151,18 @@ computeURL = do
                 , "libtorch-linux-cu121.zip" )
       _      -> error $ "Unsupported CUDA version: " ++ flavor
     Windows -> error "Windows not supported by this setup"
+
+-- Add -ld_classic flag to GHC program arguments for macOS
+addLdClassicFlag :: ProgramDb -> ProgramDb
+addLdClassicFlag progDb = 
+  case lookupProgram ghcProgram progDb of
+    Just ghc ->
+      let ghc' = ghc { programOverrideArgs = ["-optl-ld_classic"] ++ programOverrideArgs ghc }
+      in updateProgram ghc' progDb
+    Nothing -> progDb
+
+addRPath :: FilePath -> ProgramDb -> ProgramDb
+addRPath libDir progDb =
+  userSpecifyArgs (programName ldProgram)
+  ["-Wl,-rpath," ++ libDir]
+  progDb

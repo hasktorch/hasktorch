@@ -37,7 +37,7 @@ tenTypeToCppType tentype =
     TensorAVector -> "std::vector<at::Tensor>"
     TensorOptions -> "at::TensorOptions"
     TensorList -> "std::vector<at::Tensor>"
-    C10ListTensor -> "c10::List<c10::optional<at::Tensor>>"
+    C10ListTensor -> "c10::List<std::optional<at::Tensor>>"
     ITensorListRef -> "std::vector<at::Tensor>"
     IndexTensor -> "at::Tensor"
     IntegerTensor -> "at::Tensor"

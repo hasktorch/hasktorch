@@ -18,9 +18,15 @@ extra-source-files:
 
 custom-setup
   setup-depends:
-      base >= 4.9 && < 5
-    , Cabal >= 3.10.1.0 && < 3.16
-    , cabal-doctest >=1.0.9 && <1.1
+    base >= 4.7 && < 5,
+    Cabal >= 3.0 && < 4,
+    cabal-doctest >=1.0.9 && <1.1,
+    directory >= 1.3 && < 2,
+    filepath >= 1.4 && < 2,
+    process >= 1.6 && < 2,
+    temporary >= 1.3 && < 2,
+    http-conduit >= 2.3 && < 3,
+    bytestring >= 0.10 && < 1
 
 Flag disable-doctest
  Description: Disable doctest. ToDo: This flag is to avoid relocation-error of ghci for macos.
@@ -211,6 +217,7 @@ test-suite spec
                     , lens-family-core
                     , data-default-class
                     , half
+                    , vector
 
 test-suite doctests
   if os(darwin) || flag(disable-doctest)

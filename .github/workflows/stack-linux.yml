@@ -14,9 +14,9 @@ jobs:
       run: |
         sudo swapoff -a
         sudo rm -f /swapfile
-        sudo apt -y purge ghc* cabal-install* php* || true
-        sudo apt autoremove -y || true
-        sudo apt autoclean -y || true
+        sudo apt-get -y purge ghc* cabal-install* php* || true
+        sudo apt-get autoremove -y || true
+        sudo apt-get autoclean -y || true
         df -h
     - uses: haskell-actions/setup@v2.7.10
       with:
@@ -26,8 +26,8 @@ jobs:
     - name: Setup packages
       run: |
         sudo rm -f /etc/apt/sources.list.d/sbt.list
-        sudo apt update -qq
-        sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install cmake curl wget unzip git libtinfo-dev python3 python3-yaml
+        sudo apt-get update -qq
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install cmake curl wget unzip git libtinfo6 libncurses-dev python3 python3-yaml
       ## Stack is preinstalled on the GHA runners
       #  (wget -qO- https://get.haskellstack.org/ | sh) || true
     - name: Cache .stack
@@ -47,7 +47,6 @@ jobs:
       run: |
         # export PATH=/opt/ghc/bin:$PATH
         source setenv
-        pushd deps/ ; ./get-deps.sh -a cpu; popd
         stack build \
           libtorch-ffi \
           libtorch-ffi-helper \

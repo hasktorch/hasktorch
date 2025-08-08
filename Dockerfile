@@ -2,12 +2,12 @@ FROM nvidia/cuda:10.1-devel-ubuntu18.04
 
 WORKDIR /hasktorch
 
-RUN apt update -qq
-RUN apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
+RUN apt-get update -qq && apt-get upgrade
+RUN apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
 RUN add-apt-repository -y ppa:hvr/ghc
-RUN apt update -qq
-RUN apt -y purge ghc* cabal-install* || true
-RUN apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev ghc-8.6.5 cabal-install-3.0 devscripts debhelper python3-pip cmake curl wget unzip git libtinfo-dev python3 python3-yaml
+RUN apt-get update -qq && apt-get upgrade
+RUN apt-get -y purge ghc* cabal-install* || true
+RUN apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev ghc-8.6.5 cabal-install-3.0 devscripts debhelper python3-pip cmake curl wget unzip git libtinfo6 libncurses-dev python3 python3-yaml
 
 COPY . /hasktorch
 
