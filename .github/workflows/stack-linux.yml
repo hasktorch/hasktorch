@@ -46,7 +46,6 @@ jobs:
     - name: Build
       run: |
         # export PATH=/opt/ghc/bin:$PATH
-        source setenv
         stack build \
           libtorch-ffi \
           libtorch-ffi-helper \
@@ -59,7 +58,6 @@ jobs:
     - name: Test
       run: |
         # export PATH=/opt/ghc/bin:$PATH
-        source setenv
         stack test codegen
         stack test libtorch-ffi
         stack test hasktorch

@@ -52,10 +52,7 @@
           {
             examples =
               pkgs.haskell.packages.ghc965.callCabal2nix "examples"
-              ./examples {
-                export XDG_CACHE_HOME=$TMPDIR
-                export LIBTORCH_HOME=$TMPDIR/libtorch
-              };
+              ./examples {};
           }
           // (mkHasktorchPackageSet "cuda" pkgsCuda)
           // (mkHasktorchPackageSet "cpu" pkgs);

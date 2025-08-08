@@ -23,7 +23,6 @@ jobs:
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         brew install libomp || true
         pip3 install pyyaml || true
-        source setenv
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
 
     - name: Information about the Haskell setup
@@ -38,7 +37,6 @@ jobs:
     #   timeout-minutes: 15
     - name: Generate install-plan
       run: |
-        source setenv
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
         ./setup-cabal.sh
         cat cabal.project.local
