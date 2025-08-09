@@ -153,8 +153,8 @@ computeTokenizerURL :: IO (String, String)
 computeTokenizerURL = do
   pure $ case buildOS of
     OSX -> case buildArch of
-            AArch64 -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip"
-                       , "libtokenizers-macos-arm64.zip" )
+            AArch64 -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos-arm64.zip"
+                       , "libtokenizers-macos.zip" )
             X86_64  -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip"
                        , "libtokenizers-macos.zip" )
             _       -> error "Unsupported macOS arch"
