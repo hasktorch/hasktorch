@@ -14,6 +14,12 @@ final: prev: let
   c10 = libtorch-bin;
   torch_cpu = libtorch-bin;
   ghcName = "ghc984";
+  libtorch_2_5_0_cpu = final.fetchzip {
+    name = "libtorch-2.5.0-cpu.zip";
+    url  = "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.5.0%2Bcpu.zip";
+    hash = "sha256-gUzPhc4Z8rTPhIm89pPoLP0Ww17ono+/xgMW46E/Tro=";
+    stripRoot = false;
+  };
 in {
   haskell =
     prev.haskell
