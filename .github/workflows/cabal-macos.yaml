@@ -79,7 +79,7 @@ jobs:
 
     - name: Tests
       run: |
-        cabal v2-test -fdisable-doctest --jobs=2 all
+        cabal v2-test --jobs=2 all
 
     - name: Runs
       run: |

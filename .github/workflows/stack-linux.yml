@@ -68,7 +68,7 @@ jobs:
         source setenv
         stack test codegen
         stack test libtorch-ffi
-        stack test --flag hasktorch:disable-doctest hasktorch
+        stack test hasktorch
         stack exec codegen-exe
         stack exec xor-mlp
     # - name: Build tutorial
