@@ -36,15 +36,17 @@
         pkgsCuda,
         ...
       }: let
+        ghc = "ghc984";
         mnist = (pkgs.callPackage ./nix/datasets.nix {}).mnist;
         mkHasktorchPackageSet = t: p:
           lib.mapAttrs' (name: value: lib.nameValuePair "${name}-${t}" value) (lib.genAttrs [
             "codegen"
             "hasktorch"
-            "hasktorch-gradually-typed"
+            # Cannot be built until type-level-rewrite-rules supports GHC 9.8
+            # "hasktorch-gradually-typed"
             "libtorch-ffi"
             "libtorch-ffi-helper"
-          ] (name: p.haskell.packages.ghc965.${name}));
+          ] (name: p.haskell.packages.${ghc}.${name}));
       in {
         packages = rec
           {
@@ -62,17 +64,18 @@
             with p; [
               codegen
               hasktorch
-              hasktorch-gradually-typed
+              # Cannot be built until type-level-rewrite-rules supports GHC 9.8
+              # hasktorch-gradually-typed
               libtorch-ffi
               libtorch-ffi-helper
               cabal-install
             ];
         in {
           default = self'.devShells.cpu;
-          cpu = pkgs.haskell.packages.ghc965.shellFor {
+          cpu = pkgs.haskell.packages.${ghc}.shellFor {
             inherit packages;
           };
-          cuda = pkgsCuda.haskell.packages.ghc965.shellFor {
+          cuda = pkgsCuda.haskell.packages.${ghc}.shellFor {
             inherit packages;
           };
         };
@@ -82,18 +85,21 @@
             program = pkgsCuda.writeShellScriptBin "mnist-mixed-precision" ''
               DEVICE=cuda:0 ${self'.packages.examples}/bin/mnist-mixed-precision ${mnist}/
             '';
+            meta.description = "A simple mlp implementation of an mnist classifier using untyped tensors";
           };
           static-mnist-cnn = {
             type = "app";
             program = pkgsCuda.writeShellScriptBin "static-mnist-cnn" ''
               DEVICE=cuda:0 ${self'.packages.examples}/bin/static-mnist-cnn ${mnist}/
             '';
+            meta.description = "Static Mnist CNN";
           };
           static-mnist-mlp = {
             type = "app";
             program = pkgsCuda.writeShellScriptBin "static-mnist-mlp" ''
               DEVICE=cuda:0 ${self'.packages.examples}/bin/static-mnist-mlp ${mnist}/
             '';
+            meta.description = "Static Mnist MLP";
           };
         };
       };

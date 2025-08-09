@@ -2,20 +2,18 @@ final: prev: let
   inherit (final) lib libtorch-bin;
   inherit
     (final.haskell.lib)
-    overrideCabal
     overrideSrc
     ;
   inherit
     (final.haskell.lib.compose)
     appendConfigureFlag
-    disableLibraryProfiling
     doJailbreak
     dontCheck
     ;
   torch = libtorch-bin;
   c10 = libtorch-bin;
   torch_cpu = libtorch-bin;
-  ghcName = "ghc965";
+  ghcName = "ghc984";
 in {
   haskell =
     prev.haskell
@@ -61,22 +59,14 @@ in {
                     LIBTORCH_HOME  = "$TMPDIR/libtorch";
                   }))
                 [
-                  #  disableLibraryProfiling
                   (appendConfigureFlag
                     "--extra-include-dirs=${lib.getDev torch}/include/torch/csrc/api/include")
                 ];
 
               # Hasktorch Forks
-              union-find-array = overrideSrc hprev.union-find-array {
-                src = prev.fetchFromGitHub {
-                  owner = "hasktorch";
-                  repo = "union-find-array";
-                  rev = "2e94a0e7bdd15d5a7425aca05d64cca8816f2a23";
-                  sha256 = "sha256-WEClNSufRQhBZ4tFb+va9lnFg0Ybq/KXQAsBpW61YPE=";
-                };
-              };
+              # WARNING: Does not build with GHC 9.8
               typelevel-rewrite-rules =
-                (overrideSrc hprev.typelevel-rewrite-rules {
+                doJailbreak((overrideSrc hprev.typelevel-rewrite-rules {
                   src = prev.fetchFromGitHub {
                     owner = "hasktorch";
                     repo = "typelevel-rewrite-rules";
@@ -93,7 +83,7 @@ in {
                       sha256 = "sha256-cDthJ+XJ7J8l0SFpPRnvFt2yC4ufD6efz5GES5xMtzQ=";
                     };
                   };
-                };
+                });
               # Applies the same changes available in hasktorch/type-errors-pretty
               type-errors-pretty = lib.pipe hprev.type-errors-pretty [doJailbreak dontCheck];
 
@@ -102,15 +92,10 @@ in {
                 src = prev.fetchFromGitHub {
                   owner = "reinerp";
                   repo = "indexed-extras";
-                  rev = "3da044a29d43f1959a57b77ec6cb18ec1bc6a4e5";
-                  sha256 = "sha256-JZO0XfLBaGPDz/r5sCzW/Hn3BnhyBSfHjdblVibpgrA=";
+                  rev = "7a0c4e918578e7620a46d4f0546fbdaec933ede0";
+                  sha256 = "sha256-SS6yZEKOZ5aRgPW7xMtojNDr0TjZ+3QHCgf/o9umG84=";
                 };
               };
-              transformers = overrideCabal hprev.transformers_0_6_1_1 {
-                version = "0.5.6.2";
-                sha256 = "sha256-tmh5XWACl+TIp/1VoQe5gnssUsC8FMXqDWXiDmaRxmw=";
-              };
-              # 10 of 126 tests fail
               singletons-base = dontCheck hprev.singletons-base;
             });
         };
