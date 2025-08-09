@@ -28,20 +28,19 @@ USED_NUM_CPU=`echo $USED_MEM_GB $USED_NUM_CPU | awk '{if($1<$2) {print $1} else 
 USED_MEM_GB=`echo $USED_NUM_CPU | awk '{print ($1)"G"}'`
 USED_MEMX2_GB=`echo $USED_NUM_CPU | awk '{print ($1 * 2)"G"}'`
 
-
 cat <<EOF > cabal.project.local
 
 package libtorch-ffi
-  extra-include-dirs: $(pwd)/deps/libtorch/include/torch/csrc/api/include
-  extra-include-dirs: $(pwd)/deps/libtorch/include
-  extra-lib-dirs: $(pwd)/deps/libtorch/lib
+  extra-include-dirs: $XDG_CACHE_HOME/libtorch/include/torch/csrc/api/include
+  extra-include-dirs: $XDG_CACHE_HOME/libtorch/include
+  extra-lib-dirs: $XDG_CACHE_HOME/libtorch/lib
   extra-include-dirs: /opt/homebrew/include
   extra-lib-dirs: /opt/homebrew/lib
   extra-lib-dirs: /opt/homebrew/opt/libomp/lib
 
 package *
-  extra-lib-dirs: $(pwd)/deps/libtorch/lib
-  extra-lib-dirs: $(pwd)/deps/libtokenizers/lib
+  extra-lib-dirs: $XDG_CACHE_HOME/libtorch/lib
+  extra-lib-dirs: $XDG_CACHE_HOME/libtokenizers/lib
   extra-lib-dirs: /opt/homebrew/lib
   extra-lib-dirs: /opt/homebrew/opt/libomp/lib
 
