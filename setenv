@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
+if [ -z "${XDG_CACHE_HOME:-}" ]; then
+  export XDG_CACHE_HOME="$HOME/.cache"
+fi
+
 # execute this command if needed when building on OSX if there are linker errors.
 # dylib files in extra-lib-dirs  don't get forwarded to ghc
 # in some versions of OSX. See https://github.com/commercialhaskell/stack/issues/1826
-HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib/:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib/"
+HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
 
 function add_vendor_lib_path {
     case "$(uname)" in

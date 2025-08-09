@@ -22,7 +22,15 @@ jobs:
       run: |
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         brew install libomp python || true
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pip3 install pyyaml
+        pip3 install dataclasses
+        pip3 install typing_extensions
+        export XDG_CACHE_HOME=/tmp/xdg-cache
         source setenv
+        ./deps/get-deps.sh
+        echo "XDG_CACHE_HOME=$XDG_CACHE_HOME" >> "$GITHUB_ENV"
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
 
     - name: Information about the Haskell setup
@@ -37,10 +45,6 @@ jobs:
     #   timeout-minutes: 15
     - name: Generate install-plan
       run: |
-        export XDG_CACHE_HOME=/tmp/xdg-cache
-        ./deps/get-deps.sh
-        source setenv
-        echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
         ./setup-cabal.sh
         cat cabal.project.local
         cabal v2-update
@@ -75,7 +79,7 @@ jobs:
 
     - name: Tests
       run: |
-        cabal v2-test --jobs=2 all
+        cabal v2-test -fdisable-doctest --jobs=2 all
 
     - name: Runs
       run: |

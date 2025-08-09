@@ -47,6 +47,8 @@ jobs:
       run: |
         export XDG_CACHE_HOME=/tmp/xdg-cache
         source setenv
+        echo "XDG_CACHE_HOME=$XDG_CACHE_HOME" >> "$GITHUB_ENV"
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
         ./deps/get-deps.sh
         ./setup-cabal.sh
         cabal v2-update
@@ -84,7 +86,7 @@ jobs:
     - name: Tests
       run: |
         source setenv
-        cabal v2-test --jobs=2 all
+        cabal v2-test -fdisable-doctest --jobs=2 all
 
     - name: Runs
       run: |

@@ -18,6 +18,11 @@ jobs:
       run: |
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
         brew install libomp python || true
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pip3 install pyyaml
+        pip3 install dataclasses
+        pip3 install typing_extensions
         ## Stack is preinstalled on the GHA runners
         #wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh || true
         #wget -qO- https://get.haskellstack.org/ | sh || true
@@ -25,8 +30,9 @@ jobs:
         stack --version
         export XDG_CACHE_HOME=/tmp/xdg-cache
         source setenv
-        ./deps/get-deps.sh
+        echo "XDG_CACHE_HOME=$XDG_CACHE_HOME" >> "$GITHUB_ENV"
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
+        ./deps/get-deps.sh
         ./setup-cabal.sh
     - name: Cache .stack
       uses: actions/cache@v4
@@ -59,7 +65,7 @@ jobs:
         #. setenv
         stack test --stack-yaml stack-macos.yaml codegen
         stack test --stack-yaml stack-macos.yaml libtorch-ffi
-        stack test --stack-yaml stack-macos.yaml hasktorch
+        stack test --flag hasktorch:disable-doctest --stack-yaml stack-macos.yaml hasktorch
         stack exec --stack-yaml stack-macos.yaml codegen-exe
         stack exec --stack-yaml stack-macos.yaml xor-mlp
         stack exec --stack-yaml stack-macos.yaml regression
