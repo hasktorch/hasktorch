@@ -2,6 +2,9 @@ name: nix-linux
 
 on: [push, pull_request]
 
+env:
+  HOME: /home/runner
+
 jobs:
   build-cache:
     runs-on: ubuntu-latest
