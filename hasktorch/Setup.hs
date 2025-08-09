@@ -154,12 +154,12 @@ computeTokenizerURL = do
   pure $ case buildOS of
     OSX -> case buildArch of
             AArch64 -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos-arm64.zip"
-                       , "libtokenizers-macos.zip" )
+                       , "libtokenizers.zip" )
             X86_64  -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip"
-                       , "libtokenizers-macos.zip" )
+                       , "libtokenizers.zip" )
             _       -> error "Unsupported macOS arch"
     Linux -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip"
-           , "libtokenizers-macos.zip" )
+           , "libtokenizers.zip" )
     Windows -> error "Windows not supported by this setup"
 
 computeTorchURL :: IO (String, String)

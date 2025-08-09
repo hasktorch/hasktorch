@@ -44,6 +44,12 @@
           hash = "sha256-VFbzEB8LJiVsKIpb2KkSOdvJQY6uR9RyvratKiY8wUs=";
           stripRoot = false; # keep the top-level "libtorch" folder
         };
+        libtokenizers = pkgs.fetchzip {
+          name = "libtokenizers.zip";
+          url = "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip";
+          hash = "sha256-F/WtJeibyyofr0wgps+1vBQ5kWF2vzaygbJbJTX3EeU=";
+          stripRoot = false; # keep the top-level "libtorch" folder
+        };
         mkHasktorchPackageSet = t: p:
           lib.mapAttrs' (name: value: lib.nameValuePair "${name}-${t}" value) (lib.genAttrs [
             "codegen"
@@ -66,6 +72,8 @@
                     export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
                     export LIBTORCH_SKIP_DOWNLOAD=1
                     ln -sfn ${libtorch_2_5_0_cpu}/libtorch "$XDG_CACHE_HOME/libtorch"
+                    export LIBTOKENIZERS_SKIP_DOWNLOAD=1
+                    ln -sfn ${libtokenizers}/libtokenizers "$XDG_CACHE_HOME/libtokenizers"
                     export LIBTORCH_HOME="$XDG_CACHE_HOME/libtorch"
                     export CMAKE_PREFIX_PATH="$LIBTORCH_HOME"
                   '';
@@ -76,6 +84,8 @@
                     export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
                     export LIBTORCH_SKIP_DOWNLOAD=1
                     ln -sfn ${libtorch_2_5_0_cpu}/libtorch "$XDG_CACHE_HOME/libtorch"
+                    export LIBTOKENIZERS_SKIP_DOWNLOAD=1
+                    ln -sfn ${libtokenizers}/libtokenizers "$XDG_CACHE_HOME/libtokenizers"
                     export LIBTORCH_HOME="$XDG_CACHE_HOME/libtorch"
                     export CMAKE_PREFIX_PATH="$LIBTORCH_HOME"
                   '';
@@ -86,6 +96,8 @@
                     export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
                     export LIBTORCH_SKIP_DOWNLOAD=1
                     ln -sfn ${libtorch_2_5_0_cpu}/libtorch "$XDG_CACHE_HOME/libtorch"
+                    export LIBTOKENIZERS_SKIP_DOWNLOAD=1
+                    ln -sfn ${libtokenizers}/libtokenizers "$XDG_CACHE_HOME/libtokenizers"
                     export LIBTORCH_HOME="$XDG_CACHE_HOME/libtorch"
                     export CMAKE_PREFIX_PATH="$LIBTORCH_HOME"
                   '';
