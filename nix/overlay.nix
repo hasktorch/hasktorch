@@ -17,7 +17,7 @@ final: prev: let
   libtorch_2_5_0_cpu = final.fetchzip {
     name = "libtorch-2.5.0-cpu.zip";
     url  = "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-2.5.0%2Bcpu.zip";
-    hash = "sha256-gUzPhc4Z8rTPhIm89pPoLP0Ww17ono+/xgMW46E/Tro=";
+    hash = "sha256-VFbzEB8LJiVsKIpb2KkSOdvJQY6uR9RyvratKiY8wUs=";
     stripRoot = false;
   };
 in {
