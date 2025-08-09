@@ -23,7 +23,7 @@ final: prev: let
   libtokenizers = final.fetchzip {
     name = "libtokenizers.zip";
     url = "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip";
-    hash = "sha256-F/WtJeibyyofr0wgps+1vBQ5kWF2vzaygbJbJTX3EeU=";
+    hash = "sha256-9XJLgvS+j01IX2Dh+9K5J9khU/8RnS4IqwBOkf+An4g=";
     stripRoot = false; # keep the top-level "libtorch" folder
   };
 in {
