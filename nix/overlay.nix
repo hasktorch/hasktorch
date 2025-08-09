@@ -25,31 +25,132 @@ in {
             prev.haskell.packages.${ghcName}.extend
             (hfinal: hprev: {
               # Hasktorch Packages
-              codegen = hfinal.callCabal2nix "codegen" ../codegen {};
+              codegen = (hfinal.callCabal2nix "codegen" ../codegen {}).overrideAttrs (old: {
+                  preConfigure = (old.preConfigure or "") + ''
+                    export HOME="$TMPDIR"
+                    export XDG_CACHE_HOME="$TMPDIR"
+                    export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                    export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                  '';
+                  preBuild = (old.preBuild or "") + ''
+                    export HOME="$TMPDIR"
+                    export XDG_CACHE_HOME="$TMPDIR"
+                    export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                    export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                  '';
+                  preInstall = (old.preInstall or "") + ''
+                    export HOME="$TMPDIR"
+                    export XDG_CACHE_HOME="$TMPDIR"
+                    export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                    export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                  '';
+                });
               hasktorch-gradually-typed =
                 lib.pipe
                 (hfinal.callCabal2nix "hasktorch-gradually-typed" ../experimental/gradually-typed {})
                 [
+                  (drv: drv.overrideAttrs (old: {
+                    preConfigure = (old.preConfigure or "") + ''
+                      export HOME="$TMPDIR"
+                      export XDG_CACHE_HOME="$TMPDIR"
+                      export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                      export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                    '';
+                    preBuild = (old.preBuild or "") + ''
+                      export HOME="$TMPDIR"
+                      export XDG_CACHE_HOME="$TMPDIR"
+                      export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                      export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                    '';
+                    preInstall = (old.preInstall or "") + ''
+                      export HOME="$TMPDIR"
+                      export XDG_CACHE_HOME="$TMPDIR"
+                      export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                      export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                    '';
+                  }))
                   dontCheck
                   #  disableLibraryProfiling
                 ];
               hasktorch =
                 lib.pipe
-                (hfinal.callCabal2nix "hasktorch" ../hasktorch {})
-                [
-                  dontCheck
-                  #  disableLibraryProfiling
-                ];
-              libtorch-ffi-helper = hfinal.callCabal2nix "libtorch-ffi-helper" ../libtorch-ffi-helper {};
+                  (hfinal.callCabal2nix "hasktorch" ../hasktorch {})
+                  [
+                    (drv: drv.overrideAttrs (old: {
+                      preConfigure = (old.preConfigure or "") + ''
+                        export HOME="$TMPDIR"
+                        export XDG_CACHE_HOME="$TMPDIR"
+                        export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                        export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                      '';
+                      preBuild = (old.preBuild or "") + ''
+                        export HOME="$TMPDIR"
+                        export XDG_CACHE_HOME="$TMPDIR"
+                        export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                        export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                      '';
+                      preInstall = (old.preInstall or "") + ''
+                        export HOME="$TMPDIR"
+                        export XDG_CACHE_HOME="$TMPDIR"
+                        export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                        export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                      '';
+                    }))
+                    dontCheck
+                    # disableLibraryProfiling
+                  ];
+
+              libtorch-ffi-helper =
+                (hfinal.callCabal2nix "libtorch-ffi-helper" ../libtorch-ffi-helper {}).overrideAttrs (old: {
+                  preConfigure = (old.preConfigure or "") + ''
+                    export HOME="$TMPDIR"
+                    export XDG_CACHE_HOME="$TMPDIR"
+                    export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                    export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                  '';
+                  preBuild = (old.preBuild or "") + ''
+                    export HOME="$TMPDIR"
+                    export XDG_CACHE_HOME="$TMPDIR"
+                    export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                    export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                  '';
+                  preInstall = (old.preInstall or "") + ''
+                    export HOME="$TMPDIR"
+                    export XDG_CACHE_HOME="$TMPDIR"
+                    export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                    export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                  '';
+                });
+
               libtorch-ffi =
                 lib.pipe
-                (hfinal.callCabal2nix "libtorch-ffi" ../libtorch-ffi {
-                  inherit torch c10 torch_cpu;
+                  (hfinal.callCabal2nix "libtorch-ffi" ../libtorch-ffi {
+                    inherit torch c10 torch_cpu;
                   })
-                [
-                  (appendConfigureFlag
-                    "--extra-include-dirs=${lib.getDev torch}/include/torch/csrc/api/include")
-                ];
+                  [
+                    (drv: drv.overrideAttrs (old: {
+                      preConfigure = (old.preConfigure or "") + ''
+                        export HOME="$TMPDIR"
+                        export XDG_CACHE_HOME="$TMPDIR"
+                        export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                        export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                      '';
+                      preBuild = (old.preBuild or "") + ''
+                        export HOME="$TMPDIR"
+                        export XDG_CACHE_HOME="$TMPDIR"
+                        export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                        export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                      '';
+                      preInstall = (old.preInstall or "") + ''
+                        export HOME="$TMPDIR"
+                        export XDG_CACHE_HOME="$TMPDIR"
+                        export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                        export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                      '';
+                    }))
+                    (appendConfigureFlag
+                      "--extra-include-dirs=${lib.getDev torch}/include/torch/csrc/api/include")
+                  ];
 
               # Hasktorch Forks
               # WARNING: Does not build with GHC 9.8

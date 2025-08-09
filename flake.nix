@@ -51,8 +51,27 @@
         packages =
           {
             examples =
-              pkgs.haskell.packages.ghc965.callCabal2nix "examples"
-              ./examples {};
+              (pkgs.haskell.packages.ghc965.callCabal2nix "examples"
+              ./examples {}).overrideAttrs (old: {
+                  preConfigure = (old.preConfigure or "") + ''
+                    export HOME="$TMPDIR"
+                    export XDG_CACHE_HOME="$TMPDIR"
+                    export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                    export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                  '';
+                  preBuild = (old.preBuild or "") + ''
+                    export HOME="$TMPDIR"
+                    export XDG_CACHE_HOME="$TMPDIR"
+                    export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                    export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                  '';
+                  preInstall = (old.preInstall or "") + ''
+                    export HOME="$TMPDIR"
+                    export XDG_CACHE_HOME="$TMPDIR"
+                    export HASKTORCH_LIB_PATH="$XDG_CACHE_HOME/libtorch/lib:$XDG_CACHE_HOME/mklml/lib/:$XDG_CACHE_HOME/libtokenizers/lib"
+                    export LD_LIBRARY_PATH=$HASKTORCH_LIB_PATH:$LD_LIBRARY_PATH
+                  '';
+                });
           }
           // (mkHasktorchPackageSet "cuda" pkgsCuda)
           // (mkHasktorchPackageSet "cpu" pkgs);
