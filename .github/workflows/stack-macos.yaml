@@ -17,14 +17,15 @@ jobs:
     - name: Setup tool-chains
       run: |
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        brew install libomp || true
-        pip3 install pyyaml || true
+        brew install libomp python || true
         ## Stack is preinstalled on the GHA runners
         #wget -qO- https://get.haskellstack.org/ | sed -e 's/^STACK_VERSION=.*/STACK_VERSION="1.9.3"/g' | sh || true
         #wget -qO- https://get.haskellstack.org/ | sh || true
         clang --version
         stack --version
+        export XDG_CACHE_HOME=/tmp/xdg-cache
         source setenv
+        ./deps/get-deps.sh
         echo "DYLD_LIBRARY_PATH=/opt/homebrew/lib:/opt/homebrew/opt/libomp/lib:$DYLD_LIBRARY_PATH" >> "${GITHUB_ENV}"
         ./setup-cabal.sh
     - name: Cache .stack

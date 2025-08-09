@@ -11,7 +11,7 @@ constructors:
 methods:
 EOF
 
-cat deps/libtorch/include/ATen/core/ivalue.h \
+cat "$XDG_CACHE_HOME/libtorch/include/ATen/core/ivalue.h" \
   | grep -vi c10 \
   | grep -vi TensorImpl \
   | perl -ne 'BEGIN{$f=0;}; {if (/struct CAFFE2_API IValue/){$f=1;}; if (/^};/ || /struct CAFFE2_API WeakIValue/){print $_;$f=0;}; if($f==1){print $_;}};' \

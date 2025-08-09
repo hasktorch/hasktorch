@@ -45,7 +45,9 @@ jobs:
 
     - name: Generate install-plan
       run: |
+        export XDG_CACHE_HOME=/tmp/xdg-cache
         source setenv
+        ./deps/get-deps.sh
         ./setup-cabal.sh
         cabal v2-update
         cabal v2-build --jobs=2 all --dry-run

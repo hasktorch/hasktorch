@@ -96,28 +96,28 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
     "Darwin")
       if [ "$USE_NIGHTLY" = 1 ] ; then
         wget https://download.pytorch.org/libtorch/nightly/cpu/libtorch-macos-latest.zip
-        unzip libtorch-macos-latest.zip
+        unzip libtorch-macos-latest.zip -d "$XDG_CACHE_HOME"
         rm libtorch-macos-latest.zip
       elif [ "$USE_BINARY_FOR_CI" = 1 ] ; then
         wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/cpu-libtorch-macos-latest.zip
-        unzip cpu-libtorch-macos-latest.zip
+        unzip cpu-libtorch-macos-latest.zip -d "$XDG_CACHE_HOME"
         rm cpu-libtorch-macos-latest.zip
       else
         wget -O libtorch-macos.zip https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-${VERSION}.zip
-        unzip libtorch-macos.zip
+        unzip libtorch-macos.zip -d "$XDG_CACHE_HOME"
         rm libtorch-macos.zip
       fi
       wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip
-      unzip libtokenizers-macos.zip
+      unzip libtokenizers-macos.zip -d "$XDG_CACHE_HOME"
       ;;
     "Linux")
       if [ "$USE_NIGHTLY" = 1 ] ; then
         wget https://download.pytorch.org/libtorch/nightly/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-latest.zip
-        unzip libtorch-cxx11-abi-shared-with-deps-latest.zip
+        unzip libtorch-cxx11-abi-shared-with-deps-latest.zip -d "$XDG_CACHE_HOME"
         rm libtorch-cxx11-abi-shared-with-deps-latest.zip
       elif [ "$USE_BINARY_FOR_CI" = 1 ] ; then
         wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
-        unzip ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
+        unzip ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip -d "$XDG_CACHE_HOME"
         rm ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
       else
 	case "${COMPUTE_ARCH}" in
@@ -129,12 +129,12 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
                   usage_exit
 	esac
 	wget -O libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip "$URL"
-        unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
+        unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip -d "$XDG_CACHE_HOME"
         rm libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
       fi
 
       wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip
-      unzip libtokenizers-linux.zip
+      unzip libtokenizers-linux.zip -d "$XDG_CACHE_HOME"
       ;;
   esac
 fi
@@ -147,23 +147,19 @@ echo "Generate ATen files."
 if [ ! -e pytorch ] ; then
     git clone https://github.com/pytorch/pytorch.git
 else
-    pushd pytorch
+    pushd ./pytorch
     git pull origin v$VERSION
     popd
 fi
 
-pushd pytorch
+pushd ./pytorch
 git checkout v$VERSION
 
 if [[ ! -d build ]]; then
 mkdir build
 fi
 
-
-PYTHON=python
-if ! (python --version | grep "Python 2") ;then
-    PYTHON=python3
-fi
+PYTHON=python3
 
 if ! ($PYTHON -c 'import yaml') ; then
     $PYTHON -m pip install --user pyyaml
@@ -203,6 +199,6 @@ esac
 
 popd
 
-pushd ../spec
-  ln -fs ../deps/pytorch/build/aten/src/ATen/Declarations.yaml
+pushd ./spec
+  ln -fs ../pytorch/build/aten/src/ATen/Declarations.yaml
 popd
