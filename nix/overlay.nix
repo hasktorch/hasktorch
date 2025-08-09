@@ -20,7 +20,7 @@ final: prev: let
     hash = "sha256-VFbzEB8LJiVsKIpb2KkSOdvJQY6uR9RyvratKiY8wUs=";
     stripRoot = false;
   };
-  libtokenizers = pkgs.fetchzip {
+  libtokenizers = final.fetchzip {
     name = "libtokenizers.zip";
     url = "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip";
     hash = "sha256-F/WtJeibyyofr0wgps+1vBQ5kWF2vzaygbJbJTX3EeU=";
