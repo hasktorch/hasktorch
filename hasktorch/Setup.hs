@@ -152,9 +152,13 @@ copyTree src dest = do
 computeTokenizerURL :: IO (String, String)
 computeTokenizerURL = do
   pure $ case buildOS of
-    OSX -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip"
-           , "libtokenizers-macos.zip" )
-    Linux -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip"
+    OSX -> case buildArch of
+            AArch64 -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip"
+                       , "libtokenizers-macos-arm64.zip" )
+            X86_64  -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip"
+                       , "libtokenizers-macos.zip" )
+            _       -> error "Unsupported macOS arch"
+    Linux -> ( "https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip"
            , "libtokenizers-macos.zip" )
     Windows -> error "Windows not supported by this setup"
 

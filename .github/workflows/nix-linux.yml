@@ -18,6 +18,15 @@ jobs:
         with:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - name: Resolve LIBTORCH path
+        run: |
+          echo "XDG_CACHE_HOME=$RUNNER_TEMP/xdg-cache" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/xdg-cache"
+          LIBTORCH_STORE_PATH="$(nix build .#libtorch-2_5_0-cpu --print-out-paths)"
+          ln -sfn "$LIBTORCH_STORE_PATH/libtorch" "$RUNNER_TEMP/xdg-cache/libtorch"
+          echo "LIBTORCH_HOME=$RUNNER_TEMP/xdg-cache/libtorch" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=$RUNNER_TEMP/xdg-cache/libtorch" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$RUNNER_TEMP/xdg-cache/libtorch/lib:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
       - run: |
             nix build .#codegen-cpu
             nix build .#hasktorch-cpu

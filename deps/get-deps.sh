@@ -107,8 +107,20 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
         unzip libtorch-macos.zip -d "$XDG_CACHE_HOME"
         rm libtorch-macos.zip
       fi
-      wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip
-      unzip libtokenizers-macos.zip -d "$XDG_CACHE_HOME"
+      case "$(uname -m)" in
+        "x86_64")
+          wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip
+          unzip libtokenizers-macos.zip -d "$XDG_CACHE_HOME"
+          ;;
+        "arm64")
+          wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos-arm64.zip
+          unzip libtokenizers-macos.zip -d "$XDG_CACHE_HOME"
+          ;;
+        "arm64e")
+          wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos-arm64.zip
+          unzip libtokenizers-macos.zip -d "$XDG_CACHE_HOME"
+          ;;
+      esac
       ;;
     "Linux")
       if [ "$USE_NIGHTLY" = 1 ] ; then
