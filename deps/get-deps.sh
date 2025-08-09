@@ -114,11 +114,11 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
           ;;
         "arm64")
           wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos-arm64.zip
-          unzip libtokenizers-macos.zip -d "$XDG_CACHE_HOME"
+          unzip libtokenizers-macos-arm64.zip -d "$XDG_CACHE_HOME"
           ;;
         "arm64e")
           wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos-arm64.zip
-          unzip libtokenizers-macos.zip -d "$XDG_CACHE_HOME"
+          unzip libtokenizers-macos-arm64.zip -d "$XDG_CACHE_HOME"
           ;;
       esac
       ;;
