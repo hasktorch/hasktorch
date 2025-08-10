@@ -4,26 +4,25 @@ packages:
     libtorch-ffi-helper/*.cabal
     hasktorch/*.cabal
     examples/*.cabal
---    experimental/bounding-box/*.cabal
---    experimental/dataloader-cifar10/*.cabal
---    experimental/untyped-nlp/*.cabal
-    experimental/*/*.cabal
+    experimental/untyped-nlp/untyped-nlp.cabal
+    experimental/dataloader-cifar10/dataloader-cifar10.cabal
+    experimental/bounding-box/bounding-box.cabal
 
-source-repository-package
-    type: git
-    location: https://github.com/hasktorch/tokenizers
-    tag: addbd197fa71eb0bf875424d015ad9d732f42eed
-    subdir: bindings/haskell/tokenizers-haskell
+-- source-repository-package
+--     type: git
+--     location: https://github.com/hasktorch/tokenizers
+--     tag: addbd197fa71eb0bf875424d015ad9d732f42eed
+--     subdir: bindings/haskell/tokenizers-haskell
 
-source-repository-package
-    type: git
-    location: https://github.com/hasktorch/typelevel-rewrite-rules
-    tag: 1f181c3073df201cec45e121f07610b0bfbb6ecd
+-- source-repository-package
+--     type: git
+--     location: https://github.com/hasktorch/typelevel-rewrite-rules
+--     tag: 1f181c3073df201cec45e121f07610b0bfbb6ecd
 
-source-repository-package
-    type: git
-    location: https://github.com/hasktorch/type-errors-pretty
-    tag: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
+-- source-repository-package
+--     type: git
+--     location: https://github.com/hasktorch/type-errors-pretty
+--     tag: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
 
 source-repository-package
     type: git
