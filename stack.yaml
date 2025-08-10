@@ -62,3 +62,8 @@ nix:
 # ghc-options:
 #   libtorch-ffi: -j +RTS -A128m -n2m -RTS
 #   hasktorch: -j +RTS -A128m -n2m -RTS
+
+configure-options:
+  $targets:
+  - --enable-executable-dynamic
+  - --enable-shared
