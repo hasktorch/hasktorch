@@ -48,3 +48,5 @@ source-repository-package
 write-ghc-environment-files: always
 tests: true
 documentation: false
+shared: true
+executable-dynamic: true
