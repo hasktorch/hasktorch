@@ -85,13 +85,13 @@ jobs:
         cabal v2-exec codegen-exe
         cabal v2-exec xor-mlp
 
-    - name: Benchmark
-      run: |
-        cabal v2-bench hasktorch:runtime --benchmark-options='--output benchmark-runtime.html'
-        cabal v2-bench hasktorch:alloc   --benchmark-options='--output benchmark-alloc.html'
+    # - name: Benchmark
+    #   run: |
+    #     cabal v2-bench hasktorch:runtime --benchmark-options='--output benchmark-runtime.html'
+    #     cabal v2-bench hasktorch:alloc   --benchmark-options='--output benchmark-alloc.html'
 
-    - name: Archive benchmark results
-      uses: actions/upload-artifact@v4
-      with:
-        name: benchmark-report
-        path: hasktorch/benchmark*.html
+    # - name: Archive benchmark results
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: benchmark-report
+    #     path: hasktorch/benchmark*.html
