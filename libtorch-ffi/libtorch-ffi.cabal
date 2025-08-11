@@ -11,6 +11,7 @@ maintainer:          hasktorch@gmail.com
 copyright:           2018 Austin Huang
 category:            Codegen
 build-type:          Custom
+extra-source-files:  README.md
 
 custom-setup
   setup-depends:
