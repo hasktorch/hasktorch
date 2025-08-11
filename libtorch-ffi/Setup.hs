@@ -55,12 +55,17 @@ main = defaultMainWithHooks $ simpleUserHooks
             _ -> return $ lbi
   }
 
-libtorchVersion :: String
-libtorchVersion = "2.5.0"
+getLibtorchVersion :: IO String
+getLibtorchVersion = do
+  mVersion <- lookupEnv "LIBTORCH_VERSION"
+  case mVersion of
+    Nothing -> return "2.5.0"
+    Just other -> return other
 
 getLocalUserLibtorchDir :: IO FilePath
 getLocalUserLibtorchDir = do
   mHome <- lookupEnv "LIBTORCH_HOME"
+  libtorchVersion <- getLibtorchVersion
   base <- case mHome of
     Just h  -> pure h
     Nothing -> do
@@ -119,7 +124,7 @@ downloadLibtorch = do
       if present && exists
         then pure $ Just dest
         else do
-          putStrLn $ "libtorch not found in global cache, installing to " <> dest
+          putStrLn $ "libtorch not found in local cache, installing to " <> dest
           downloadAndExtractLibtorchTo dest
           -- Create an idempotence marker that checks
           -- if we've already downloaded torch.
@@ -162,7 +167,7 @@ copyTree src dest = do
 computeURL :: IO (String, String)
 computeURL = do
   flavor <- getCudaFlavor
-  let v = libtorchVersion
+  v <- getLibtorchVersion
   pure $ case buildOS of
     OSX -> case buildArch of
       AArch64 -> ( "https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-" ++ v ++ ".zip"
@@ -173,13 +178,8 @@ computeURL = do
     Linux -> case flavor of
       "cpu"  -> ( "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2Bcpu.zip"
                 , "libtorch-linux.zip" )
-      "cu117"-> ( "https://download.pytorch.org/libtorch/cu117/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2Bcu117.zip"
-                , "libtorch-linux-cu117.zip" )
-      "cu118"-> ( "https://download.pytorch.org/libtorch/cu118/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2Bcu118.zip"
-                , "libtorch-linux-cu118.zip" )
-      "cu121"-> ( "https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2Bcu121.zip"
-                , "libtorch-linux-cu121.zip" )
-      _      -> error $ "Unsupported CUDA version: " ++ flavor
+      cudaVersion -> ( "https://download.pytorch.org/libtorch/" ++ cudaVersion ++"/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2B" ++ cudaVersion ++ ".zip"
+                , "libtorch-linux-" ++ cudaVersion ++ ".zip" )
     Windows -> error "Windows not supported by this setup"
 
 -- Add -ld_classic flag to GHC program arguments for macOS
