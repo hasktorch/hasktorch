@@ -1,3 +1,4 @@
+import Data.List (isPrefixOf)
 import Distribution.Simple
 import Distribution.Simple.Program
 import Distribution.Simple.Setup
@@ -22,35 +23,43 @@ import Control.Exception
 main :: IO ()
 main = defaultMainWithHooks $ simpleUserHooks
   { preConf = \_ _ -> do
-      _ <- ensureLibtorch 
       pure emptyHookedBuildInfo
   , confHook = \(gpd, hbi) flags -> do
-      libtorchDir <- getGlobalLibtorchDir
-      let libDir     = libtorchDir </> "lib"
-          includeDir = libtorchDir </> "include"
-      
-      let updatedFlags = flags
-            { configExtraLibDirs      = libDir : configExtraLibDirs flags
-            , configExtraIncludeDirs  =
-                includeDir
-                : (includeDir </> "torch" </> "csrc" </> "api" </> "include")
-                : configExtraIncludeDirs flags
-            }
-      -- Call the default configuration hook with updated flags
-      lbi <- confHook simpleUserHooks (gpd, hbi) updatedFlags
-      -- For macOS, add the -ld_classic flag to the linker
-      return $
-        case buildOS of
-          OSX -> lbi { withPrograms = addRPath libDir $ addLdClassicFlag (withPrograms lbi) }
-          Linux -> lbi { withPrograms = addRPath libDir (withPrograms lbi) }
-          _ -> lbi
+      mlibtorchDir <- ensureLibtorch
+      case mlibtorchDir of
+        Nothing -> do
+          putStrLn "libtorch not found, skipping configuration."
+          lbi <- confHook simpleUserHooks (gpd, hbi) flags
+          -- For macOS, add the -ld_classic flag to the linker
+          case buildOS of
+            OSX -> return $ lbi { withPrograms = addLdClassicFlag (withPrograms lbi) }
+            _ -> return $ lbi
+        Just libtorchDir -> do
+          libtorchDir <- getLocalUserLibtorchDir
+          let libDir     = libtorchDir </> "lib"
+              includeDir = libtorchDir </> "include"
+
+          let updatedFlags = flags
+                { configExtraLibDirs      = libDir : configExtraLibDirs flags
+                , configExtraIncludeDirs  =
+                    includeDir
+                    : (includeDir </> "torch" </> "csrc" </> "api" </> "include")
+                    : configExtraIncludeDirs flags
+                }
+          -- Call the default configuration hook with updated flags
+          lbi <- confHook simpleUserHooks (gpd, hbi) updatedFlags
+          -- For macOS, add the -ld_classic flag to the linker
+          case buildOS of
+            OSX -> return $ lbi { withPrograms = addRPath libDir $ addLdClassicFlag (withPrograms lbi) }
+            Linux -> return $ lbi { withPrograms = addRPath libDir (withPrograms lbi) }
+            _ -> return $ lbi
   }
 
 libtorchVersion :: String
 libtorchVersion = "2.5.0"
 
-getGlobalLibtorchDir :: IO FilePath
-getGlobalLibtorchDir = do
+getLocalUserLibtorchDir :: IO FilePath
+getLocalUserLibtorchDir = do
   mHome <- lookupEnv "LIBTORCH_HOME"
   base <- case mHome of
     Just h  -> pure h
@@ -74,20 +83,41 @@ getCudaFlavor :: IO String
 getCudaFlavor = do
   fromMaybe "cpu" <$> lookupEnv "LIBTORCH_CUDA_VERSION"  -- "cpu" | "cu117" | "cu118" | "cu121"
 
-ensureLibtorch :: IO FilePath
+ensureLibtorch :: IO (Maybe FilePath)
 ensureLibtorch = do
+  isSandbox <- isNixSandbox
+  if isSandbox
+    then return Nothing
+    else downloadLibtorch
+
+isNixSandbox :: IO Bool
+isNixSandbox = do
+  nix <- lookupEnv "NIX_BUILD_TOP"
+  case nix of
+    Just path -> do
+      let isNixPath = any (`isPrefixOf` path) ["/build", "/private/tmp/nix-build"]
+      if isNixPath
+        then do
+          putStrLn "Nix sandbox detected; skipping libtorch download."
+          return True
+        else do
+          return False
+    Nothing -> return False
+
+downloadLibtorch :: IO (Maybe FilePath)
+downloadLibtorch = do
   skip <- lookupEnv "LIBTORCH_SKIP_DOWNLOAD"
   case skip of
     Just _ -> do
       putStrLn "LIBTORCH_SKIP_DOWNLOAD set; assuming libtorch exists globally."
-      getGlobalLibtorchDir
+      return Nothing
     Nothing -> do
-      dest <- getGlobalLibtorchDir
+      dest <- getLocalUserLibtorchDir
       let marker = dest </> ".ok"
       exists <- doesFileExist marker
       present <- doesDirectoryExist dest
       if present && exists
-        then pure dest
+        then pure $ Just dest
         else do
           putStrLn $ "libtorch not found in global cache, installing to " <> dest
           downloadAndExtractLibtorchTo dest
@@ -96,7 +126,7 @@ ensureLibtorch = do
           -- Since we'll be moving everything this will
           -- be the our main reference.
           writeFile marker ""
-          pure dest
+          pure $ Just dest
 
 downloadAndExtractLibtorchTo :: FilePath -> IO ()
 downloadAndExtractLibtorchTo dest = do
