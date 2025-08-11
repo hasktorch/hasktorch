@@ -19,6 +19,7 @@ import System.Environment (lookupEnv)
 import Data.Maybe (fromMaybe)
 import GHC.IO.Exception
 import Control.Exception
+import Codec.Archive.Zip
 
 main :: IO ()
 main = defaultMainWithHooks $ simpleUserHooks
@@ -144,7 +145,8 @@ downloadAndExtractLibtorchTo dest = do
     response <- httpLBS request
     LBS.writeFile downloadPath (getResponseBody response)
     putStrLn "Download complete. Extracting..."
-    callProcess "unzip" ["-q", downloadPath, "-d", tmpDir]
+    archive <- toArchive <$> LBS.readFile downloadPath
+    extractFilesFromArchive [OptDestination tmpDir] archive
     let unpacked = tmpDir </> "libtorch"
     exists <- doesDirectoryExist unpacked
     let src = if exists then unpacked else tmpDir
