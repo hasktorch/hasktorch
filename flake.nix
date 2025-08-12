@@ -59,14 +59,14 @@
         devShells = let
           packages = p:
             with p; [
-              codegen
-              hasktorch
               # Cannot be built until type-level-rewrite-rules supports GHC 9.8
               # hasktorch-gradually-typed
+              cabal-install
+              codegen
+              hasktorch
               libtorch-ffi
               libtorch-ffi-helper
-              cabal-install
-            ];
+            ] ++ [self'.packages.examples];
         in {
           default = self'.devShells.cpu;
           cpu = pkgs.haskell.packages.${ghc}.shellFor {
