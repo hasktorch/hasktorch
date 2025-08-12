@@ -51,7 +51,7 @@
         packages =
           {
             examples =
-              pkgs.haskell.packages.ghc965.callCabal2nix "examples"
+              pkgs.haskell.packages.${ghc}.callCabal2nix "examples"
               ./examples {};
           }
           // (mkHasktorchPackageSet "cuda" pkgsCuda)
