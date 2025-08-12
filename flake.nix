@@ -71,9 +71,17 @@
           default = self'.devShells.cpu;
           cpu = pkgs.haskell.packages.${ghc}.shellFor {
             inherit packages;
+            nativeBuildInputs = with pkgs; [
+              cabal-install
+              haskell-language-server
+            ];
           };
           cuda = pkgsCuda.haskell.packages.${ghc}.shellFor {
             inherit packages;
+            nativeBuildInputs = with pkgsCuda; [
+              cabal-install
+              haskell-language-server
+            ];
           };
         };
         apps = {
