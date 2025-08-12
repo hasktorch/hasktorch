@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 import Data.List (isPrefixOf)
 import Distribution.Simple
 import Distribution.Simple.Program
@@ -21,6 +23,14 @@ import GHC.IO.Exception
 import Control.Exception
 import Codec.Archive.Zip
 
+#if MIN_VERSION_Cabal(3,14,0)
+import Distribution.Utils.Path (makeSymbolicPath)
+#else
+
+makeSymbolicPath :: a -> a
+makeSymbolicPath = id
+#endif
+
 main :: IO ()
 main = defaultMainWithHooks $ simpleUserHooks
   { preConf = \_ _ -> do
@@ -41,10 +51,10 @@ main = defaultMainWithHooks $ simpleUserHooks
               includeDir = libtorchDir </> "include"
 
           let updatedFlags = flags
-                { configExtraLibDirs      = libDir : configExtraLibDirs flags
+                { configExtraLibDirs      = makeSymbolicPath libDir : configExtraLibDirs flags
                 , configExtraIncludeDirs  =
-                    includeDir
-                    : (includeDir </> "torch" </> "csrc" </> "api" </> "include")
+                    makeSymbolicPath includeDir
+                    : makeSymbolicPath (includeDir </> "torch" </> "csrc" </> "api" </> "include")
                     : configExtraIncludeDirs flags
                 }
           -- Call the default configuration hook with updated flags
