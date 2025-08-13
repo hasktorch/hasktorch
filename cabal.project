@@ -5,7 +5,7 @@ packages:
     hasktorch/*.cabal
     examples/*.cabal
     experimental/untyped-nlp/untyped-nlp.cabal
-    experimental/dataloader-cifar10/dataloader-cifar10.cabal
+--  experimental/dataloader-cifar10/dataloader-cifar10.cabal
     experimental/bounding-box/bounding-box.cabal
 
 -- source-repository-package
@@ -24,20 +24,20 @@ packages:
 --     location: https://github.com/hasktorch/type-errors-pretty
 --     tag: 32d7abec6a21c42a5f960d7f4133d604e8be79ec
 
-source-repository-package
-    type: git
-    location: https://github.com/hasktorch/streaming-cassava
-    tag: 1ecc4742beae22a2fe32e445a54d1990b6200249
+-- source-repository-package
+--     type: git
+--     location: https://github.com/hasktorch/streaming-cassava
+--     tag: 1ecc4742beae22a2fe32e445a54d1990b6200249
 
-source-repository-package
-    type: git
-    location: https://github.com/hasktorch/indexed-extras
-    tag: 7a0c4e918578e7620a46d4f0546fbdaec933ede0
+-- source-repository-package
+--     type: git
+--     location: https://github.com/hasktorch/indexed-extras
+--     tag: 7a0c4e918578e7620a46d4f0546fbdaec933ede0
 
-source-repository-package
-    type: git
-    location: https://github.com/hasktorch/term-rewriting
-    tag: 54221f58b28c9f36db9bac437231e6142c8cca3a
+-- source-repository-package
+--     type: git
+--     location: https://github.com/hasktorch/term-rewriting
+--     tag: 54221f58b28c9f36db9bac437231e6142c8cca3a
 
 -- 2024-04-30 fork is obsolete with union-find-array-0.1.0.4
 -- source-repository-package

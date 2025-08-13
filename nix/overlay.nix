@@ -33,13 +33,7 @@ in {
               #     dontCheck
               #     #  disableLibraryProfiling
               #   ];
-              hasktorch =
-                lib.pipe
-                (hfinal.callCabal2nix "hasktorch" ../hasktorch {})
-                [
-                  dontCheck
-                  #  disableLibraryProfiling
-                ];
+              hasktorch = hfinal.callCabal2nix "hasktorch" ../hasktorch {};
               libtorch-ffi-helper = hfinal.callCabal2nix "libtorch-ffi-helper" ../libtorch-ffi-helper {};
               libtorch-ffi =
                 lib.pipe
