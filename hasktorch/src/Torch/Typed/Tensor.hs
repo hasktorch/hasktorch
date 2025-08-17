@@ -451,6 +451,38 @@ ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
 (==.) = eq
 (/=.) = ne
 
+gtScalar,
+  ltScalar,
+  geScalar,
+  leScalar,
+  eqScalar,
+  neScalar,
+  (.>),
+  (.<),
+  (.>=),
+  (.<=),
+  (.==),
+  (./=) ::
+    forall shape dtype device.
+    ( ComparisonDTypeIsValid device dtype,
+      StandardFloatingPointDTypeValidation device dtype
+    ) =>
+    Tensor device dtype shape ->
+    Float ->
+    Tensor device 'D.Bool shape
+gtScalar a s = UnsafeMkTensor $ D.gtScalar (toDynamic a) s
+ltScalar a s = UnsafeMkTensor $ D.ltScalar (toDynamic a) s
+geScalar a s = UnsafeMkTensor $ D.geScalar (toDynamic a) s
+leScalar a s = UnsafeMkTensor $ D.leScalar (toDynamic a) s
+eqScalar a s = UnsafeMkTensor $ D.eqScalar (toDynamic a) s
+neScalar a s = UnsafeMkTensor $ D.neScalar (toDynamic a) s
+(.>) = gtScalar
+(.<) = ltScalar
+(.>=) = geScalar
+(.<=) = leScalar
+(.==) = eqScalar
+(./=) = neScalar
+
 type family ComputeMatMul (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
   ComputeMatMul (k ': '[]) (k ': '[]) = Just '[]
   ComputeMatMul (k ': '[]) (m ': k ': reversedBroadcastShape') = AppendToMaybe m (ComputeBroadcast '[] reversedBroadcastShape')

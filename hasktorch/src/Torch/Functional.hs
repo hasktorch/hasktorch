@@ -729,6 +729,84 @@ eq a b = unsafePerformIO $ cast2 ATen.eq_tt a b
 
 (==.) = eq
 
+-- | Computes input > scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+gtScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+gtScalar = Internal.gtScalar
+
+(.>) = gtScalar
+
+-- | Computes input < scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+ltScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+ltScalar = Internal.ltScalar
+
+(.<) = ltScalar
+
+-- | Computes input >= scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+geScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+geScalar = Internal.geScalar
+
+(.>=) = geScalar
+
+-- | Computes input <= scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+leScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+leScalar = Internal.leScalar
+
+(.<=) = leScalar
+
+-- | Computes input == scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+eqScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+eqScalar = Internal.eqScalar
+
+(.==) = eqScalar
+
+-- | Computes input /= scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+neScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+neScalar = Internal.neScalar
+
+(./=) = neScalar
+
 -- | Returns a new tensor with the elements of input at the given indices. The input tensor is treated as if it were viewed as a 1-D tensor. The result takes the same shape as the indices.
 take ::
   -- | index
