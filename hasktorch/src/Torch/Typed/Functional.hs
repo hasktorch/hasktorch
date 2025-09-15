@@ -4547,8 +4547,20 @@ squeezeDim ::
   Tensor device dtype shape'
 squeezeDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.squeeze_tl input (natValI @dim)
 
--- where' :: Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape -> Tensor device dtype shape
--- where' _condition _input _other = unsafePerformIO $ (ATen.cast3 ATen.Managed.where_ttt) _condition _input _other
+-- | return a tensor of elements selected from either input or other, depending on condition.
+where' ::
+  forall shape shape' shape'' shape''' shape'''' dtype device.
+  ( shape'' ~ Broadcast shape shape',
+    shape'''' ~ Broadcast shape''' shape''
+  ) =>
+  -- | condition
+  Tensor device 'D.Bool shape ->
+  -- | input
+  Tensor device dtype shape' ->
+  -- | other
+  Tensor device dtype shape''' ->
+  Tensor device dtype shape''''
+where' _condition _input _other = unsafePerformIO $ (ATen.cast3 ATen.Managed.where_ttt) _condition _input _other
 
 -- where_ :: Tensor device dtype shape -> [Tensor device dtype shape]
 -- where_ _condition = unsafePerformIO $ (ATen.cast1 ATen.Managed.where_t) _condition
