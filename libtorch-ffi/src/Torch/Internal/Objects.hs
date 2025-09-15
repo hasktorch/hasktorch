@@ -369,6 +369,18 @@ instance CppObject (StdVector TensorIndex) where
   deletePtr ptr = c_delete_tensorindexlist' ptr
   {-# INLINE deletePtr #-}
 
+foreign import ccall unsafe "hasktorch_finalizer.h &delete_optionaltensor"
+  c_delete_optionaltensor :: FunPtr ( Ptr OptionalTensor -> IO ())
+
+foreign import ccall unsafe "hasktorch_finalizer.h delete_optionaltensor"
+  c_delete_optionaltensor' ::  Ptr OptionalTensor -> IO ()
+
+instance CppObject OptionalTensor where
+  fromPtr ptr = newForeignPtr c_delete_optionaltensor ptr
+  {-# INLINE fromPtr #-}
+  deletePtr ptr = c_delete_optionaltensor' ptr
+  {-# INLINE deletePtr #-}
+
 foreign import ccall unsafe "hasktorch_finalizer.h &delete_tensorlist"
   c_delete_tensorlist :: FunPtr ( Ptr TensorList -> IO ())
 

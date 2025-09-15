@@ -49,6 +49,7 @@ import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.StdArray as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.StdOptional as ATen
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Managed.Type.Extra as ATen
@@ -77,6 +78,39 @@ newMutableTensor tensor = MutableTensor <$> cast1 ATen.detach_t tensor
 
 toImmutable :: MutableTensor -> IO Tensor
 toImmutable (MutableTensor tensor) = cast1 ATen.detach_t tensor
+
+type ATenOptionalTensor = ForeignPtr (ATen.StdOptional ATen.Tensor)
+
+-- do not use the constructor
+newtype OptionalTensor = UnsafeOptional ATenOptionalTensor
+
+instance Castable OptionalTensor ATenOptionalTensor where
+  cast (UnsafeOptional aten_optional_tensor) f = f aten_optional_tensor
+  uncast aten_optional_tensor f = f $ UnsafeOptional aten_optional_tensor
+
+instance Castable (Maybe Tensor) OptionalTensor where
+  cast Nothing f = do
+    ptr <- ATen.stdOptionalTensor_empty
+    f (UnsafeOptional ptr)
+  cast (Just tensor) f = do
+    cast tensor $ \atenTensor -> do
+      ptr <- ATen.stdOptionalTensor_create atenTensor
+      f (UnsafeOptional ptr)
+  uncast (UnsafeOptional ptr) f = do
+    hasValue <- ATen.stdOptionalTensor_has_value ptr
+    if hasValue /= 0
+      then do
+        atenTensor <- ATen.stdOptionalTensor_value ptr
+        uncast atenTensor $ \tensor -> f (Just tensor)
+      else f Nothing
+
+instance Castable (Maybe Tensor) ATenOptionalTensor where
+  cast maybeTensor f = do
+    cast maybeTensor $ \(optTensor :: OptionalTensor) -> do
+      cast optTensor f
+  uncast ptr f = do
+    uncast ptr $ \(optTensor :: OptionalTensor) -> do
+      uncast optTensor f
 
 --------------------------------------------------------------------------------
 -- Basic tensor properties

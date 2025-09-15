@@ -9,12 +9,15 @@
 #include <torch/optim.h>
 
 #include <array>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <vector>
 
 extern "C" {
   void delete_tensor(at::Tensor* tensor);
+
+  void delete_optionaltensor(std::optional<at::Tensor>* tensor);
 
   void delete_tensorlist(std::vector<at::Tensor>* tensors);
 
