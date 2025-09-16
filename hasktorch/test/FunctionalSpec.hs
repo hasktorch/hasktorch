@@ -300,3 +300,16 @@ spec = do
       (asTensor ([[[0.1, 0.2, 0.7]]] :: [[[Float]]]))
       (asTensor ([2] :: [Int]))
       `shouldBe` asTensor (-0.7 :: Float)
+  it "scaled_dot_product_attention with Nothing mask" $ do
+    let query = ones' [2, 4, 8]
+        key = ones' [2, 4, 8]
+        value = ones' [2, 4, 8]
+        result = scaled_dot_product_attention query key value Nothing 0.0 True 1.0 False
+    shape result `shouldBe` [2, 4, 8]
+  it "scaled_dot_product_attention with Just mask" $ do
+    let query = ones' [2, 4, 8]
+        key = ones' [2, 4, 8]
+        value = ones' [2, 4, 8]
+        attn_mask = ones' [2, 4, 4]
+        result = scaled_dot_product_attention query key value (Just attn_mask) 0.0 False 1.0 False
+    shape result `shouldBe` [2, 4, 8]

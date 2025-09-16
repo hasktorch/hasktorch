@@ -6440,11 +6440,13 @@ scaled_dot_product_attention
   :: Tensor -- ^ query
   -> Tensor -- ^ key
   -> Tensor -- ^ value
-  -> Tensor -- ^ attn_mask
+  -> Maybe Tensor -- ^ attn_mask
   -> Double -- ^ dropout_p
   -> Bool -- ^ is_causal
+  -> Double -- ^ scale
+  -> Bool -- ^ enable_gqa
   -> Tensor
-scaled_dot_product_attention _query _key _value _attn_mask _dropout_p _is_causal = unsafePerformIO $ (cast6 ATen.scaled_dot_product_attention_ttttdb) _query _key _value _attn_mask _dropout_p _is_causal
+scaled_dot_product_attention _query _key _value _attn_mask _dropout_p _is_causal _scale _enable_gqa = unsafePerformIO $ (cast8 ATen.scaled_dot_product_attention_tttqdbdb) _query _key _value _attn_mask _dropout_p _is_causal _scale _enable_gqa
 
 special_airy_ai
   :: Tensor -- ^ x

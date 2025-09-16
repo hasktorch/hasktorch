@@ -21,6 +21,7 @@ module Torch.Functional
     Internal.logdet,
     Internal.lstsq,
     Internal.mv,
+    Internal.scaled_dot_product_attention,
     Internal.sumWithDimnames,
   )
 where
