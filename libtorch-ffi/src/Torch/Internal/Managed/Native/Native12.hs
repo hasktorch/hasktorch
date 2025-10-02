@@ -1413,6 +1413,18 @@ _native_multi_head_attention_tttlltttt
   -> IO (ForeignPtr (StdTuple '(Tensor,Tensor)))
 _native_multi_head_attention_tttlltttt = _cast9 Unmanaged._native_multi_head_attention_tttlltttt
 
+scaled_dot_product_attention_tttqdbdb
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr OptionalTensor
+  -> CDouble
+  -> CBool
+  -> CDouble
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+scaled_dot_product_attention_tttqdbdb = _cast8 Unmanaged.scaled_dot_product_attention_tttqdbdb
+
 scaled_dot_product_attention_ttttdb
   :: ForeignPtr Tensor
   -> ForeignPtr Tensor

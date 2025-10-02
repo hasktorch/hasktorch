@@ -2434,6 +2434,28 @@ _native_multi_head_attention_tttlltttt _query _key _value _embed_dim _num_head _
   , *$(at::Tensor* _proj_bias)));
   }|]
 
+scaled_dot_product_attention_tttqdbdb
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr Tensor
+  -> Ptr OptionalTensor
+  -> CDouble
+  -> CBool
+  -> CDouble
+  -> CBool
+  -> IO (Ptr Tensor)
+scaled_dot_product_attention_tttqdbdb _query _key _value _attn_mask _dropout_p _is_causal _scale _enable_gqa =
+  [C.throwBlock| at::Tensor* { return new at::Tensor(at::scaled_dot_product_attention(
+    *$(at::Tensor* _query)
+  , *$(at::Tensor* _key)
+  , *$(at::Tensor* _value)
+  , *$(std::optional<at::Tensor>* _attn_mask)
+  , $(double _dropout_p)
+  , $(bool _is_causal)
+  , $(double _scale)
+  , $(bool _enable_gqa)));
+  }|]
+
 scaled_dot_product_attention_ttttdb
   :: Ptr Tensor
   -> Ptr Tensor
