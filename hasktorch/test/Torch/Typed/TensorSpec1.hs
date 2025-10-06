@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -141,6 +142,7 @@ spec' device =
         broadcastableShapes1 = Proxy @'[2, 1, 1] :. HNil
         standardDTypes2 = hproduct standardDTypes standardDTypes
         almostAllDTypes2 = hproduct (withHalf standardDTypes) (withHalf standardDTypes)
+        mpsDTypes2 = hproduct mpsDTypes mpsDTypes
         identicalShapes = hzip standardShapes standardShapes
         broadcastableShapes = hzip broadcastableShapes0 broadcastableShapes1
 
@@ -152,12 +154,16 @@ spec' device =
                   hfoldrM @IO binaryCmpSpec () (hattach cpu (hproduct standardDTypes2 identicalShapes))
                 Device {deviceType = CUDA, deviceIndex = 0} ->
                   hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hproduct almostAllDTypes2 identicalShapes))
+                Device {deviceType = MPS, deviceIndex = 0} ->
+                  hfoldrM @IO binaryCmpSpec () (hattach mps (hproduct mpsDTypes2 identicalShapes))
             it "works on broadcastable tensors of different shapes" $
               case device of
                 Device {deviceType = CPU, deviceIndex = 0} ->
                   hfoldrM @IO binaryCmpSpec () (hattach cpu (hproduct standardDTypes2 broadcastableShapes))
                 Device {deviceType = CUDA, deviceIndex = 0} ->
                   hfoldrM @IO binaryCmpSpec () (hattach cuda0 (hproduct almostAllDTypes2 broadcastableShapes))
+                Device {deviceType = MPS, deviceIndex = 0} ->
+                  hfoldrM @IO binaryCmpSpec () (hattach mps (hproduct mpsDTypes2 broadcastableShapes))
       describe "greater than" $ dispatch GTSpec
       describe "lower than" $ dispatch LTSpec
       describe "greater or equal than" $ dispatch GESpec
@@ -175,17 +181,27 @@ spec' device =
             hfoldrM @IO ReshapeSpec () (hattach cpu (hproduct allDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO ReshapeSpec () (hattach cuda0 (hproduct allDTypes shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO ReshapeSpec () (hattach mps (hproduct mpsDTypes shapes))
 
       it "toDevice" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
+#ifdef __APPLE__
+          hfoldrM @IO ToDeviceSpec () (hattach cpu (hproduct mpsDTypes standardShapes))
+#else
           hfoldrM @IO ToDeviceSpec () (hattach cpu (hproduct allDTypes standardShapes))
+#endif
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO ToDeviceSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO ToDeviceSpec () (hattach mps (hproduct mpsDTypes standardShapes))
       it "toType" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
           hfoldrM @IO ToTypeSpec () (hattach cpu (hproduct (hproduct allDTypes allDTypes) standardShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO ToTypeSpec () (hattach cuda0 (hproduct (hproduct allDTypes allDTypes) standardShapes))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO ToTypeSpec () (hattach mps (hproduct (hproduct mpsDTypes mpsDTypes) standardShapes))
 
     describe "untyped to typed tensor" $ do
       it "withTensor" $ do

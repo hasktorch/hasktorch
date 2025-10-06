@@ -537,12 +537,16 @@ spec' device =
               hfoldrM @IO unaryAllDTypesSpec () (hattach cpu (hproduct allDTypes standardShapes))
             Device {deviceType = CUDA, deviceIndex = 0} ->
               hfoldrM @IO unaryAllDTypesSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
+            Device {deviceType = MPS, deviceIndex = 0} ->
+              hfoldrM @IO unaryAllDTypesSpec () (hattach mps (hproduct mpsDTypes standardShapes))
 
       it "abs" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
           hfoldrM @IO AbsSpec () (hattach cpu (hproduct standardDTypes standardShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO AbsSpec () (hattach cuda0 (hproduct standardDTypes standardShapes))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO AbsSpec () (hattach mps (hproduct mpsDTypes standardShapes))
       it "sign" $ dispatch SignSpec
       it "onesLike" $ dispatch OnesLikeSpec
       it "zerosLike" $ dispatch ZerosLikeSpec
@@ -554,6 +558,8 @@ spec' device =
               hfoldrM @IO unaryStandardFloatingPointDTypesSpec () (hattach cpu (hproduct standardFloatingPointDTypes standardShapes))
             Device {deviceType = CUDA, deviceIndex = 0} ->
               hfoldrM @IO unaryStandardFloatingPointDTypesSpec () (hattach cuda0 (hproduct allFloatingPointDTypes standardShapes))
+            Device {deviceType = MPS, deviceIndex = 0} ->
+              hfoldrM @IO unaryStandardFloatingPointDTypesSpec () (hattach mps (hproduct mpsFloatingPointDTypes standardShapes))
 
       it "frac" $ dispatch FracSpec
       it "ceil" $ dispatch CeilSpec
@@ -579,11 +585,15 @@ spec' device =
           hfoldrM @IO MishSpec () (hattach cpu (hproduct standardFloatingPointDTypes standardShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO MishSpec () (hattach cuda0 (hproduct allFloatingPointDTypes standardShapes))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO MishSpec () (hattach mps (hproduct mpsFloatingPointDTypes standardShapes))
       it "gelu" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
           hfoldrM @IO GeluSpec () (hattach cpu (hproduct standardFloatingPointDTypes standardShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO GeluSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes standardShapes))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO GeluSpec () (hattach mps (hproduct mpsFloatingPointDTypes standardShapes))
       it "leakyRelu" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
           hfoldrM @IO
@@ -595,6 +605,11 @@ spec' device =
             LeakyReluSpec
             ()
             (hattach cuda0 (hproduct scalarParams (hproduct standardFloatingPointDTypes standardShapes)))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO
+            LeakyReluSpec
+            ()
+            (hattach mps (hproduct scalarParams (hproduct mpsFloatingPointDTypes standardShapes)))
       it "elu" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
           hfoldrM @IO
@@ -606,6 +621,11 @@ spec' device =
             ELUSpec
             ()
             (hattach cuda0 (hproduct (hzip scalarParams (hzip scalarParams scalarParams)) (hproduct standardFloatingPointDTypes standardShapes)))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO
+            ELUSpec
+            ()
+            (hattach mps (hproduct (hzip scalarParams (hzip scalarParams scalarParams)) (hproduct mpsFloatingPointDTypes standardShapes)))
       it "sigmoid" $ dispatch SigmoidSpec
       it "logSigmoid" $ dispatch LogSigmoidSpec
 
@@ -629,6 +649,8 @@ spec' device =
           hfoldrM @IO ToDTypeSpec () (hattach cpu (hproduct (hproduct allDTypes allDTypes) standardShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO ToDTypeSpec () (hattach cuda0 (hproduct (hproduct allDTypes allDTypes) standardShapes))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO ToDTypeSpec () (hattach mps (hproduct (hproduct mpsDTypes mpsDTypes) standardShapes))
 
     describe "aggregation" $ do
       it "sumAll" $ case device of
@@ -636,6 +658,8 @@ spec' device =
           hfoldrM @IO SumAllSpec () (hattach cpu (hproduct almostAllDTypes standardShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO SumAllSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO SumAllSpec () (hattach mps (hproduct mpsDTypes standardShapes))
       it "sumDim" $ do
         let sumDimDims = Proxy @0 :. Proxy @1 :. HNil
             sumDimShapes = Proxy @'[1, 0] :. Proxy @'[2, 3] :. HNil
@@ -644,6 +668,8 @@ spec' device =
             hfoldrM @IO SumDimSpec () (hproduct sumDimDims (hattach cpu (hproduct almostAllDTypes sumDimShapes)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO SumDimSpec () (hproduct sumDimDims (hattach cuda0 (hproduct allDTypes sumDimShapes)))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO SumDimSpec () (hproduct sumDimDims (hattach mps (hproduct mpsDTypes sumDimShapes)))
       do
         let shapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
             dispatch spec = case device of
@@ -651,6 +677,8 @@ spec' device =
                 hfoldrM @IO spec () (hattach cpu (hproduct almostAllDTypes shapes))
               Device {deviceType = CUDA, deviceIndex = 0} ->
                 hfoldrM @IO spec () (hattach cuda0 (hproduct allDTypes shapes))
+              Device {deviceType = MPS, deviceIndex = 0} ->
+                hfoldrM @IO spec () (hattach mps (hproduct mpsDTypes shapes))
         it "min" $ dispatch MinSpec
         it "max" $ dispatch MaxSpec
       it "meanAll" $ do
@@ -660,6 +688,8 @@ spec' device =
             hfoldrM @IO MeanAllSpec () (hattach cpu (hproduct standardFloatingPointDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MeanAllSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MeanAllSpec () (hattach mps (hproduct mpsFloatingPointDTypes shapes))
       it "meanDim" $ do
         let dims = Proxy @0 :. Proxy @1 :. HNil
             shapes = Proxy @'[1, 3] :. Proxy @'[2, 3] :. HNil
@@ -668,6 +698,8 @@ spec' device =
             hfoldrM @IO MeanDimSpec () (hproduct dims (hattach cpu (hproduct standardFloatingPointDTypes shapes)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MeanDimSpec () (hproduct dims (hattach cuda0 (hproduct standardFloatingPointDTypes shapes)))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MeanDimSpec () (hproduct dims (hattach mps (hproduct mpsFloatingPointDTypes shapes)))
       it "mean" $ do
         let dims = Proxy @0 :. Proxy @1 :. HNil
             keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
@@ -677,6 +709,8 @@ spec' device =
             hfoldrM @IO MeanSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu (hproduct standardFloatingPointDTypes shapes)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MeanSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu (hproduct standardFloatingPointDTypes shapes)))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MeanSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu (hproduct mpsFloatingPointDTypes shapes)))
       it "medianAll" $ do
         let shapes = (Proxy :: Proxy ('[] :: [Nat])) :. Proxy @'[1] :. Proxy @'[2, 3] :. HNil
         case device of
@@ -684,6 +718,8 @@ spec' device =
             hfoldrM @IO MedianAllSpec () (hattach cpu (hproduct standardDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MedianAllSpec () (hattach cuda0 (hproduct (withHalf standardDTypes) shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MedianAllSpec () (hattach mps (hproduct (withHalf mpsDTypes) shapes))
       it "medianDim" $ do
         let dims = Proxy @0 :. Proxy @1 :. HNil
             shapes = Proxy @'[1, 17, 1] :. Proxy @'[2, 3] :. HNil
@@ -692,6 +728,8 @@ spec' device =
             hfoldrM @IO MedianDimSpec () (hproduct dims (hattach cpu (hproduct standardDTypes shapes)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MedianDimSpec () (hproduct dims (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MedianDimSpec () (hproduct dims (hattach mps (hproduct (withHalf mpsDTypes) shapes)))
       it "median" $ do
         let dims = Proxy @0 :. Proxy @1 :. HNil
             keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
@@ -701,6 +739,8 @@ spec' device =
             hfoldrM @IO MedianSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu (hproduct standardDTypes shapes)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MedianSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MedianSpec () (hproduct (hproduct dims keepOrDropDims) (hattach mps (hproduct (withHalf mpsDTypes) shapes)))
       it "mode" $ do
         let dims = Proxy @0 :. Proxy @1 :. HNil
             keepOrDropDims = Proxy @KeepDim :. Proxy @DropDim :. HNil
@@ -710,4 +750,4 @@ spec' device =
             hfoldrM @IO ModeSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cpu (hproduct standardDTypes shapes)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO ModeSpec () (hproduct (hproduct dims keepOrDropDims) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
-
+          Device {deviceType = MPS, deviceIndex = 0} -> pure ()

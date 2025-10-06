@@ -293,6 +293,29 @@ $ docker run --gpus all -it --rm -p 8888:8888 htorch/hasktorch-jupyter:latest-cu
 
 ## Known Issues
 
+### MPS (Metal Performance Shaders) Support on macOS
+
+When using Hasktorch on Apple Silicon Macs with MPS device support, you must set the `PYTORCH_ENABLE_MPS_FALLBACK=1` environment variable before running your program:
+
+```sh
+$ export PYTORCH_ENABLE_MPS_FALLBACK=1
+$ cabal test hasktorch   # Run tests with MPS fallback enabled
+```
+
+Or run directly with:
+
+```sh
+$ PYTORCH_ENABLE_MPS_FALLBACK=1 cabal test hasktorch
+```
+
+This is required because some operations (like `erfc`) are not yet natively implemented for the MPS backend in PyTorch and need to fall back to CPU computation. Without this environment variable, you will see errors like:
+
+```
+The operator 'aten::erfc.out' is not currently implemented for the MPS device.
+```
+
+Note: When this environment variable is not set, MPS tests will be automatically skipped to prevent failures.
+
 ### Tensors Cannot Be Moved to CUDA
 
 In rare cases, you may see errors like

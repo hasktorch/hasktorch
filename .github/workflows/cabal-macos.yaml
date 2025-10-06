@@ -72,7 +72,7 @@ jobs:
 
     - name: Tests
       run: |
-        cabal v2-test --jobs=2 all
+        PYTORCH_ENABLE_MPS_FALLBACK=1 cabal v2-test --jobs=2 all
 
     - name: Runs
       run: |

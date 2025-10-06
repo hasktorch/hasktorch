@@ -85,6 +85,7 @@ spec' device =
         broadcastableShapes1 = Proxy @'[2, 1, 1] :. HNil
         standardDTypes2 = hproduct standardDTypes standardDTypes
         almostAllDTypes2 = hproduct (withHalf standardDTypes) (withHalf standardDTypes)
+        mpsDTypes2 = hproduct mpsDTypes mpsDTypes
         identicalShapes = hzip standardShapes standardShapes
         broadcastableShapes = hzip broadcastableShapes0 broadcastableShapes1
 
@@ -96,12 +97,16 @@ spec' device =
                   hfoldrM @IO binarySpec () (hattach cpu (hproduct standardDTypes2 identicalShapes))
                 Device {deviceType = CUDA, deviceIndex = 0} ->
                   hfoldrM @IO binarySpec () (hattach cuda0 (hproduct almostAllDTypes2 identicalShapes))
+                Device {deviceType = MPS, deviceIndex = 0} ->
+                  hfoldrM @IO binarySpec () (hattach mps (hproduct mpsDTypes2 identicalShapes))
             it "works on broadcastable tensors of different shapes" $
               case device of
                 Device {deviceType = CPU, deviceIndex = 0} ->
                   hfoldrM @IO binarySpec () (hattach cpu (hproduct standardDTypes2 broadcastableShapes))
                 Device {deviceType = CUDA, deviceIndex = 0} ->
                   hfoldrM @IO binarySpec () (hattach cuda0 (hproduct almostAllDTypes2 broadcastableShapes))
+                Device {deviceType = MPS, deviceIndex = 0} ->
+                  hfoldrM @IO binarySpec () (hattach mps (hproduct mpsDTypes2 broadcastableShapes))
       describe "addition" $ dispatch AddSpec
       describe "subtraction" $ dispatch SubSpec
       describe "multiplication" $ dispatch MulSpec
@@ -114,6 +119,8 @@ spec' device =
             hfoldrM @IO MatMulSpec () (hattach cpu (hproduct standardDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MatMulSpec () (hattach mps (hproduct mpsFloatingPointDTypes shapes))
       it "returns the matrix-matrix product if both arguments are 2-dimensional" $ do
         let shapes = hzip (Proxy @'[3, 2] :. HNil) (Proxy @'[2, 4] :. HNil)
         case device of
@@ -121,6 +128,8 @@ spec' device =
             hfoldrM @IO MatMulSpec () (hattach cpu (hproduct standardDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MatMulSpec () (hattach mps (hproduct mpsFloatingPointDTypes shapes))
       it "returns the matrix-matrix product if the first argument is 1-dimensional and the second argument is 2-dimensional by temporarily adding a 1 to the dimension of the first argument" $ do
         let shapes = hzip (Proxy @'[3] :. HNil) (Proxy @'[3, 4] :. HNil)
         case device of
@@ -128,6 +137,8 @@ spec' device =
             hfoldrM @IO MatMulSpec () (hattach cpu (hproduct standardDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MatMulSpec () (hattach mps (hproduct mpsFloatingPointDTypes shapes))
       it "returns the matrix-vector product if the first argument is 2-dimensional and the second argument is 1-dimensional" $ do
         let shapes = hzip (Proxy @'[3, 4] :. HNil) (Proxy @'[4] :. HNil)
         case device of
@@ -135,6 +146,8 @@ spec' device =
             hfoldrM @IO MatMulSpec () (hattach cpu (hproduct standardDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MatMulSpec () (hattach mps (hproduct mpsFloatingPointDTypes shapes))
       it "returns a batched matrix-matrix product if both arguments are at least 2-dimensional and the batch (i.e. non-matrix) dimensions are broadcastable" $ do
         let shapes = hzip (Proxy @'[2, 1, 4, 3] :. HNil) (Proxy @'[3, 3, 2] :. HNil)
         case device of
@@ -142,6 +155,8 @@ spec' device =
             hfoldrM @IO MatMulSpec () (hattach cpu (hproduct standardDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MatMulSpec () (hattach mps (hproduct mpsFloatingPointDTypes shapes))
       it "returns a batched matrix-matrix product if the first argument is 1-dimensional and the second argument has more than 2 dimensions" $ do
         let shapes = hzip (Proxy @'[3] :. HNil) (Proxy @'[2, 3, 4] :. HNil)
         case device of
@@ -149,6 +164,8 @@ spec' device =
             hfoldrM @IO MatMulSpec () (hattach cpu (hproduct standardDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MatMulSpec () (hattach mps (hproduct mpsFloatingPointDTypes shapes))
       it "returns a batched matrix-vector product if the first argument has more than 2 dimensions and the second argument is 1-dimensional" $ do
         let shapes = hzip (Proxy @'[2, 3, 4] :. HNil) (Proxy @'[4] :. HNil)
         case device of
@@ -156,6 +173,8 @@ spec' device =
             hfoldrM @IO MatMulSpec () (hattach cpu (hproduct standardDTypes shapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO MatMulSpec () (hattach cuda0 (hproduct allFloatingPointDTypes shapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO MatMulSpec () (hattach mps (hproduct mpsFloatingPointDTypes shapes))
 
 testTensorListFold ::
   forall device dtype shape. Tensor device dtype shape -> IO [Torch.ATenTensor]
