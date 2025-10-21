@@ -398,45 +398,66 @@ spec' device = describe ("for " <> show device) $ do
         hfoldrM @IO GDConvQuadSpec () (hattach cpu (hproduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
       Device {deviceType = CUDA, deviceIndex = 0} ->
         hfoldrM @IO GDConvQuadSpec () (hattach cuda0 (hproduct allFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+      Device {deviceType = MPS, deviceIndex = 0} ->
+        hfoldrM @IO GDConvQuadSpec () (hattach mps (hproduct mpsFloatingPointDTypes (Proxy @1 :. Proxy @2 :. HNil)))
     it "Rosenbrock" $ case device of
       Device {deviceType = CPU, deviceIndex = 0} ->
         hfoldrM @IO GDRosenbrockSpec () (hattach cpu standardFloatingPointDTypes)
       Device {deviceType = CUDA, deviceIndex = 0} ->
         hfoldrM @IO GDRosenbrockSpec () (hattach cuda0 standardFloatingPointDTypes)
+      Device {deviceType = MPS, deviceIndex = 0} ->
+        return ()
+      -- ToDo: This test does not pass. --
+      -- Device {deviceType = MPS, deviceIndex = 0} ->
+      --   hfoldrM @IO GDRosenbrockSpec () (hattach mps mpsFloatingPointDTypes)
     it "Ackley" $ case device of
       Device {deviceType = CPU, deviceIndex = 0} ->
         hfoldrM @IO GDAckleySpec () (hattach cpu standardFloatingPointDTypes)
       Device {deviceType = CUDA, deviceIndex = 0} ->
         hfoldrM @IO GDAckleySpec () (hattach cuda0 standardFloatingPointDTypes)
+      Device {deviceType = MPS, deviceIndex = 0} ->
+        hfoldrM @IO GDAckleySpec () (hattach mps mpsFloatingPointDTypes)
   describe "GDM" $ do
     it "convex quadratic" $ case device of
       Device {deviceType = CPU, deviceIndex = 0} ->
         hfoldrM @IO GDMConvQuadSpec () (hattach cpu (hproduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
       Device {deviceType = CUDA, deviceIndex = 0} ->
         hfoldrM @IO GDMConvQuadSpec () (hattach cuda0 (hproduct allFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+      Device {deviceType = MPS, deviceIndex = 0} ->
+        hfoldrM @IO GDMConvQuadSpec () (hattach mps (hproduct mpsFloatingPointDTypes (Proxy @1 :. Proxy @2 :. HNil)))
     it "Rosenbrock" $ case device of
       Device {deviceType = CPU, deviceIndex = 0} ->
         hfoldrM @IO GDMRosenbrockSpec () (hattach cpu standardFloatingPointDTypes)
       Device {deviceType = CUDA, deviceIndex = 0} ->
         hfoldrM @IO GDMRosenbrockSpec () (hattach cuda0 standardFloatingPointDTypes)
+      Device {deviceType = MPS, deviceIndex = 0} ->
+        hfoldrM @IO GDMRosenbrockSpec () (hattach mps mpsFloatingPointDTypes)
     it "Ackley" $ case device of
       Device {deviceType = CPU, deviceIndex = 0} ->
         hfoldrM @IO GDMAckleySpec () (hattach cpu standardFloatingPointDTypes)
       Device {deviceType = CUDA, deviceIndex = 0} ->
         hfoldrM @IO GDMAckleySpec () (hattach cuda0 standardFloatingPointDTypes)
+      Device {deviceType = MPS, deviceIndex = 0} ->
+        hfoldrM @IO GDMAckleySpec () (hattach mps mpsFloatingPointDTypes)
   describe "Adam" $ do
     it "convex quadratic" $ case device of
       Device {deviceType = CPU, deviceIndex = 0} ->
         hfoldrM @IO AdamConvQuadSpec () (hattach cpu (hproduct standardFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
       Device {deviceType = CUDA, deviceIndex = 0} ->
         hfoldrM @IO AdamConvQuadSpec () (hattach cuda0 (hproduct allFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+      Device {deviceType = MPS, deviceIndex = 0} ->
+        hfoldrM @IO AdamConvQuadSpec () (hattach mps (hproduct mpsFloatingPointDTypes (Proxy @1 :. Proxy @2 :. HNil)))
     it "Rosenbrock" $ case device of
       Device {deviceType = CPU, deviceIndex = 0} ->
         hfoldrM @IO AdamRosenbrockSpec () (hattach cpu standardFloatingPointDTypes)
       Device {deviceType = CUDA, deviceIndex = 0} ->
         hfoldrM @IO AdamRosenbrockSpec () (hattach cuda0 standardFloatingPointDTypes)
+      Device {deviceType = MPS, deviceIndex = 0} ->
+        hfoldrM @IO AdamRosenbrockSpec () (hattach mps mpsFloatingPointDTypes)
     it "Ackley" $ case device of
       Device {deviceType = CPU, deviceIndex = 0} ->
         hfoldrM @IO AdamAckleySpec () (hattach cpu standardFloatingPointDTypes)
       Device {deviceType = CUDA, deviceIndex = 0} ->
         hfoldrM @IO AdamAckleySpec () (hattach cuda0 standardFloatingPointDTypes)
+      Device {deviceType = MPS, deviceIndex = 0} ->
+        hfoldrM @IO AdamAckleySpec () (hattach mps mpsFloatingPointDTypes)

@@ -222,11 +222,15 @@ spec' device =
             hfoldrM @IO NarrowSpec () (hproduct dims (hproduct narrowStarts (hproduct narrowLengths (hattach cpu (hproduct standardFloatingPointDTypes narrowShapes)))))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO NarrowSpec () (hproduct dims (hproduct narrowStarts (hproduct narrowLengths (hattach cuda0 (hproduct allFloatingPointDTypes narrowShapes)))))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO NarrowSpec () (hproduct dims (hproduct narrowStarts (hproduct narrowLengths (hattach mps (hproduct mpsFloatingPointDTypes narrowShapes)))))
       it "squeezeAll" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
           hfoldrM @IO SqueezeAllSpec () (hattach cpu (hproduct allDTypes standardShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO SqueezeAllSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO SqueezeAllSpec () (hattach mps (hproduct mpsDTypes standardShapes))
       it "transpose" $ do
         let dims =
               hzip
@@ -238,11 +242,15 @@ spec' device =
             hfoldrM @IO TransposeSpec () (hproduct dims (hattach cpu (hproduct allDTypes shapes)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO TransposeSpec () (hproduct dims (hattach cuda0 (hproduct allDTypes shapes)))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO TransposeSpec () (hproduct dims (hattach mps (hproduct mpsDTypes shapes)))
       it "transpose2d" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
           hfoldrM @IO Transpose2DSpec () (hattach cpu (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO Transpose2DSpec () (hattach cuda0 (hproduct allDTypes (Proxy @'[2, 3] :. HNil)))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO Transpose2DSpec () (hattach mps (hproduct mpsDTypes (Proxy @'[2, 3] :. HNil)))
       it "diag" $ do
         let vectorShapes = Proxy @'[0] :. Proxy @'[1] :. Proxy @'[2] :. HNil
             emptyShapes = Proxy @'[0, 0] :. Proxy @'[0, 1] :. Proxy @'[1, 0] :. HNil
@@ -258,6 +266,10 @@ spec' device =
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes) (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes) (hattach cuda0 (hproduct (withHalf standardDTypes) vectorShapes)))
             hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach cuda0 (hproduct (withHalf standardDTypes) emptyShapes)))
+          Device {deviceType = MPS, deviceIndex = 0} -> do
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes) (hattach mps (hproduct (withHalf mpsDTypes) standardShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes) (hattach mps (hproduct (withHalf mpsDTypes) vectorShapes)))
+            hfoldrM @IO DiagSpec () (hproduct (hproduct tris indexes') (hattach mps (hproduct (withHalf mpsDTypes) emptyShapes)))
       it "diagEmbed" $ do
         let shapes =
               standardShapes
@@ -279,6 +291,9 @@ spec' device =
           Device {deviceType = CUDA, deviceIndex = 0} -> do
             hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
             hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes allDims) (hattach cuda0 (hproduct (withHalf standardDTypes) standardShapes)))
+          Device {deviceType = MPS, deviceIndex = 0} -> do
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes dims) (hattach mps (hproduct (withHalf mpsDTypes) shapes)))
+            hfoldrM @IO DiagEmbedSpec () (hproduct (hproduct indexes allDims) (hattach mps (hproduct (withHalf mpsDTypes) standardShapes)))
       it "diagflat" $ do
         let shapes =
               standardShapes
@@ -296,6 +311,8 @@ spec' device =
             hfoldrM @IO DiagflatSpec () (hproduct indexes (hattach cpu (hproduct standardDTypes shapes)))
           Device {deviceType = CUDA, deviceIndex = 0} -> do
             hfoldrM @IO DiagflatSpec () (hproduct indexes (hattach cuda0 (hproduct (withHalf standardDTypes) shapes)))
+          Device {deviceType = MPS, deviceIndex = 0} -> do
+            hfoldrM @IO DiagflatSpec () (hproduct indexes (hattach mps (hproduct (withHalf mpsDTypes) shapes)))
       it "diagonal" $ do
         let shapes1 = Proxy @'[2, 5, 4, 2] :. HNil
             shapes2 = Proxy @'[2, 3] :. shapes1
@@ -314,3 +331,7 @@ spec' device =
             hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct indexes dims)) (hattach cuda0 (hproduct (withHalf standardDTypes) allShapes)))
             hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes allDims)) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes1)))
             hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes dims)) (hattach cuda0 (hproduct (withHalf standardDTypes) shapes2)))
+          Device {deviceType = MPS, deviceIndex = 0} -> do
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct indexes dims)) (hattach mps (hproduct (withHalf mpsDTypes) allShapes)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes allDims)) (hattach mps (hproduct (withHalf mpsDTypes) shapes1)))
+            hfoldrM @IO DiagonalSpec () (hproduct (hproduct tris (hproduct allIndexes dims)) (hattach mps (hproduct (withHalf mpsDTypes) shapes2)))

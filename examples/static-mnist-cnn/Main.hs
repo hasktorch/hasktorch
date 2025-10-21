@@ -117,5 +117,6 @@ main = do
   case deviceStr of
     Right "cpu" -> train' @'( 'CPU, 0) dataPath 
     Right "cuda:0" -> train' @'( 'CUDA, 0) dataPath
+    Right "mps" -> train' @'( 'MPS, 0) dataPath
     Right device -> error $ "Unknown device setting: " ++ device
     _ -> train' @'( 'CPU, 0) dataPath 

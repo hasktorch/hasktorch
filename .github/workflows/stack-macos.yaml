@@ -55,7 +55,7 @@ jobs:
       run: |
         stack test --stack-yaml stack-macos.yaml codegen
         stack test --stack-yaml stack-macos.yaml libtorch-ffi
-        stack test --stack-yaml stack-macos.yaml hasktorch
+        PYTORCH_ENABLE_MPS_FALLBACK=1 stack test --stack-yaml stack-macos.yaml hasktorch
         stack exec --stack-yaml stack-macos.yaml codegen-exe
         stack exec --stack-yaml stack-macos.yaml xor-mlp
         stack exec --stack-yaml stack-macos.yaml regression

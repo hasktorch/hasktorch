@@ -68,6 +68,8 @@ spec' device =
                 hfoldrM @IO simpleFactoriesSpec () (hattach cpu (hproduct allDTypes standardShapes))
               Device {deviceType = CUDA, deviceIndex = 0} ->
                 hfoldrM @IO simpleFactoriesSpec () (hattach cuda0 (hproduct allDTypes standardShapes))
+              Device {deviceType = MPS, deviceIndex = 0} ->
+                hfoldrM @IO simpleFactoriesSpec () (hattach mps (hproduct mpsDTypes standardShapes))
       it "ones" $ dispatch ZerosSpec
       it "zeros" $ dispatch OnesSpec
       it "full" $ dispatch FullSpec
@@ -78,6 +80,8 @@ spec' device =
                 hfoldrM @IO randomFactoriesSpec () (hattach cpu (hproduct standardFloatingPointDTypes standardShapes))
               Device {deviceType = CUDA, deviceIndex = 0} ->
                 hfoldrM @IO randomFactoriesSpec () (hattach cuda0 (hproduct allFloatingPointDTypes standardShapes))
+              Device {deviceType = MPS, deviceIndex = 0} ->
+                hfoldrM @IO randomFactoriesSpec () (hattach mps (hproduct mpsFloatingPointDTypes standardShapes))
       it "rand" $ dispatch RandSpec
       it "randn" $ dispatch RandnSpec
     describe "advanced factories" $ do
@@ -88,10 +92,16 @@ spec' device =
         Device {deviceType = CUDA, deviceIndex = 0} -> do
           let t = linspace @3 @'( 'CUDA, 0) (1 :: Int) (3 :: Int)
           checkDynamicTensorAttributes t
+        Device {deviceType = MPS, deviceIndex = 0} -> do
+          let t = linspace @3 @'( 'MPS, 0) (1 :: Int) (3 :: Int)
+          checkDynamicTensorAttributes t
       it "eyeSquare" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} -> do
           let t = eyeSquare @10 @'Float @'( 'CPU, 0)
           checkDynamicTensorAttributes t
         Device {deviceType = CUDA, deviceIndex = 0} -> do
           let t = eyeSquare @10 @'Float @'( 'CUDA, 0)
+          checkDynamicTensorAttributes t
+        Device {deviceType = MPS, deviceIndex = 0} -> do
+          let t = eyeSquare @10 @'Float @'( 'MPS, 0)
           checkDynamicTensorAttributes t
