@@ -73,7 +73,15 @@ $ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
-### linux+cabal+cuda11
+### linux+cabal+cuda
+
+First set the `LIBTORCH_CUDA_VERSION` environment variable to
+the CUDA version you're currently using. E.g
+
+`export LIBTORCH_CUDA_VERSION=cu118` for CUDA 11.8.
+
+If unspecified, Hasktorch defaults to downloading the cpu
+version.
 
 Starting from the top-level directory of the project, run:
 
