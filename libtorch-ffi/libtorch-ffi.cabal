@@ -193,6 +193,9 @@ library
   if !flag(gcc)
     cxx-options:       -std=c++17
     ghc-options:       -optcxx-std=c++17
+ else
+  cxx-options:       -std=c++17
+  ghc-options:       -optcxx-std=c++17
  default-extensions:          Strict
                             , StrictData
  cxx-sources:          csrc/hasktorch_finalizer.cpp
