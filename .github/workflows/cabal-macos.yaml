@@ -44,16 +44,16 @@ jobs:
         cabal v2-build --jobs=2 all --dry-run
       ## The latter leaves a build plan in dist-newstyle/cache/plan.json
 
-    - name: Restore cached dependencies
-      uses: actions/cache/restore@v3
-      id:   cache
-      with:
-        # We don't cache dist-newstyle because it is fat and in practice hardly reused.
-        path: ~/.cabal/store
-        # Append the build plan to the cache key so that a new cache gets saved when dependencies update.
-        # `plan.json` is a good cache key because it does not contain time stamps (unlike `cabal.project.freeze`).
-        key:          ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-plan-${{ hashFiles('**/plan.json') }}
-        restore-keys: ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-
+    # - name: Restore cached dependencies
+    #   uses: actions/cache/restore@v3
+    #   id:   cache
+    #   with:
+    #     # We don't cache dist-newstyle because it is fat and in practice hardly reused.
+    #     path: ~/.cabal/store
+    #     # Append the build plan to the cache key so that a new cache gets saved when dependencies update.
+    #     # `plan.json` is a good cache key because it does not contain time stamps (unlike `cabal.project.freeze`).
+    #     key:          ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-plan-${{ hashFiles('**/plan.json') }}
+    #     restore-keys: ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-
 
     - name: Install dependencies
       run: |
