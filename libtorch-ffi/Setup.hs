@@ -70,7 +70,7 @@ getLibtorchVersion :: IO String
 getLibtorchVersion = do
   mVersion <- lookupEnv "LIBTORCH_VERSION"
   case mVersion of
-    Nothing -> return "2.5.0"
+    Nothing -> return "2.9.0"
     Just other -> return other
 
 getLocalUserLibtorchDir :: IO FilePath
