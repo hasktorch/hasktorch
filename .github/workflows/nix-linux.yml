@@ -16,15 +16,15 @@ jobs:
           name: hasktorch
           signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
       - run: |
-            nix build .#codegen-cpu
-            nix build .#hasktorch-cpu
+            nix build --accept-flake-config .#codegen-cpu
+            nix build --accept-flake-config .#hasktorch-cpu
             # nix build .#hasktorch-gradually-typed-cpu
-            nix build .#libtorch-ffi-cpu
-            nix build .#libtorch-ffi-helper-cpu
-            nix build .#codegen-cuda
-            nix build .#hasktorch-cuda
+            nix build --accept-flake-config .#libtorch-ffi-cpu
+            nix build --accept-flake-config .#libtorch-ffi-helper-cpu
+            nix build --accept-flake-config .#codegen-cuda
+            nix build --accept-flake-config .#hasktorch-cuda
             # nix build .#hasktorch-gradually-typed-cuda
-            nix build .#libtorch-ffi-cuda
-            nix build .#libtorch-ffi-helper-cuda
-            nix build .#devShells.x86_64-linux.cpu
-            nix build .#devShells.x86_64-linux.cuda
+            nix build --accept-flake-config .#libtorch-ffi-cuda
+            nix build --accept-flake-config .#libtorch-ffi-helper-cuda
+            nix build --accept-flake-config .#devShells.x86_64-linux.cpu
+            nix build --accept-flake-config .#devShells.x86_64-linux.cuda
