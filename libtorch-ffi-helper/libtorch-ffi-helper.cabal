@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                libtorch-ffi-helper
-version:             2.0.0.2
+version:             2.0.0.3
 -- The prefix(2.0) of this version("2.0.0.0") is the same as libtorch's one.
 synopsis:            Helpers for integrating libtorch-ffi with Hasktorch.
 description:         Provide macros and plugins for building libtorch-ffi of hasktorch.
@@ -18,6 +18,6 @@ library
  hs-source-dirs: src
  default-language: Haskell2010
  build-depends:       base >= 4.7 && < 5
-                    , ghc >=8.5 && < 9.12
+                    , ghc >=8.5 && < 9.14
  if os(darwin)
    ghc-options: -optc=-Wno-int-conversion

@@ -110,12 +110,12 @@ library
                     , libtorch-ffi >= 2.0.1.10 && < 2.0.2
                     , libtorch-ffi-helper == 2.0.0.*
                     , finite-typelits >= 0.1 && < 0.3
-                    , ghc-typelits-extra >= 0.4.6 && < 0.5
-                    , ghc-typelits-knownnat >= 0.7.9 && < 0.8
-                    , ghc-typelits-natnormalise >= 0.7.9 && < 0.8
+                    , ghc-typelits-extra >= 0.4.6 && < 0.6
+                    , ghc-typelits-knownnat >= 0.7.9 && < 0.9
+                    , ghc-typelits-natnormalise >= 0.7.9 && < 0.10
                     , mtl >= 2.3.1 && < 2.4
                     , safe-exceptions >= 0.1.7 && < 0.2
-                    , random >= 1.2.1 && < 1.3
+                    , random >= 1.2.1 && < 1.4
                     , reflection >= 2.1 && < 2.2
                     , stm >= 2.5.1 && < 2.6
                     , JuicyPixels >= 3.3 && < 3.4
@@ -131,7 +131,7 @@ library
                     , pipes-csv >= 1.4.3 && < 1.5
                     , lens-family-core >= 2.1.3 && < 2.2
                     , cassava >= 0.5.3 && < 0.6
-                    , lifted-async >= 0.10.2 && < 0.11
+                    , lifted-async >= 0.10.2 && < 0.12
                     , monad-control >= 1.0.3 && < 1.1
                     , foldl >= 1.4 && < 1.5
                     , transformers-base >= 0.4.6 && < 0.5
@@ -140,7 +140,7 @@ library
                     , containers >= 0.6.7 && < 0.8
                     , inline-c >= 0.9.1 && < 0.10
                     , vector-sized >= 1.5 && < 1.7
-                    , template-haskell >= 2.20.0 && < 2.23
+                    , template-haskell >= 2.20.0 && < 2.24
                     , megaparsec >= 9.5 && < 9.8
                     , half >= 0.3 && < 0.4
                     , constraints >= 0.14 && < 0.15
