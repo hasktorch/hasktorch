@@ -635,8 +635,8 @@ spec' device =
       it "solve" $ do
         let solveShapes =
               hzip
-                (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
-                (Proxy @'[1, 1] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
+                (Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
+                (Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
         case device of
           Device {deviceType = CPU, deviceIndex = 0} ->
             hfoldrM @IO SolveSpec () (hattach cpu (hproduct standardFloatingPointDTypes solveShapes))
