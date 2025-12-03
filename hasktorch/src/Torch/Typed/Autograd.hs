@@ -9,6 +9,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoStarIsType #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Torch.Typed.Autograd
   ( Torch.Typed.Autograd.HasGrad,
@@ -28,10 +29,13 @@ import qualified Torch.Internal.Managed.Autograd as LibTorch
 import qualified Torch.Tensor as D
 import Torch.Typed.Parameter
 import Torch.Typed.Tensor
+import Torch.Autograd (GradOptions(..))
+
 
 class HasGrad a b | a -> b where
   -- | calculate gradients of a zero-dimensional tensor with respect to a list of parameters
   grad :: forall dtype device. Tensor device dtype '[] -> a -> b
+  gradWithOptions :: forall dtype device. GradOptions -> Tensor device dtype '[] -> a -> b
 
   toDependent :: a -> b
 
@@ -47,6 +51,15 @@ instance HasGrad (Parameter device dtype shape) (Tensor device dtype shape) wher
     head . unsafePerformIO $
       ATen.cast2
         LibTorch.grad
+        loss
+        [Torch.Typed.Autograd.toDependent input]
+  gradWithOptions GradOptions{..} loss input =
+    head . unsafePerformIO $
+      ATen.cast5
+        LibTorch.gradWithOptions
+        keepGraph
+        createGraph
+        accumulateGrad
         loss
         [Torch.Typed.Autograd.toDependent input]
   toDependent = Torch.Typed.Parameter.toDependent
@@ -66,6 +79,15 @@ instance
     unsafePerformIO $
       ATen.cast2
         LibTorch.grad
+        loss
+        (Torch.Typed.Autograd.toDependent inputs)
+  gradWithOptions GradOptions{..} loss inputs =
+    unsafePerformIO $
+      ATen.cast5
+        LibTorch.gradWithOptions
+        keepGraph
+        createGraph
+        accumulateGrad
         loss
         (Torch.Typed.Autograd.toDependent inputs)
   toDependent (a :. as) =
