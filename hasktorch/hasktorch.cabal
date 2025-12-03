@@ -1,6 +1,6 @@
 cabal-version:       3.0
 name:                hasktorch
-version:             0.2.1.7
+version:             0.2.1.8
 synopsis:            Haskell bindings to libtorch, supporting both typed and untyped tensors.
 description:         Hasktorch is a library for tensors and neural networks in Haskell. It is an independent open source community project which leverages the core C++ libraries shared by PyTorch.
 homepage:            https://github.com/hasktorch/hasktorch#readme
