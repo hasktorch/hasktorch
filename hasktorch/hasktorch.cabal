@@ -107,7 +107,7 @@ library
   cpp-options:        -D__APPLE__
  build-depends:       async >= 2.2.5 && < 2.3
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 2.0.1.*
+                    , libtorch-ffi >= 2.0.1.10 && < 2.0.2
                     , libtorch-ffi-helper == 2.0.0.*
                     , finite-typelits >= 0.1 && < 0.3
                     , ghc-typelits-extra >= 0.4.6 && < 0.5
