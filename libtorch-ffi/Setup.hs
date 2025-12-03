@@ -70,7 +70,7 @@ getLibtorchVersion :: IO String
 getLibtorchVersion = do
   mVersion <- lookupEnv "LIBTORCH_VERSION"
   case mVersion of
-    Nothing -> return "2.9.0"
+    Nothing -> return "2.9.1"
     Just other -> return other
 
 getLocalUserLibtorchDir :: IO FilePath
@@ -97,7 +97,7 @@ platformTag =
 
 getCudaFlavor :: IO String
 getCudaFlavor = do
-  fromMaybe "cpu" <$> lookupEnv "LIBTORCH_CUDA_VERSION"  -- "cpu" | "cu117" | "cu118" | "cu121"
+  fromMaybe "cpu" <$> lookupEnv "LIBTORCH_CUDA_VERSION"  -- "cpu" | "cu126" | "cu128" | "cu130"
 
 ensureLibtorch :: IO (Maybe FilePath)
 ensureLibtorch = do
@@ -188,9 +188,9 @@ computeURL = do
                  , "libtorch-macos-x86_64.zip" )
       _       -> error "Unsupported macOS arch"
     Linux -> case flavor of
-      "cpu"  -> ( "https://download.pytorch.org/libtorch/cpu/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2Bcpu.zip"
+      "cpu"  -> ( "https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-" ++ v ++ "%2Bcpu.zip"
                 , "libtorch-linux.zip" )
-      cudaVersion -> ( "https://download.pytorch.org/libtorch/" ++ cudaVersion ++"/libtorch-cxx11-abi-shared-with-deps-" ++ v ++ "%2B" ++ cudaVersion ++ ".zip"
+      cudaVersion -> ( "https://download.pytorch.org/libtorch/" ++ cudaVersion ++"/libtorch-shared-with-deps-" ++ v ++ "%2B" ++ cudaVersion ++ ".zip"
                 , "libtorch-linux-" ++ cudaVersion ++ ".zip" )
     Windows -> error "Windows not supported by this setup"
 
