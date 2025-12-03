@@ -11,7 +11,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
-VERSION=2.5.0
+VERSION=2.9.1
 
 if ! command -v unzip &> /dev/null
 then
