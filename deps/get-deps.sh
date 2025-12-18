@@ -51,7 +51,7 @@ fi
 
 
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu117" or "cu118"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu117" or "cu118" or "cu128" or "cu130"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
     echo "    # Use libtorch-$(VERSION)  w/o -l" 1>&2
     echo "" 1>&2
@@ -59,8 +59,10 @@ usage_exit() {
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
     echo "" 1>&2
     echo " -a cpu   # Use CPU without CUDA" 1>&2
-    echo " -a cu117 # Use CUDA-11.7" 1>&2
-    echo " -a cu118 # Use CUDA-11.8" 1>&2
+    echo " -a cu117 # Use CUDA-11.7 (download might be unavailable)" 1>&2
+    echo " -a cu118 # Use CUDA-11.8 (download might be unavailable)" 1>&2
+    echo " -a cu128 # Use CUDA-12.8" 1>&2
+    echo " -a cu130 # Use CUDA-13.0" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
@@ -112,25 +114,27 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
       ;;
     "Linux")
       if [ "$USE_NIGHTLY" = 1 ] ; then
-        wget https://download.pytorch.org/libtorch/nightly/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-latest.zip
-        unzip libtorch-cxx11-abi-shared-with-deps-latest.zip
-        rm libtorch-cxx11-abi-shared-with-deps-latest.zip
+        wget https://download.pytorch.org/libtorch/nightly/${COMPUTE_ARCH}/libtorch-shared-with-deps-latest.zip
+        unzip libtorch-shared-with-deps-latest.zip
+        rm libtorch-shared-with-deps-latest.zip
       elif [ "$USE_BINARY_FOR_CI" = 1 ] ; then
-        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
-        unzip ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
-        rm ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
+        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
+        unzip ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
+        rm ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
       else
 	case "${COMPUTE_ARCH}" in
-	      "cpu" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcpu.zip ;;
-	      "cu117" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu117.zip ;;
-	      "cu118" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu118.zip ;;
+	      "cpu" )     URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcpu.zip ;;
+	      "cu117" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu117.zip ;;
+	      "cu118" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu118.zip ;;
+        "cu128" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu128.zip;;
+        "cu130" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu130.zip;;
               *)
                   1>&2 printf "Error: invalid value '%s' passed to -a\n\n" "$COMPUTE_ARCH"
                   usage_exit
 	esac
-	wget -O libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip "$URL"
-        unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
-        rm libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
+	wget -O libtorch-shared-with-deps-${VERSION}.zip "$URL"
+        unzip libtorch-shared-with-deps-${VERSION}.zip
+        rm libtorch-shared-with-deps-${VERSION}.zip
       fi
 
       wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip
