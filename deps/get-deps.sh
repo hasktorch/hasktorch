@@ -126,8 +126,8 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
 	      "cpu" )     URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcpu.zip ;;
 	      "cu117" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu117.zip ;;
 	      "cu118" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu118.zip ;;
-        "cu128" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu128.zip;;
-        "cu130" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu130.zip;;
+	      "cu128" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu128.zip;;
+	      "cu130" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu130.zip;;
               *)
                   1>&2 printf "Error: invalid value '%s' passed to -a\n\n" "$COMPUTE_ARCH"
                   usage_exit
