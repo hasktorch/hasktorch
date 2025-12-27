@@ -96,7 +96,7 @@ retryWithGC' count func =
 #ifdef darwin_HOST_OS
     msgOutOfMemory = "MPS backend out of memory"
 #else
-    msgOutOfMemory = "Exception: CUDA out of memory."
+    msgOutOfMemory = "CUDA out of memory."
 #endif
 {-# INLINE retryWithGC' #-}
 
