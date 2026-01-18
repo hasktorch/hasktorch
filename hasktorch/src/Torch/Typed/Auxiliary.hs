@@ -313,6 +313,7 @@ type family DTypeIsFloatingPoint (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
   DTypeIsFloatingPoint _ 'D.Half = ()
   DTypeIsFloatingPoint _ 'D.Float = ()
   DTypeIsFloatingPoint _ 'D.Double = ()
+  DTypeIsFloatingPoint _ 'D.BFloat16 = ()
   DTypeIsFloatingPoint '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 type family DTypeIsIntegral (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where

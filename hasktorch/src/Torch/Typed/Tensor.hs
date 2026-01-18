@@ -93,6 +93,9 @@ instance KnownDType 'D.Int64 where
 instance KnownDType 'D.Half where
   dtypeVal = D.Half
 
+instance KnownDType 'D.BFloat16 where
+  dtypeVal = D.BFloat16
+
 instance KnownDType 'D.Float where
   dtypeVal = D.Float
 
