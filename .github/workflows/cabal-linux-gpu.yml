@@ -1,0 +1,126 @@
+name: cabal-linux-gpu
+
+on: [push, pull_request]
+
+jobs:
+  build-gpu:
+
+    runs-on: ubuntu-latest
+    env:
+      GHC: '9.6.6'
+      # NOTE: PyTorch 2.9.1 with CUDA 13.0 uses older library versions (e.g., libcusparse.so.12).
+      # Setup.hs dynamically detects these versions and downloads the correct PyPI packages
+      # (e.g., nvidia-cusparse-cu12 instead of nvidia-cusparse-cu13).
+      LIBTORCH_CUDA_VERSION: 'cu130'
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Setup packages
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
+        sudo rm -f /etc/apt/sources.list.d/sbt.list
+        sudo apt-get update -qq
+        sudo apt-get -y purge ghc* cabal-install* php* || true
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev devscripts debhelper python3-pip cmake curl wget unzip git libtinfo6 libncurses-dev python3 python3-yaml
+
+    - name: Setup Haskell
+      run: |
+        echo "$HOME/.ghcup/bin" >> "${GITHUB_PATH}"
+        ghcup install ghc --set ${{ env.GHC }}
+        mkdir -p ~/.cabal
+      # The presence of ~/.cabal should switch cabal 3.10 to not use the XDG layout.
+
+      ## GHCup is preinstalled on the GHA runners. This would be the magic incantation to install it:
+      # curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+      ## Cabal is preinstalled on the GHA runners
+      # ghcup install cabal
+
+    - name: Information about the Haskell setup
+      run: |
+        echo "PATH = ${PATH}"
+        echo "GHC is $(which ghc)"
+        echo "Cabal is $(which cabal)"
+        echo "GHC_VERSION=$(ghc --numeric-version)"     >> "${GITHUB_ENV}"
+        echo "CABAL_VERSION=$(cabal --numeric-version)" >> "${GITHUB_ENV}"
+
+    - name: Generate install-plan
+      run: |
+        ./setup-cabal.sh
+        cabal v2-update
+        cabal v2-build --jobs=2 all --dry-run
+      ## The latter leaves a build plan in dist-newstyle/cache/plan.json
+
+    - name: Restore cached dependencies
+      uses: actions/cache/restore@v4
+      id:   cache
+      with:
+        # We don't cache dist-newstyle because it is fat and in practice hardly reused.
+        path: ~/.cabal/store
+        # Append the build plan to the cache key so that a new cache gets saved when dependencies update.
+        # `plan.json` is a good cache key because it does not contain time stamps (unlike `cabal.project.freeze`).
+        key:          ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-plan-${{ hashFiles('**/plan.json') }}
+        restore-keys: ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-
+
+    - name: Install dependencies
+      run: |
+        cabal v2-build --jobs=2 all --only-dependencies
+
+    - name: Cache dependencies
+      if:   ${{ steps.cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cabal/store
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+
+    - name: Verify NVIDIA wheel URLs are available
+      run: |
+        # This verification script checks if cu130 packages exist.
+        # They don't, but Setup.hs will dynamically detect and download the correct versions.
+        python3 scripts/verify-nvidia-wheels.py ${{ env.LIBTORCH_CUDA_VERSION }} || \
+          echo "INFO: nvidia-*-cu13 packages not available (Setup.hs will auto-detect correct versions)"
+
+    - name: Build (with CUDA library download)
+      run: |
+        cabal v2-build --jobs=2 all
+
+    - name: Verify libtorch installation
+      run: |
+        LIBTORCH_DIR="${HOME}/.cache/libtorch/2.9.1/linux-x86_64/cu130"
+        echo "Checking libtorch installation in: ${LIBTORCH_DIR}"
+
+        if [ ! -d "${LIBTORCH_DIR}" ]; then
+          echo "✗ Error: libtorch directory not found at ${LIBTORCH_DIR}"
+          exit 1
+        fi
+
+        echo "✓ libtorch installed successfully"
+        echo ""
+        echo "Checking for NVIDIA libraries in lib directory:"
+        if [ -d "${LIBTORCH_DIR}/lib" ]; then
+          echo "NVIDIA libraries found:"
+          ls -lh "${LIBTORCH_DIR}/lib" | grep -E '(cublas|cusparse|cufft|curand)' || echo "  (none - may be bundled with libtorch)"
+        fi
+
+    - name: Tests
+      run: |
+        cabal v2-test --jobs=2 all
+
+    - name: Runs
+      run: |
+        cabal v2-exec codegen-exe
+        cabal v2-exec xor-mlp
+
+    # - name: Benchmark
+    #   run: |
+    #     cabal v2-bench hasktorch:runtime --benchmark-options='--output benchmark-runtime.html'
+    #     cabal v2-bench hasktorch:alloc   --benchmark-options='--output benchmark-alloc.html'
+
+    # - name: Archive benchmark results
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: benchmark-report
+    #     path: hasktorch/benchmark*.html
