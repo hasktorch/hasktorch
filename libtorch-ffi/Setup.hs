@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-import Data.List (isPrefixOf, isInfixOf)
+import Data.Char (toLower)
+import Data.List (isPrefixOf, isInfixOf, nubBy)
 import Distribution.Simple
 import Distribution.Simple.Program
 import Distribution.Simple.Setup
@@ -141,11 +142,13 @@ downloadLibtorch = do
         else do
           putStrLn $ "libtorch not found in local cache, installing to " <> dest
           downloadAndExtractLibtorchTo dest
-          
+
           -- Download NVIDIA libs if on Linux + CUDA
           flavor <- getCudaFlavor
           when (buildOS == Linux && "cu" `isPrefixOf` flavor) $ do
-             downloadNvidiaLibs dest flavor
+             -- Dynamically detect which NVIDIA library versions are needed
+             -- and extract them to dest/lib (same directory as libtorch_cuda.so)
+             downloadNvidiaLibs dest
 
           -- Create an idempotence marker
           writeFile marker ""
@@ -174,29 +177,194 @@ downloadAndExtractLibtorchTo dest = do
     putStrLn "libtorch extracted successfully (global cache)."
 
 -- | Downloads necessary NVIDIA wheels from PyPI and extracts libs to dest/lib
-downloadNvidiaLibs :: FilePath -> String -> IO ()
-downloadNvidiaLibs dest flavor = do
-  putStrLn $ "Detected CUDA flavor: " ++ flavor ++ ". Checking for missing NVIDIA libraries..."
-  
-  -- Map libtorch flavor (e.g., cu121) to pypi package suffix (e.g., cu12)
-  let pypiSuffix = if "cu12" `isPrefixOf` flavor then "cu12"
-                   else if "cu11" `isPrefixOf` flavor then "cu11"
-                   else "cu12" -- default fallback
+-- Dynamically detects which library versions are needed by inspecting libtorch
+-- Uses iterative detection to find transitive dependencies
+downloadNvidiaLibs :: FilePath -> IO ()
+downloadNvidiaLibs dest = do
+  let libDir = dest </> "lib"
 
-  -- List of packages to fetch. nvjitlink is often a dep for others.
-  let packages = [ "nvidia-cusparse-" ++ pypiSuffix
-                 , "nvidia-cufft-" ++ pypiSuffix
-                 , "nvidia-curand-" ++ pypiSuffix
-                 -- , "nvidia-cublas-" ++ pypiSuffix
-                 -- , "nvidia-nvjitlink-" ++ pypiSuffix 
-                 ]
+  -- Pass 1: Detect and download direct dependencies from libtorch
+  putStrLn "Pass 1: Detecting NVIDIA library dependencies from libtorch..."
+  neededLibs <- detectNeededNvidiaLibs libDir
 
+  if null neededLibs
+    then putStrLn "No missing NVIDIA libraries detected (all bundled with libtorch)."
+    else do
+      putStrLn $ "Found " ++ show (length neededLibs) ++ " NVIDIA libraries to download:"
+      forM_ neededLibs $ \(lib, ver) ->
+        putStrLn $ "  - " ++ lib ++ " (version " ++ ver ++ ")"
+      downloadAndExtractPackages dest neededLibs
+
+      -- Pass 2: Check downloaded libraries for transitive dependencies
+      putStrLn "\nPass 2: Checking downloaded libraries for transitive dependencies..."
+      transitiveLibs <- detectNeededNvidiaLibs libDir
+
+      if null transitiveLibs
+        then putStrLn "No additional transitive dependencies found."
+        else do
+          putStrLn $ "Found " ++ show (length transitiveLibs) ++ " additional libraries to download:"
+          forM_ transitiveLibs $ \(lib, ver) ->
+            putStrLn $ "  - " ++ lib ++ " (version " ++ ver ++ ")"
+          downloadAndExtractPackages dest transitiveLibs
+
+-- | Detect which NVIDIA libraries are needed by inspecting libtorch's dependencies
+-- Returns list of (library name, major version) tuples, e.g., [("cusparse", "12"), ("cufft", "11")]
+detectNeededNvidiaLibs :: FilePath -> IO [(String, String)]
+detectNeededNvidiaLibs libDir = do
+  putStrLn $ "  Inspecting libraries in: " ++ libDir
+
+  -- Libraries we care about (including transitive dependencies)
+  let targetLibs = ["cusparse", "cufft", "curand", "cublas", "cusolver", "nvjitlink"]
+
+  -- Check libtorch libraries first
+  let libtorchFiles = ["libtorch_cuda.so", "libtorch.so"]
+
+  -- Also check any NVIDIA libraries that were already downloaded (for transitive deps)
+  libDirContents <- listDirectory libDir
+  let nvidiaLibs = filter (\f -> any (\target -> ("lib" ++ target) `isPrefixOf` f && ".so" `isInfixOf` f) targetLibs) libDirContents
+
+  let soFiles = libtorchFiles ++ nvidiaLibs
+
+  needed <- forM soFiles $ \soFile -> do
+    let fullPath = libDir </> soFile
+    exists <- doesFileExist fullPath
+    if not exists
+      then do
+        putStrLn $ "  Skipping " ++ soFile ++ " (not found)"
+        return []
+      else do
+        putStrLn $ "  Analyzing dependencies of " ++ soFile ++ "..."
+        deps <- extractNvidiaDeps fullPath targetLibs
+        forM_ deps $ \(lib, ver) ->
+          putStrLn $ "    Found dependency: lib" ++ lib ++ ".so." ++ ver
+        return deps
+
+  -- Flatten results and remove duplicates
+  let allNeeded = concat needed
+      uniqueNeeded = nubBy (\(a,_) (b,_) -> a == b) allNeeded
+
+  putStrLn $ "  Total unique NVIDIA dependencies found: " ++ show (length uniqueNeeded)
+
+  -- Filter out libraries that are already bundled
+  filterM (notBundled libDir) uniqueNeeded
+
+-- | Check if a library is already bundled in libtorch
+notBundled :: FilePath -> (String, String) -> IO Bool
+notBundled libDir (libName, _ver) = do
+  files <- listDirectory libDir
+  -- Match exactly "libNAME.so" or "libNAME-*.so" to avoid false matches
+  -- (e.g., "libcusparse" should not match "libcusparseLt")
+  let pattern = "lib" ++ libName
+  let bundled = any (\f ->
+        (f == pattern ++ ".so" ||
+         (pattern ++ ".so.") `isPrefixOf` f ||
+         (pattern ++ "-") `isPrefixOf` f && ".so" `isInfixOf` f)) files
+  return (not bundled)
+
+-- | Extract NVIDIA library dependencies using readelf
+extractNvidiaDeps :: FilePath -> [String] -> IO [(String, String)]
+extractNvidiaDeps soFile targetLibs = do
+  -- Try readelf first
+  result <- tryReadelf soFile
+  case result of
+    Just output -> return $ parseNvidiaDeps output targetLibs
+    Nothing -> do
+      -- Fallback: try objdump
+      result2 <- tryObjdump soFile
+      case result2 of
+        Just output -> return $ parseNvidiaDeps output targetLibs
+        Nothing -> return []
+
+tryReadelf :: FilePath -> IO (Maybe String)
+tryReadelf soFile = do
+  result <- try $ readProcess "readelf" ["-d", soFile] ""
+  case result of
+    Right output -> return (Just output)
+    Left (_ :: IOException) -> return Nothing
+
+tryObjdump :: FilePath -> IO (Maybe String)
+tryObjdump soFile = do
+  result <- try $ readProcess "objdump" ["-p", soFile] ""
+  case result of
+    Right output -> return (Just output)
+    Left (_ :: IOException) -> return Nothing
+
+-- | Parse readelf/objdump output to extract NVIDIA library dependencies
+-- Example: "libcusparse.so.12" -> ("cusparse", "12")
+-- Case-insensitive matching to handle libraries like "libnvJitLink" vs "libnvjitlink"
+parseNvidiaDeps :: String -> [String] -> [(String, String)]
+parseNvidiaDeps output targetLibs =
+  [ (lib, ver)
+  | line <- lines output
+  , lib <- targetLibs
+  , let pattern = "lib" ++ lib ++ ".so."
+  , let lineLower = map toLower line
+  , let patternLower = map toLower pattern
+  , patternLower `isInfixOf` lineLower
+  , let ver = extractVersion line lib
+  , not (null ver)
+  ]
+
+extractVersion :: String -> String -> String
+extractVersion line libName =
+  case findSubstring pattern line of
+    Just idx ->
+      let afterPattern = drop (idx + length pattern) line
+      in takeWhile isDigit afterPattern
+    Nothing -> ""
+  where
+    pattern = "lib" ++ libName ++ ".so."
+    isDigit c = c >= '0' && c <= '9'
+
+    -- Case-insensitive substring search
+    findSubstring :: String -> String -> Maybe Int
+    findSubstring needle haystack = go 0 haystack
+      where
+        needleLower = map toLower needle
+        go _ [] = Nothing
+        go idx str
+          | length str >= length needle &&
+            map toLower (take (length needle) str) == needleLower = Just idx
+          | otherwise = go (idx + 1) (tail str)
+
+downloadAndExtractPackages :: FilePath -> [(String, String)] -> IO ()
+downloadAndExtractPackages dest neededLibs =
   withSystemTempDirectory "nvidia-libs-download" $ \tmpDir -> do
-    forM_ packages $ \pkg -> do
-      putStrLn $ "Fetching metadata for " ++ pkg ++ "..."
-      mUrl <- getPyPiWheelUrl pkg
-      case mUrl of
-        Nothing -> putStrLn $ "Warning: Could not find manylinux wheel for " ++ pkg
+    forM_ neededLibs $ \(libName, majorVer) -> do
+      -- Special case: nvidia-cufft-cu12 provides .so.11, but we need .so.12
+      -- In this case, use the generic nvidia-cufft package which has 12.x
+      let useGenericFirst = (libName == "cufft" && majorVer == "12")
+
+      -- Map major version to PyPI suffix (12 -> cu12, 11 -> cu11, etc.)
+      let pypiSuffix = "cu" ++ majorVer
+      let pkgWithSuffix = "nvidia-" ++ libName ++ "-" ++ pypiSuffix
+      let pkgGeneric = "nvidia-" ++ libName
+
+      -- Try generic first for known mismatches, otherwise try CUDA-specific first
+      (finalPkg, finalUrl) <- if useGenericFirst
+        then do
+          putStrLn $ "Fetching metadata for " ++ pkgGeneric ++ " (known version mismatch)..."
+          mUrl <- getPyPiWheelUrl pkgGeneric
+          case mUrl of
+            Just url -> return (pkgGeneric, Just url)
+            Nothing -> do
+              putStrLn $ "  Not found, trying: " ++ pkgWithSuffix ++ "..."
+              url <- getPyPiWheelUrl pkgWithSuffix
+              return (pkgWithSuffix, url)
+        else do
+          putStrLn $ "Fetching metadata for " ++ pkgWithSuffix ++ "..."
+          mUrl <- getPyPiWheelUrl pkgWithSuffix
+          -- Fallback to generic package name if versioned one not found
+          -- (e.g., nvidia-curand instead of nvidia-curand-cu10)
+          case mUrl of
+            Just url -> return (pkgWithSuffix, Just url)
+            Nothing -> do
+              putStrLn $ "  Not found, trying fallback: " ++ pkgGeneric ++ "..."
+              url <- getPyPiWheelUrl pkgGeneric
+              return (pkgGeneric, url)
+
+      case finalUrl of
+        Nothing -> putStrLn $ "Warning: Could not find manylinux wheel for " ++ finalPkg
         Just url -> do
           let fileName = takeFileName url
           let downloadPath = tmpDir </> fileName
@@ -222,11 +390,17 @@ downloadNvidiaLibs dest flavor = do
             when (isSharedObj && isLibDir) $ do
               let entryFileName = takeFileName path
               let targetPath = libDest </> entryFileName
+              putStrLn $ "  Extracting: " ++ entryFileName ++ " -> " ++ targetPath
               -- Write the file
               let entryData = fromEntry entry
               LBS.writeFile targetPath entryData
-              -- set executable permission (important for shared libs)
-              setPermissions targetPath (setOwnerExecutable True emptyPermissions)
+              -- Set readable and executable permissions for shared libraries
+              -- Using only owner permissions (older directory library compatibility)
+              let perms = foldl (flip ($)) emptyPermissions
+                          [ setOwnerReadable True
+                          , setOwnerExecutable True
+                          ]
+              setPermissions targetPath perms
 
 -- | Quick and dirty PyPI JSON parser to find manylinux x86_64 url
 -- Avoids adding Aeson dependency to Setup.hs
@@ -290,5 +464,7 @@ addLdClassicFlag progDb =
 addRPath :: FilePath -> ProgramDb -> ProgramDb
 addRPath libDir progDb =
   userSpecifyArgs (programName ldProgram)
-  ["-Wl,-rpath," ++ libDir]
+  [ "-Wl,-rpath," ++ libDir          -- for runtime library search
+  , "-Wl,-rpath-link," ++ libDir     -- for link-time library search (needed for transitive deps)
+  ]
   progDb
