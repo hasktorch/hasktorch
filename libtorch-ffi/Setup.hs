@@ -465,6 +465,5 @@ addRPath :: FilePath -> ProgramDb -> ProgramDb
 addRPath libDir progDb =
   userSpecifyArgs (programName ldProgram)
   [ "-Wl,-rpath," ++ libDir          -- for runtime library search
-  , "-Wl,-rpath-link," ++ libDir     -- for link-time library search (needed for transitive deps)
   ]
   progDb
