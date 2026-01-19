@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, isInfixOf)
 import Distribution.Simple
 import Distribution.Simple.Program
 import Distribution.Simple.Setup
@@ -17,8 +19,9 @@ import System.IO.Temp
 import Control.Monad
 import Network.HTTP.Simple
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Lazy.Char8 as LBSC
 import System.Environment (lookupEnv)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, listToMaybe)
 import GHC.IO.Exception
 import Control.Exception
 import Codec.Archive.Zip
@@ -39,7 +42,7 @@ main = defaultMainWithHooks $ simpleUserHooks
       mlibtorchDir <- ensureLibtorch
       case mlibtorchDir of
         Nothing -> do
-          putStrLn "libtorch not found, skipping configuration."
+          putStrLn "libtorch not found or handled by Nix, skipping configuration."
           lbi <- confHook simpleUserHooks (gpd, hbi) flags
           -- For macOS, add the -ld_classic flag to the linker
           case buildOS of
@@ -59,7 +62,8 @@ main = defaultMainWithHooks $ simpleUserHooks
                 }
           -- Call the default configuration hook with updated flags
           lbi <- confHook simpleUserHooks (gpd, hbi) updatedFlags
-          -- For macOS, add the -ld_classic flag to the linker
+          
+          -- Add RPath so the binary finds the libs at runtime
           case buildOS of
             OSX -> return $ lbi { withPrograms = addRPath libDir $ addLdClassicFlag (withPrograms lbi) }
             Linux -> return $ lbi { withPrograms = addRPath libDir (withPrograms lbi) }
@@ -97,7 +101,7 @@ platformTag =
 
 getCudaFlavor :: IO String
 getCudaFlavor = do
-  fromMaybe "cpu" <$> lookupEnv "LIBTORCH_CUDA_VERSION"  -- "cpu" | "cu126" | "cu128" | "cu130"
+  fromMaybe "cpu" <$> lookupEnv "LIBTORCH_CUDA_VERSION"  -- "cpu" | "cu121" | "cu118"
 
 ensureLibtorch :: IO (Maybe FilePath)
 ensureLibtorch = do
@@ -137,10 +141,13 @@ downloadLibtorch = do
         else do
           putStrLn $ "libtorch not found in local cache, installing to " <> dest
           downloadAndExtractLibtorchTo dest
-          -- Create an idempotence marker that checks
-          -- if we've already downloaded torch.
-          -- Since we'll be moving everything this will
-          -- be the our main reference.
+          
+          -- Download NVIDIA libs if on Linux + CUDA
+          flavor <- getCudaFlavor
+          when (buildOS == Linux && "cu" `isPrefixOf` flavor) $ do
+             downloadNvidiaLibs dest flavor
+
+          -- Create an idempotence marker
           writeFile marker ""
           pure $ Just dest
 
@@ -160,10 +167,87 @@ downloadAndExtractLibtorchTo dest = do
     let unpacked = tmpDir </> "libtorch"
     exists <- doesDirectoryExist unpacked
     let src = if exists then unpacked else tmpDir
+    
     -- We want to move the directory since this operation is atomic.
     -- If that doesn't work we fall back to copying.
     (renameDirectory src dest) `catch` (\(_::IOException) -> copyTree src dest)
     putStrLn "libtorch extracted successfully (global cache)."
+
+-- | Downloads necessary NVIDIA wheels from PyPI and extracts libs to dest/lib
+downloadNvidiaLibs :: FilePath -> String -> IO ()
+downloadNvidiaLibs dest flavor = do
+  putStrLn $ "Detected CUDA flavor: " ++ flavor ++ ". Checking for missing NVIDIA libraries..."
+  
+  -- Map libtorch flavor (e.g., cu121) to pypi package suffix (e.g., cu12)
+  let pypiSuffix = if "cu12" `isPrefixOf` flavor then "cu12"
+                   else if "cu11" `isPrefixOf` flavor then "cu11"
+                   else "cu12" -- default fallback
+
+  -- List of packages to fetch. nvjitlink is often a dep for others.
+  let packages = [ "nvidia-cusparse-" ++ pypiSuffix
+                 , "nvidia-cufft-" ++ pypiSuffix
+                 , "nvidia-curand-" ++ pypiSuffix
+                 -- , "nvidia-cublas-" ++ pypiSuffix
+                 -- , "nvidia-nvjitlink-" ++ pypiSuffix 
+                 ]
+
+  withSystemTempDirectory "nvidia-libs-download" $ \tmpDir -> do
+    forM_ packages $ \pkg -> do
+      putStrLn $ "Fetching metadata for " ++ pkg ++ "..."
+      mUrl <- getPyPiWheelUrl pkg
+      case mUrl of
+        Nothing -> putStrLn $ "Warning: Could not find manylinux wheel for " ++ pkg
+        Just url -> do
+          let fileName = takeFileName url
+          let downloadPath = tmpDir </> fileName
+          putStrLn $ "Downloading " ++ fileName ++ "..."
+          
+          request  <- parseRequest url
+          response <- httpLBS request
+          LBS.writeFile downloadPath (getResponseBody response)
+          
+          putStrLn $ "Extracting libraries from " ++ fileName ++ "..."
+          archive <- toArchive <$> LBS.readFile downloadPath
+          
+          -- Iterate over entries and extract only .so files to dest/lib
+          let libDest = dest </> "lib"
+          createDirectoryIfMissing True libDest
+          
+          forM_ (zEntries archive) $ \entry -> do
+            let path = eRelativePath entry
+                isSharedObj = ".so" `isInfixOf` path
+                -- Wheels put libs in nvidia/<pkg>/lib/ or lib/
+                isLibDir = "lib/" `isInfixOf` path 
+            
+            when (isSharedObj && isLibDir) $ do
+              let entryFileName = takeFileName path
+              let targetPath = libDest </> entryFileName
+              -- Write the file
+              let entryData = fromEntry entry
+              LBS.writeFile targetPath entryData
+              -- set executable permission (important for shared libs)
+              setPermissions targetPath (setOwnerExecutable True emptyPermissions)
+
+-- | Quick and dirty PyPI JSON parser to find manylinux x86_64 url
+-- Avoids adding Aeson dependency to Setup.hs
+getPyPiWheelUrl :: String -> IO (Maybe String)
+getPyPiWheelUrl pkg = do
+  let jsonUrl = "https://pypi.org/pypi/" ++ pkg ++ "/json"
+  request <- parseRequest jsonUrl
+  response <- httpLBS request
+  let body = getResponseBody response
+  
+  -- We look for the "url" field inside an object that also has "manylinux" and "x86_64" in the filename
+  -- This is a heuristic search on the raw JSON string
+  let urls = extractUrls body
+  return $ listToMaybe [ u | u <- urls, "manylinux" `isInfixOf` u, "x86_64" `isInfixOf` u ]
+
+-- | Helper to extract all strings that look like URLs from JSON
+extractUrls :: LBS.ByteString -> [String]
+extractUrls content = 
+  let parts = LBSC.split '"' content
+      -- Filter for https URLs
+  in [ LBSC.unpack p | p <- parts, "https://" `LBSC.isPrefixOf` p, ".whl" `LBSC.isSuffixOf` p ]
 
 copyTree :: FilePath -> FilePath -> IO ()
 copyTree src dest = do
