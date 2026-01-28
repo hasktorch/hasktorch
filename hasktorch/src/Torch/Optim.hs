@@ -163,6 +163,74 @@ instance Optimizer Adam where
   step = adam
 
 --
+-- AdamW
+--
+
+-- | State representation for AdamW Optimizer
+data AdamW = AdamW
+  { beta1W :: Float, -- 1st moment forgetting factor
+    beta2W :: Float, -- 2nd moment forgetting factor
+    m1W :: [Tensor], -- 1st moment
+    m2W :: [Tensor], -- 2nd moment
+    iterW :: Int, -- iteration
+    weightDecayW :: Float -- weight decay
+  }
+  deriving (Show, Generic)
+
+instance NFData AdamW
+
+mkAdamW ::
+  Int ->
+  Float ->
+  Float ->
+  Float ->
+  [Parameter] ->
+  AdamW
+mkAdamW iter beta1 beta2 weightDecay parameters =
+  AdamW
+    beta1
+    beta2
+    (initZeros <$> parameters)
+    (initZeros <$> parameters)
+    iter
+    weightDecay
+  where
+    initZeros = zerosLike . toDependent
+
+-- | AdamW step
+adamw ::
+  -- | learning rate
+  LearningRate ->
+  -- | model parameter gradients
+  Gradients ->
+  -- | model parameters
+  [Tensor] ->
+  -- | adamw parameters
+  AdamW ->
+  -- | returns new parameters + updated adamw parameters
+  ([Tensor], AdamW)
+adamw lr (Gradients gradients) parameters AdamW {..} =
+    (parameters', AdamW beta1W beta2W m1' m2' (iterW + 1) weightDecayW)
+  where
+    -- decaying averages of 1st & 2nd moments
+    f1 m1 dp = mulScalar beta1W m1 + mulScalar (1 - beta1W) dp
+    f2 m2 dp = mulScalar beta2W m2 + mulScalar (1 - beta2W) (dp * dp)
+    -- force to prevent spine laziness. See https://github.com/hasktorch/hasktorch/pull/728
+    m1' = force $ zipWith f1 m1W gradients
+    m2' = force $ zipWith f2 m2W gradients
+    -- bias adjustment
+    a beta = divScalar (1 - beta ^ (iterW + 1))
+    a1 = fmap (a beta1W) m1'
+    a2 = fmap (a beta2W) m2'
+    -- parameter update
+    eps = 1e-8
+    update prevParam a1' a2' = prevParam - lr * (a1' / (sqrt a2' + eps) + mulScalar weightDecayW prevParam)
+    parameters' = zipWith3 update parameters a1 a2
+
+instance Optimizer AdamW where
+  step = adamw
+
+--
 -- Adagrad
 --
 
