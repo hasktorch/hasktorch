@@ -332,6 +332,58 @@ _toDevice device' t = unsafePerformIO $ do
           <> show di'
           <> "\""
 
+-- | Non-blocking variant of _toDevice for async H2D transfers.
+-- IMPORTANT: Caller must synchronize before using the tensor (e.g., via
+-- cudaStreamSynchronize or a synchronizing CUDA operation).
+_toDeviceNonBlocking ::
+  -- | device to cast input to
+  Device ->
+  -- | input
+  Tensor ->
+  -- | output (may still be transferring)
+  Tensor
+_toDeviceNonBlocking device' t = unsafePerformIO $ do
+  hasDevice <- case deviceType device' of
+    CPU -> pure True
+    CUDA -> cast0 ATen.hasCUDA
+    MPS -> cast0 ATen.hasMPS
+  let device = Torch.Tensor.device t
+  toDevice'
+    (deviceType device)
+    (deviceType device')
+    (deviceIndex device)
+    (deviceIndex device')
+    hasDevice
+  where
+    toDevice' dt dt' di di' _ | dt == dt' && di == di' = pure t
+    toDevice' CUDA CUDA di di' True | di /= di' = getOpts t >>= withDeviceIndex di' >>= toNonBlocking t
+    toDevice' CPU CUDA 0 di' True | di' >= 0 = getOpts t >>= withDeviceIndex di' >>= toNonBlocking t
+    toDevice' CUDA CPU di 0 True | di >= 0 = getOpts t >>= withDeviceType CPU >>= toNonBlocking t
+    toDevice' CPU MPS 0 0 True = getOpts t >>= withDeviceType MPS >>= toNonBlocking t
+    toDevice' MPS CPU 0 0 True = getOpts t >>= withDeviceType CPU >>= toNonBlocking t
+    toDevice' dt dt' di di' _ =
+      error $
+        "cannot move tensor from \""
+          <> show dt
+          <> ":"
+          <> show di
+          <> "\" to \""
+          <> show dt'
+          <> ":"
+          <> show di'
+          <> "\""
+    getOpts :: Tensor -> IO TensorOptions
+    getOpts = cast1 ATen.tensor_options
+    withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
+    withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
+    withDeviceIndex :: Int16 -> TensorOptions -> IO TensorOptions
+    withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di
+    toNonBlocking :: Tensor -> TensorOptions -> IO Tensor
+    toNonBlocking t opts = cast4 ATen.tensor_to_obb t opts nonBlocking copy
+      where
+        nonBlocking = True
+        copy = False
+
 toDeviceWithTensor :: Tensor -> Tensor -> Tensor
 toDeviceWithTensor reference input = unsafePerformIO $ cast2 ATen.tensor_to_device reference input
 
