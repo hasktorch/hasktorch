@@ -7,7 +7,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      GHC: '9.6.6'
+      GHC: '9.8.4'
     steps:
 
     - uses: actions/checkout@v4

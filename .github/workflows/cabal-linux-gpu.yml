@@ -7,7 +7,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      GHC: '9.6.6'
+      GHC: '9.8.4'
       # NOTE: PyTorch 2.9.1 with CUDA 13.0 uses older library versions (e.g., libcusparse.so.12).
       # Setup.hs dynamically detects these versions and downloads the correct PyPI packages
       # (e.g., nvidia-cusparse-cu12 instead of nvidia-cusparse-cu13).

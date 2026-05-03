@@ -6,7 +6,7 @@ jobs:
   build:
     runs-on: macOS-latest
     env:
-      GHC: '9.6.6'
+      GHC: '9.8.4'
     steps:
 
     - uses: actions/checkout@v4
@@ -15,7 +15,7 @@ jobs:
 
     - uses: haskell-actions/setup@v2.7.10
       with:
-        ghc-version: '9.6.6'
+        ghc-version: '9.8.4'
         cabal-version: '3.10.2.1'
 
     - name: Setup packages
