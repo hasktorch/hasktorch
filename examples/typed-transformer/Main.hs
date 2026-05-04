@@ -21,11 +21,13 @@ module Main where
 
 import Control.Concurrent.Async
 import qualified Control.Foldl as L
+import Control.Monad (unless)
 import Control.Monad.Base (MonadBase, liftBase)
 import Control.Monad.Cont (ContT (runContT))
 import Control.Monad.Trans.Control (MonadBaseControl (..), control)
 import Data.Constraint
 import Data.Kind
+import Data.Char (isSpace)
 import qualified Data.List as List
 import qualified Data.Maybe as Maybe
 import Data.Proxy
@@ -35,15 +37,11 @@ import qualified Data.Text.IO as T
 import qualified GHC.Exts as Exts
 import GHC.TypeLits
 import qualified GHC.TypeNats
-import Lens.Family hiding (All)
 import Pipes
-import Pipes.Group
 import qualified Pipes.Prelude as P
 import qualified Pipes.Random as Random
 import qualified Pipes.Safe as Safe
 import qualified Pipes.Safe.Prelude as Safe
-import qualified Pipes.Text as Text
-import qualified Pipes.Text.IO as Text
 import qualified System.IO as IO
 import System.IO.Unsafe (unsafePerformIO)
 import System.Mem (performGC)
@@ -101,7 +99,7 @@ type ModelSpec numEmbeds modelDevice =
 data TransformerData seqLen = TransformerData
   { length :: Int,
     filePath :: FilePath,
-    vocab :: OSet.OSet Text.Text
+    vocab :: OSet.OSet T.Text
   }
 
 instance
@@ -144,7 +142,7 @@ program numEpochs trainingFile trainingLen evaluationFile evaluationLen =
       forall (numEmbeds :: Nat).
       KnownNat numEmbeds =>
       Dict ((1 <=? numEmbeds) ~ 'True) ->
-      OSet.OSet Text.Text ->
+      OSet.OSet T.Text ->
       Effect (Safe.SafeT IO) ()
     go Dict vocab =
       let trainingData =
@@ -478,21 +476,18 @@ readData ::
   (Safe.MonadSafe m, KnownNat seqLen) =>
   FilePath ->
   Int ->
-  OSet.OSet Text.Text ->
+  OSet.OSet T.Text ->
   Producer [Maybe Int] m ()
 readData file length vocab = raw >-> P.take length
   where
-    raw = Safe.withFile file IO.ReadMode $
-      \h ->
-        L.purely folds L.list
-          . chain (sequencing . readHandleEndlesslyFromOffset h)
-          $ randomOffsets
-    sequencing =
-      (>-> applyVocab vocab)
-        . L.purely folds L.mconcat
-        . takes (natValI @(seqLen + 1))
-        . drops 1
-        . view Text.words
+    raw = Safe.withFile file IO.ReadMode $ \h ->
+      randomOffsets >-> P.mapM (collectAt h)
+    collectAt h offset =
+      P.toListM $
+        wordsP (readHandleEndlesslyFromOffset h offset)
+          >-> P.drop 1
+          >-> P.take (natValI @(seqLen + 1))
+          >-> P.map (`OSet.findIndex` vocab)
 
 collation ::
   forall modelDevice batchSize seqLen m.
@@ -524,26 +519,37 @@ collation = for Pipes.cat $ \x -> case f x of
 randomOffsets :: MonadIO m => Producer Integer m ()
 randomOffsets = hoist liftIO $ Random.uniform @Int >-> P.map toInteger
 
-chain ::
-  forall a b m r.
-  Monad m =>
-  (a -> Producer b m r) ->
-  Producer a m r ->
-  FreeT (Producer b m) m r
-chain f = go
+wordsP :: forall m r. Monad m => Producer T.Text m r -> Producer T.Text m r
+wordsP = go T.empty
   where
-    go p = FreeT $ do
-      x <- next p
-      return $ case x of
-        Left r -> Pure r
-        Right (a, p') -> Free $ fmap go (f a >> return p')
+    go buf p = do
+      step <- lift (next p)
+      case step of
+        Left r -> do
+          unless (T.null buf) (yield buf)
+          pure r
+        Right (chunk, p') ->
+          let combined = buf <> chunk
+              ws = T.words combined
+              endsWithSpace = case T.unsnoc combined of
+                Just (_, c) -> isSpace c
+                Nothing -> False
+          in case ws of
+            [] -> go T.empty p'
+            _
+              | endsWithSpace -> do
+                  mapM_ yield ws
+                  go T.empty p'
+              | otherwise -> do
+                  mapM_ yield (init ws)
+                  go (last ws) p'
 
 readHandleEndlesslyFromOffset ::
   forall m.
   MonadIO m =>
   IO.Handle ->
   Integer ->
-  Producer Text.Text m ()
+  Producer T.Text m ()
 readHandleEndlesslyFromOffset h offset = do
   fileSize <- liftIO $ IO.hFileSize h
   let offset' = offset `mod` fileSize
@@ -554,7 +560,7 @@ fromHandleEndlessly ::
   forall m.
   MonadIO m =>
   IO.Handle ->
-  Producer Text.Text m ()
+  Producer T.Text m ()
 fromHandleEndlessly h = go
   where
     go = do
@@ -570,13 +576,19 @@ buildVocab = L.purely P.fold oSet
 oSet :: forall a. Ord a => L.Fold a (OSet.OSet a)
 oSet = L.Fold (\as a -> as |> a) OSet.empty id
 
-buildVocabFromFile :: FilePath -> IO (OSet.OSet Text.Text)
+buildVocabFromFile :: FilePath -> IO (OSet.OSet T.Text)
 buildVocabFromFile file =
-  IO.withFile file IO.ReadMode $
-    buildVocab
-      . L.purely folds L.mconcat
-      . view Text.words
-      . Text.fromHandle
+  IO.withFile file IO.ReadMode $ \h ->
+    buildVocab (wordsP (fromHandleEndOnEof h))
+
+fromHandleEndOnEof :: MonadIO m => IO.Handle -> Producer T.Text m ()
+fromHandleEndOnEof h = go
+  where
+    go = do
+      txt <- liftIO (T.hGetChunk h)
+      unless (T.null txt) $ do
+        yield txt
+        go
 
 applyVocab ::
   forall a m.

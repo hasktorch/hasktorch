@@ -11,7 +11,7 @@ jobs:
         submodules: true
     - uses: haskell-actions/setup@v2.7.10
       with:
-        ghc-version: '9.6.6'
+        ghc-version: '9.8.4'
         enable-stack: true
         stack-version: 'latest'
     - name: Setup tool-chains
