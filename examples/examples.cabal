@@ -82,14 +82,11 @@ executable typed-transformer
                      , constraints
                      , containers
                      , foldl
-                     , lens-family-core
                      , libtorch-ffi
                      , ordered-containers
                      , pipes
-                     , pipes-group
                      , pipes-random
                      , pipes-safe
-                     , pipes-text
                      , safe-exceptions
                      , text
                      , monad-control
