@@ -280,3 +280,6 @@ cppOptimizerGetAllParams (CppOptimizerState _ optimizer) = cast1 LibTorch.getAll
 
 cppOptimizerSetLr :: CppOptimizerState option -> Double -> IO ()
 cppOptimizerSetLr (CppOptimizerState _ optimizer) lr = cast2 LibTorch.setLr optimizer lr
+
+cppOptimizerSetGroupLr :: CppOptimizerState option -> Int -> Double -> IO ()
+cppOptimizerSetGroupLr (CppOptimizerState _ optimizer) groupIdx lr = cast3 LibTorch.setGroupLr optimizer groupIdx lr

@@ -96,7 +96,7 @@ lbfgs
   -> IO (ForeignPtr Optimizer)
 lbfgs = _cast8 Unmanaged.lbfgs
 
-getParams :: ForeignPtr Optimizer -> IO (ForeignPtr TensorList) 
+getParams :: ForeignPtr Optimizer -> IO (ForeignPtr TensorList)
 getParams = _cast1 Unmanaged.getParams
 
 step :: ForeignPtr Optimizer -> (ForeignPtr TensorList -> IO (ForeignPtr Tensor)) -> IO (ForeignPtr Tensor)
@@ -175,3 +175,6 @@ setParamGrads = _cast2 Unmanaged.setParamGrads
 
 setLr :: ForeignPtr Optimizer -> CDouble -> IO ()
 setLr = _cast2 Unmanaged.setLr
+
+setGroupLr :: ForeignPtr Optimizer -> CInt -> CDouble -> IO ()
+setGroupLr = _cast3 Unmanaged.setGroupLr

@@ -458,3 +458,12 @@ setLr optimizer newLr =
       options.lr($(double newLr));
     }
   }|]
+
+setGroupLr :: Ptr Optimizer -> CInt -> CDouble -> IO ()
+setGroupLr optimizer groupIdx lr =
+  [C.throwBlock| void {
+    auto optimizer = $(torch::optim::Optimizer* optimizer);
+    auto& group = optimizer->param_groups()[(size_t)$(int groupIdx)];
+    auto& options = static_cast<torch::optim::AdamWOptions&>(group.options());
+    options.lr($(double lr));
+  }|]
