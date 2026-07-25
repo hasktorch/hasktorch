@@ -23,6 +23,7 @@ import qualified Torch.Distributions.ConstraintsSpec
 import qualified Torch.Typed.AutogradSpec
 import qualified Torch.Typed.AuxiliarySpec
 import qualified Torch.Typed.FactoriesSpec
+import qualified Torch.Typed.GradedSpec
 import qualified Torch.Typed.FunctionalSpec0
 import qualified Torch.Typed.FunctionalSpec1
 import qualified Torch.Typed.FunctionalSpec2
@@ -34,6 +35,8 @@ import qualified Torch.Typed.NN.TransformerSpec
 import qualified Torch.Typed.NNSpec
 import qualified Torch.Typed.NamedTensorSpec
 import qualified Torch.Typed.OptimSpec
+import qualified Torch.Typed.RepresentableSpec
+import qualified Torch.Typed.StagedSpec
 import qualified Torch.Typed.TensorSpec0
 import qualified Torch.Typed.TensorSpec1
 import qualified Torch.Typed.VisionSpec
@@ -63,6 +66,7 @@ main = hspec $ do
   Torch.Typed.AutogradSpec.spec
   Torch.Typed.AuxiliarySpec.spec
   Torch.Typed.FactoriesSpec.spec
+  Torch.Typed.GradedSpec.spec
   Torch.Typed.FunctionalSpec0.spec
   Torch.Typed.FunctionalSpec1.spec
   Torch.Typed.FunctionalSpec2.spec
@@ -74,6 +78,8 @@ main = hspec $ do
   Torch.Typed.NNSpec.spec
   Torch.Typed.NamedTensorSpec.spec
   Torch.Typed.OptimSpec.spec
+  Torch.Typed.RepresentableSpec.spec
+  Torch.Typed.StagedSpec.spec
   Torch.Typed.TensorSpec0.spec
   Torch.Typed.TensorSpec1.spec
   Torch.Typed.VisionSpec.spec

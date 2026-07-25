@@ -85,6 +85,9 @@ library
                     , Torch.Typed.Vision
                     , Torch.Typed.Lens
                     , Torch.Typed.NamedTensor
+                    , Torch.Typed.Representable
+                    , Torch.Typed.Graded
+                    , Torch.Typed.Staged
                     , Torch.Typed.VLTensor
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
@@ -183,6 +186,9 @@ test-suite spec
                     , Torch.Typed.NN.TransformerSpec
                     , Torch.Typed.VisionSpec
                     , Torch.Typed.NamedTensorSpec
+                    , Torch.Typed.RepresentableSpec
+                    , Torch.Typed.GradedSpec
+                    , Torch.Typed.StagedSpec
                     , Torch.Typed.SerializeSpec
                     , SerializeSpec
                     , RandomSpec
@@ -213,6 +219,7 @@ test-suite spec
                     , pipes
                     , random
                     , vector-sized
+                    , finite-typelits
                     , lens-family-core
                     , data-default-class
                     , half
