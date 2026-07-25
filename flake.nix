@@ -71,13 +71,30 @@
                   # hasktorch-gradually-typed
                   libtorch-ffi
                   libtorch-ffi-helper
-                  cabal-install
                 ];
+              # Developer tools belong here, not in `packages`: shellFor treats
+              # `packages` as the set of packages being developed and brings in
+              # only their dependencies, so a tool listed there never lands on
+              # PATH.
               nativeBuildInputs = p: [
+                  p.cabal-install
+                  p.haskell.packages.${ghc}.haskell-language-server
+                  p.pkg-config
                   (p.python3.withPackages (pp: with pp; [
                     pyyaml
                     typing-extensions
                   ]))
+                ]
+              ;
+              # C libraries that Haskell dependencies link against. `packages`
+              # only brings in the *Haskell* dependency closure, so when cabal
+              # builds e.g. the `zlib` package from Hackage (which it does
+              # whenever the version pinned in cabal.project.freeze differs
+              # from the one nixpkgs provides) the C headers must come from
+              # here or the configure step fails.
+              buildInputs = p: [
+                  p.zlib
+                  p.zlib.dev
                 ]
               ;
             in
@@ -86,10 +103,12 @@
               cpu = pkgs.haskell.packages.${ghc}.shellFor {
                 inherit packages;
                 nativeBuildInputs = nativeBuildInputs pkgs;
+                buildInputs = buildInputs pkgs;
               };
               cuda = pkgsCuda.haskell.packages.${ghc}.shellFor {
                 inherit packages;
                 nativeBuildInputs = nativeBuildInputs pkgsCuda;
+                buildInputs = buildInputs pkgsCuda;
               };
             };
           checks = self'.packages;
