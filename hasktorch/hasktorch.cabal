@@ -75,6 +75,7 @@ library
                     , Torch.Typed.NN.Dropout
                     , Torch.Typed.NN.Sparse
                     , Torch.Typed.NN.DataParallel
+                    , Torch.Typed.NN.Arrow
                     , Torch.Typed.Tensor
                     , Torch.Typed.Parameter
                     , Torch.Typed.Device
@@ -196,6 +197,7 @@ test-suite spec
                     , Torch.Typed.IndexSpec
                     , Torch.Typed.LensSpec
                     , Torch.Typed.AttentionSpec
+                    , Torch.Typed.ArrowSpec
                     , Torch.Typed.SerializeSpec
                     , SerializeSpec
                     , RandomSpec
