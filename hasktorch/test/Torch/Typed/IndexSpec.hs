@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -57,6 +58,12 @@ spec = do
       let s = slice @'[SliceAll, SliceFromUpToWithStep 0 3 2] t
       shape s `shouldBe` [2, 2, 4]
       elems s `shouldBe` ([0 .. 3] ++ [8 .. 11] ++ [12 .. 15] ++ [20 .. 23])
+    it "accepts PyTorch-style syntax via the ix quasiquoter" $ do
+      elems (slice @[ix| 1 |] t) `shouldBe` elems (slice @'[SliceAt 1] t)
+      elems (slice @[ix| :, 0 |] t) `shouldBe` elems (slice @'[SliceAll, SliceAt 0] t)
+      shape (slice @[ix| None, :, 1:3 |] t) `shouldBe` [1, 2, 2, 4]
+      elems (slice @[ix| 1:2, :2, 1::2 |] t) `shouldBe` [13, 15, 17, 19]
+      shape (slice @[ix| :, ::2 |] t) `shouldBe` [2, 2, 4]
   describe "setSlice" $ do
     it "replaces the indexed part and leaves the rest" $ do
       let u = setSlice @'[SliceAt 0] t zeros

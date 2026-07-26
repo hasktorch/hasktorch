@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
@@ -27,6 +28,9 @@ module Torch.Typed.Index
   ( -- * The index language
     IndexType (..),
 
+    -- * PyTorch-style syntax
+    ix,
+
     -- * Result-shape computation
     IndexedShape,
 
@@ -37,8 +41,11 @@ module Torch.Typed.Index
   )
 where
 
+import Data.Char (isDigit, isSpace)
 import Data.Type.Bool (If)
 import GHC.TypeLits
+import qualified Language.Haskell.TH as TH
+import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Tensor as T
@@ -63,6 +70,8 @@ data IndexType
     SliceFromWithStep Nat Nat
   | -- | @[:to:step]@
     SliceUpToWithStep Nat Nat
+  | -- | @[::step]@
+    SliceWithStep Nat
   | -- | @[from:to:step]@
     SliceFromUpToWithStep Nat Nat Nat
 
@@ -117,6 +126,7 @@ type family IndexedShape (ixs :: [IndexType]) (shape :: [Nat]) :: [Nat] where
   IndexedShape ('SliceFromUpTo f t ': ixs) (n ': sh) = SliceLen f t 1 n ': IndexedShape ixs sh
   IndexedShape ('SliceFromWithStep f s ': ixs) (n ': sh) = SliceLen f n s n ': IndexedShape ixs sh
   IndexedShape ('SliceUpToWithStep t s ': ixs) (n ': sh) = SliceLen 0 t s n ': IndexedShape ixs sh
+  IndexedShape ('SliceWithStep s ': ixs) (n ': sh) = SliceLen 0 n s n ': IndexedShape ixs sh
   IndexedShape ('SliceFromUpToWithStep f t s ': ixs) (n ': sh) = SliceLen f t s n ': IndexedShape ixs sh
   IndexedShape (ix ': ixs) '[] =
     TypeError ('Text "Too many indices for the shape of the tensor.")
@@ -176,6 +186,12 @@ instance (KnownNat t, KnownNat s, KnownIndices ixs) => KnownIndices ('SliceUpToW
       <$> (T.RawTensorIndex <$> ATen.newTensorIndexWithSlice 0 (fromIntegral (natValI @t)) (fromIntegral (natValI @s)))
       <*> rawIndices @ixs
 
+instance (KnownNat s, KnownIndices ixs) => KnownIndices ('SliceWithStep s ': ixs) where
+  rawIndices =
+    (:)
+      <$> (T.RawTensorIndex <$> ATen.newTensorIndexWithSlice 0 maxBound (fromIntegral (natValI @s)))
+      <*> rawIndices @ixs
+
 instance (KnownNat f, KnownNat t, KnownNat s, KnownIndices ixs) => KnownIndices ('SliceFromUpToWithStep f t s ': ixs) where
   rawIndices =
     (:)
@@ -213,3 +229,62 @@ setSlice ::
 setSlice t v = unsafePerformIO $ do
   raws <- rawIndices @ixs
   pure . UnsafeMkTensor $ T.maskedFill (toDynamic t) (RawIndices raws) (toDynamic v)
+
+--------------------------------------------------------------------------------
+-- PyTorch-style syntax
+--------------------------------------------------------------------------------
+
+-- | A /type/ quasiquoter for PyTorch indexing syntax, usable wherever the
+-- type-level index list goes:
+--
+-- > slice @[ix| 1, :, 1:3:2 |] t  ==  slice @'[SliceAt 1, SliceAll, SliceFromUpToWithStep 1 3 2] t
+--
+-- Supported per-dimension forms, as in PyTorch: @i@, @:@, @::@, @from:@,
+-- @:to@, @from:to@, @from::step@, @:to:step@, @::step@, @from:to:step@ and
+-- @None@ (insert an axis).  Negative indices, @...@ and boolean\/tensor
+-- indices are not supported; indices here are type-level naturals.
+ix :: QuasiQuoter
+ix =
+  QuasiQuoter
+    { quoteType = parseIndices,
+      quoteExp = const (fail "ix is a type quasiquoter; use it as slice @[ix|...|] t"),
+      quotePat = const (fail "ix is a type quasiquoter; use it as slice @[ix|...|] t"),
+      quoteDec = const (fail "ix is a type quasiquoter; use it as slice @[ix|...|] t")
+    }
+
+parseIndices :: String -> TH.Q TH.Type
+parseIndices str = do
+  items <-
+    if all isSpace str
+      then pure []
+      else mapM (parseItem . filter (not . isSpace)) (splitOn ',' str)
+  pure (foldr (\x xs -> TH.PromotedConsT `TH.AppT` x `TH.AppT` xs) TH.PromotedNilT items)
+  where
+    nat :: String -> TH.Q TH.Type
+    nat s
+      | not (null s) && all isDigit s = pure (TH.LitT (TH.NumTyLit (read s)))
+      | otherwise = fail ("ix: expected a natural number, got " <> show s)
+    con :: TH.Name -> [TH.Q TH.Type] -> TH.Q TH.Type
+    con name args = foldl (\acc a -> TH.AppT <$> acc <*> a) (pure (TH.PromotedT name)) args
+    parseItem :: String -> TH.Q TH.Type
+    parseItem "None" = con 'NewAxis []
+    parseItem s = case splitOn ':' s of
+      [i] -> con 'SliceAt [nat i]
+      ["", ""] -> con 'SliceAll []
+      [f, ""] -> con 'SliceFrom [nat f]
+      ["", t] -> con 'SliceUpTo [nat t]
+      [f, t] -> con 'SliceFromUpTo [nat f, nat t]
+      ["", "", ""] -> con 'SliceAll []
+      [f, "", ""] -> con 'SliceFrom [nat f]
+      ["", t, ""] -> con 'SliceUpTo [nat t]
+      [f, t, ""] -> con 'SliceFromUpTo [nat f, nat t]
+      ["", "", s'] -> con 'SliceWithStep [nat s']
+      [f, "", s'] -> con 'SliceFromWithStep [nat f, nat s']
+      ["", t, s'] -> con 'SliceUpToWithStep [nat t, nat s']
+      [f, t, s'] -> con 'SliceFromUpToWithStep [nat f, nat t, nat s']
+      _ -> fail ("ix: cannot parse index " <> show s)
+
+splitOn :: Char -> String -> [String]
+splitOn c s = case break (== c) s of
+  (chunk, []) -> [chunk]
+  (chunk, _ : rest) -> chunk : splitOn c rest
