@@ -36,14 +36,37 @@ module Torch.Typed.Representable
     indexList,
     tabulateList,
     allIndices,
+
+    -- * Moving dimensions between tensor and structure
+    --
+    -- | 'dimUp' and 'dimDown' move the outermost dimension of a named tensor
+    -- between the tensor and an actual Haskell functor.
+    --
+    -- __Acknowledgement__: representable functors are exactly the /Naperian/
+    -- functors of Jeremy Gibbons's \"APLicative Programming with Naperian
+    -- Functors\", and these operations continue the design of
+    -- <https://github.com/jasigal/hasktorch-naperian hasktorch-naperian> by
+    -- Jesse Sigal (GSoC 2019), whose @Dim ns fs@ type pioneered letting
+    -- dimensions migrate between the tensor and the surrounding Haskell
+    -- structure — 'dimUp'\/'dimDown' correspond to its operations of the
+    -- same names.
+    dimUp,
+    dimDown,
   )
 where
 
+import Data.Default.Class (Default (..))
 import Data.Finite (Finite, getFinite, packFinite)
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
+import Data.Vector.Sized (Vector)
+import qualified Data.Vector.Sized as V
 import GHC.TypeLits (KnownNat)
+import qualified Torch.Functional as F
+import qualified Torch.Functional.Internal as I
 import Torch.HList
+import Torch.Lens (HasTypes (..), flattenValues, replaceValues, types)
+import Torch.Typed.Lens ()
 import qualified Torch.Tensor as D
 import qualified Torch.TensorOptions as D
 import Torch.Typed.Auxiliary (natValI)
@@ -155,3 +178,46 @@ tabulateList f =
 -- element order that 'D.asTensor' plus 'D.reshape' produces.
 allIndices :: [Int] -> [[Int]]
 allIndices = foldr (\n acc -> [i : rest | i <- [0 .. n - 1], rest <- acc]) [[]]
+
+--------------------------------------------------------------------------------
+-- Moving dimensions between tensor and structure
+--------------------------------------------------------------------------------
+
+-- Positions of a sized vector, for the generic traversal machinery.  (The
+-- record case gets these from Generic deriving; 'Vector' has neither
+-- 'Generic' nor 'Default', so they are provided here.)
+instance HasTypes a t => HasTypes (Vector n a) t where
+  types_ f = traverse (types_ f)
+
+instance (KnownNat n, Default a) => Default (Vector n a) where
+  def = V.replicate def
+
+-- | Move the outermost dimension out of the tensor: the result is the
+-- dimension's functor, holding one smaller tensor per position.  With
+-- @f = RGB@ this splits an image into its channel tensors as an ordinary
+-- record; with @f = Vector n@ it is typed @unbind@.
+dimUp ::
+  forall f shape device dtype.
+  ( Default (f (NamedTensor device dtype shape)),
+    HasTypes (f (NamedTensor device dtype shape)) (NamedTensor device dtype shape)
+  ) =>
+  NamedTensor device dtype (f ': shape) ->
+  f (NamedTensor device dtype shape)
+dimUp t =
+  replaceValues (types @(NamedTensor device dtype shape)) def
+    . map (fromUnnamed . UnsafeMkTensor)
+    $ I.unbind (toDynamic t) 0
+
+-- | Move a Haskell dimension into the tensor: one position per element of
+-- the functor, stacked as the new outermost axis.  Inverse of 'dimUp'.
+dimDown ::
+  forall f shape device dtype.
+  (HasTypes (f (NamedTensor device dtype shape)) (NamedTensor device dtype shape)) =>
+  f (NamedTensor device dtype shape) ->
+  NamedTensor device dtype (f ': shape)
+dimDown =
+  fromUnnamed
+    . UnsafeMkTensor
+    . F.stack (F.Dim 0)
+    . map toDynamic
+    . flattenValues (types @(NamedTensor device dtype shape))

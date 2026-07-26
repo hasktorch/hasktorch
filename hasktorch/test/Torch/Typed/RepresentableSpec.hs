@@ -29,6 +29,8 @@ import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.HList
 import qualified Torch.Tensor as D
+import qualified Data.Vector.Sized as V
+import Torch.Typed.Factories ()
 import Torch.Typed.Representable
 import Torch.Typed.Tensor
 
@@ -96,3 +98,18 @@ spec = do
       index t (0 :. 0 :. HNil) `shouldBe` 0
       index t (0 :. 1 :. HNil) `shouldBe` 1
       index t (0 :. 2 :. HNil) `shouldBe` 2
+  describe "dimUp and dimDown" $ do
+    it "dimUp splits the outermost dimension into a record, by name" $ do
+      let t = tabulate (\(i :. j :. HNil) -> fromIntegral (fromEnum i) * 10 + fromIntegral (fromEnum j)) :: NamedTensor '(D.CPU, 0) 'D.Float '[RGB, Vector 2]
+          chans = dimUp t :: RGB (NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2])
+      (D.asValue (toDynamic (r chans)) :: [Float]) `shouldBe` [0, 1]
+      (D.asValue (toDynamic (g chans)) :: [Float]) `shouldBe` [10, 11]
+      (D.asValue (toDynamic (b chans)) :: [Float]) `shouldBe` [20, 21]
+    it "dimDown is the inverse of dimUp" $ do
+      let t = tabulate (\(i :. j :. HNil) -> fromIntegral (fromEnum i) * 10 + fromIntegral (fromEnum j)) :: NamedTensor '(D.CPU, 0) 'D.Float '[RGB, Vector 2]
+      (D.asValue (D.reshape [-1] (toDynamic (dimDown (dimUp t)))) :: [Float])
+        `shouldBe` (D.asValue (D.reshape [-1] (toDynamic t)) :: [Float])
+    it "with Vector it is typed unbind and stack" $ do
+      let t = tabulate (\(i :. j :. HNil) -> fromIntegral (fromEnum i) * 10 + fromIntegral (fromEnum j)) :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 3, RGB]
+          rows = dimUp t :: Vector 3 (NamedTensor '(D.CPU, 0) 'D.Float '[RGB])
+      (D.asValue (toDynamic (V.index rows 1)) :: [Float]) `shouldBe` [10, 11, 12]
