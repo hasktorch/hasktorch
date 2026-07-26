@@ -1,0 +1,114 @@
+---
+title: Named Tensors and Lenses
+---
+
+# Named Tensors and Lenses
+
+Typed tensors (see [Typed Tensors](07-typed-tensors.html)) check the
+*sizes* of dimensions at compile time. Named tensors go one step
+further: they give dimensions *meanings*. A `Tensor` of shape
+`'[2, 3]` and another of shape `'[2, 3]` are the same type even when
+one holds RGB channels and the other holds YCoCg channels; a
+`NamedTensor` distinguishes them.
+
+## Shapes made of types
+
+A `NamedTensor` is indexed by a list of *type constructors* rather
+than a list of naturals:
+
+```haskell
+import Torch.Typed
+
+data RGB a = RGB
+  { r :: a,
+    g :: a,
+    b :: a
+  }
+  deriving (Show, Eq, Generic)
+
+newtype Batch (n :: Nat) a = Batch (Vector n a) deriving (Generic)
+
+type Image = NamedTensor '( 'D.CPU, 0) 'D.Float '[Batch 2, RGB]
+```
+
+The runtime shape is derived from the types by the `ToNat` type
+family: `Batch 2` contributes 2, and `RGB` contributes 3 because it is
+a record with three fields. No registration is needed — `ToNat` walks
+the `Generic` representation, so any record or sized-vector newtype
+works as a dimension out of the box.
+
+`'[Batch 2, RGB]` and `'[Batch 2, YCoCg]` both erase to `[2, 3]` at
+runtime, but they are different types, and converting between them is
+an explicit, checked function. This is the property that plain size
+types (including those of array languages like Futhark) cannot
+express.
+
+## Field lenses
+
+Because `RGB` is a record, its fields address positions of the
+dimension. The `field` lens extracts one:
+
+```haskell
+import Torch.Typed.Lens
+
+red :: NamedTensor device dtype '[Batch 2] -- the RGB dimension is dropped
+red = image ^. field @"r"
+```
+
+Field names are checked: `field @"q"` on a shape containing `RGB`
+does not compile. Whole dimensions can be addressed by name with the
+`name` traversal:
+
+```haskell
+channels :: Traversal' (NamedTensor dev dt '[Batch 2, RGB])
+                       (NamedTensor dev dt '[Batch 2])
+channels = name @RGB
+```
+
+A worked conversion, from the test suite:
+
+```haskell
+toYCoCG :: NamedTensor device dtype '[Vector n, RGB]
+        -> NamedTensor device dtype '[Vector n, YCoCg]
+toYCoCG rgb =
+  set (field @"y")  ((r + g * 2 + b) / 4) $
+  set (field @"co") ((r - b) / 2) $
+  set (field @"cg") ((- r + g * 2 - b) / 4) $
+  def
+  where
+    r = rgb ^. field @"r"
+    g = rgb ^. field @"g"
+    b = rgb ^. field @"b"
+```
+
+Nothing in this code mentions a numeric channel index.
+
+## Tensors as functions of their index
+
+`Torch.Typed.Representable` treats a named tensor as what it
+mathematically is: a function from an index to an element.
+
+```haskell
+import Torch.Typed.Representable
+
+-- Log (index type) of Image is HList '[Finite 2, Finite 3]:
+-- one bounds-checked index per dimension.
+
+image :: Image
+image = tabulate (\(i :. j :. HNil) -> fromIntegral (fromEnum i) * 10
+                                     + fromIntegral (fromEnum j))
+
+x :: Float
+x = index image (1 :. 2 :. HNil)
+```
+
+`tabulate` builds the whole tensor from the function in a single
+batched call; `index` reads one element. The laws
+`index (tabulate f) i == f i` and `tabulate (index t) == t` are
+checked in the test suite against real tensors.
+
+Note the granularity: `tabulate` is efficient (one `asTensor` call),
+`index` costs a few FFI calls per element, so it is for spot reads,
+not for loops over all elements. For whole-tensor element-wise
+computation, see [Graded and Staged Tensor
+Programs](10-graded-and-staged.html).
