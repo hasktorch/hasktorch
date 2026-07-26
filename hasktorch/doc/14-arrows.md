@@ -156,3 +156,18 @@ composition point was an ambiguous type for the compiler, `deriving
 Parameterized` broke, and examples needed `PartialTypeSignatures`.
 Records for state, arrows for wiring — each side does what it is good
 at.
+
+## In the wild
+
+For a full-scale example, see
+[gpt2-haskell](https://github.com/collinarnett/gpt2-haskell) by Collin
+Arnett, whose GPT-2 decoder stack is wired exactly in this style —
+
+```haskell
+residual (layer ln >>> selfAttention mha mask) >>> transformerMLP
+```
+
+— with the causal mask written as its `tabulate` formula and typed
+slicing (`getSlice`) replacing runtime shape proofs that previously
+needed `unsafeCoerce`.  Its migration PR is a good study in porting an
+existing model to these APIs.
