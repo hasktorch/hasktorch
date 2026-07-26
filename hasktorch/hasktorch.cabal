@@ -88,6 +88,7 @@ library
                     , Torch.Typed.Representable
                     , Torch.Typed.Graded
                     , Torch.Typed.Staged
+                    , Torch.Typed.Index
                     , Torch.Typed.VLTensor
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
@@ -190,6 +191,7 @@ test-suite spec
                     , Torch.Typed.GradedSpec
                     , Torch.Typed.StagedSpec
                     , Torch.Typed.NMSSpec
+                    , Torch.Typed.IndexSpec
                     , Torch.Typed.SerializeSpec
                     , SerializeSpec
                     , RandomSpec
