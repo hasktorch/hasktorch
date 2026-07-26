@@ -24,6 +24,7 @@ import Data.List (sortOn)
 import Data.Maybe (fromJust)
 import Data.Ord (Down (..))
 import Data.Vector.Sized (Vector)
+import qualified Data.Vector.Storable as VS
 import Foreign.Marshal.Utils (copyBytes)
 import qualified Data.ByteString.Lazy as BS.Lazy
 import Data.Kind
@@ -219,8 +220,10 @@ boxIou dets = fromUnnamed . UnsafeMkTensor $ iou rows cols
 -- remaining box whose IoU with it exceeds the threshold, recurse.  Returns
 -- indices into the input, best score first.
 --
--- The pairwise matrix costs @O(n^2)@ memory; the suppression itself is plain
--- list recursion, which is where the algorithm is easiest to read.
+-- The pairwise matrix costs @O(n^2)@ memory — with the pre-NMS top-k of a
+-- typical detector (@n@ between 1000 and 6000) that is 4 to 144 MB.  The
+-- suppression itself is plain list recursion, which is where the algorithm is
+-- easiest to read.
 nms ::
   forall n device.
   KnownNat n =>
@@ -232,9 +235,10 @@ nms ::
   [Finite n]
 nms threshold dets = map (fromJust . packFinite . fromIntegral) (go order)
   where
+    n = natValI @n
     go [] = []
-    go (i : rest) = i : go [j | j <- rest, m !! i !! j <= threshold]
-    order = sortOn (Down . (scores !!)) [0 .. natValI @n - 1]
+    go (i : rest) = i : go [j | j <- rest, m VS.! (i * n + j) <= threshold]
+    order = map snd (sortOn (Down . fst) (zip (VS.toList scores) [0 ..]))
     cpu = D.toDevice (D.Device D.CPU 0)
-    scores = D.asValue (cpu (toDynamic (getConst (field @"score" Const dets)))) :: [Float]
-    m = D.asValue (cpu (toDynamic (boxIou dets))) :: [[Float]]
+    scores = D.asValue (D.reshape [-1] (cpu (toDynamic (getConst (field @"score" Const dets))))) :: VS.Vector Float
+    m = D.asValue (D.reshape [-1] (cpu (toDynamic (boxIou dets)))) :: VS.Vector Float
