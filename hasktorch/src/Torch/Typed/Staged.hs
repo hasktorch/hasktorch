@@ -39,6 +39,8 @@
 module Torch.Typed.Staged
   ( -- * Value-dependent control flow
     Cond (..),
+    maxE,
+    minE,
 
     -- * Vectorized element-wise operations
     emap,
@@ -93,6 +95,14 @@ instance Cond Double where
   geE a b = if a >= b then 1 else 0
   eqE a b = if a == b then 1 else 0
   neE a b = if a /= b then 1 else 0
+
+-- | Elementwise maximum, via 'whereE'.
+maxE :: Cond a => a -> a -> a
+maxE a b = whereE (gtE a b) a b
+
+-- | Elementwise minimum, via 'whereE'.
+minE :: Cond a => a -> a -> a
+minE a b = whereE (ltE a b) a b
 
 instance Cond D.Tensor where
   whereE c t e = I.where' (F.toDType DT.Bool c) t e

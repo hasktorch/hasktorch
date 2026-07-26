@@ -1,6 +1,10 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -14,9 +18,16 @@ import qualified Codec.Compression.GZip as GZip
 import Control.Monad (forM_)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BSI
+import Data.Finite (Finite, packFinite)
+import Data.Functor.Const (Const (..))
+import Data.List (sortOn)
+import Data.Maybe (fromJust)
+import Data.Ord (Down (..))
+import Data.Vector.Sized (Vector)
 import Foreign.Marshal.Utils (copyBytes)
 import qualified Data.ByteString.Lazy as BS.Lazy
 import Data.Kind
+import GHC.Generics (Generic)
 import qualified Foreign.ForeignPtr as F
 import qualified Foreign.Ptr as F
 import GHC.Exts (IsList (fromList))
@@ -29,8 +40,11 @@ import Torch.Internal.Cast
 import qualified Torch.Internal.Managed.TensorFactories as LibTorch
 import qualified Torch.Tensor as D
 import qualified Torch.TensorOptions as D
+import Torch.Lens (Lens')
 import Torch.Typed.Auxiliary
 import Torch.Typed.Functional
+import Torch.Typed.Lens (field)
+import Torch.Typed.Staged (Cond, maxE, minE)
 import Torch.Typed.Tensor
 
 data MNIST (m :: Type -> Type) (device :: (D.DeviceType, Nat)) (batchSize :: Nat) = MNIST {mnistData :: MnistData}
@@ -142,3 +156,85 @@ initMnist path = do
   testImagesBS <- decompressFile path "t10k-images-idx3-ubyte.gz"
   testLabelsBS <- decompressFile path "t10k-labels-idx1-ubyte.gz"
   return (MnistData imagesBS labelsBS, MnistData testImagesBS testLabelsBS)
+
+--------------------------------------------------------------------------------
+-- Non-maximum suppression
+--------------------------------------------------------------------------------
+
+-- | A detection: box coordinates and a confidence score, addressed by name.
+-- Used as a named dimension, so detections have type
+-- @NamedTensor device dtype '[Vector n, Box]@ and nothing below indexes a
+-- coordinate by number.
+data Box a = Box
+  { x1 :: a,
+    y1 :: a,
+    x2 :: a,
+    y2 :: a,
+    score :: a
+  }
+  deriving (Show, Eq, Generic, Functor)
+
+-- | Intersection over union of two boxes, as a formula on scalars.
+--
+-- Written against @(Fractional a, Cond a)@ so that the one definition serves
+-- both as the vectorized implementation ('boxIou' instantiates it at
+-- @a = Tensor@) and as a per-element reference (at @a = Float@); the test
+-- suite checks the two instantiations agree exactly.
+iou :: (Fractional a, Cond a) => Box a -> Box a -> a
+iou a b = inter / (area a + area b - inter)
+  where
+    iw = maxE 0 (minE (x2 a) (x2 b) - maxE (x1 a) (x1 b))
+    ih = maxE 0 (minE (y2 a) (y2 b) - maxE (y1 a) (y1 b))
+    inter = iw * ih
+    area v = (x2 v - x1 v) * (y2 v - y1 v)
+
+-- | The pairwise IoU matrix of a set of detections: 'iou' evaluated once at
+-- @a = Tensor@, with the coordinate fields shaped as a column and a row so
+-- broadcasting produces the whole \(n \times n\) matrix.
+boxIou ::
+  forall n device.
+  KnownNat n =>
+  NamedTensor device 'D.Float '[Vector n, Box] ->
+  NamedTensor device 'D.Float '[Vector n, Vector n]
+boxIou dets = fromUnnamed . UnsafeMkTensor $ iou rows cols
+  where
+    n = natValI @n
+    rows = D.reshape [n, 1] <$> sides
+    cols = D.reshape [1, n] <$> sides
+    sides =
+      Box
+        (viewL (field @"x1"))
+        (viewL (field @"y1"))
+        (viewL (field @"x2"))
+        (viewL (field @"y2"))
+        (viewL (field @"score"))
+    viewL ::
+      Lens'
+        (NamedTensor device 'D.Float '[Vector n, Box])
+        (NamedTensor device 'D.Float '[Vector n]) ->
+      D.Tensor
+    viewL l = toDynamic (getConst (l Const dets))
+
+-- | Greedy non-maximum suppression: take the best-scoring box, drop every
+-- remaining box whose IoU with it exceeds the threshold, recurse.  Returns
+-- indices into the input, best score first.
+--
+-- The pairwise matrix costs @O(n^2)@ memory; the suppression itself is plain
+-- list recursion, which is where the algorithm is easiest to read.
+nms ::
+  forall n device.
+  KnownNat n =>
+  -- | IoU threshold
+  Float ->
+  -- | detections
+  NamedTensor device 'D.Float '[Vector n, Box] ->
+  -- | kept indices, best score first
+  [Finite n]
+nms threshold dets = map (fromJust . packFinite . fromIntegral) (go order)
+  where
+    go [] = []
+    go (i : rest) = i : go [j | j <- rest, m !! i !! j <= threshold]
+    order = sortOn (Down . (scores !!)) [0 .. natValI @n - 1]
+    cpu = D.toDevice (D.Device D.CPU 0)
+    scores = D.asValue (cpu (toDynamic (getConst (field @"score" Const dets)))) :: [Float]
+    m = D.asValue (cpu (toDynamic (boxIou dets))) :: [[Float]]
