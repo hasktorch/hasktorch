@@ -30,6 +30,7 @@ The tutorial chapters:
 12. [Lenses](12-lenses.html)
 13. [Attention, Equation by Equation](13-attention.html)
 14. [Networks as Arrows](14-arrows.html)
+15. [Moving Dimensions](15-dimensions.html)
 
 Looking for a reference? See the [API docs][api-docs] hosted on
 [hasktorch.org][hasktorch-org].
