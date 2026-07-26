@@ -27,6 +27,7 @@ The tutorial chapters:
 9. [Indexing and Slicing](09-indexing.html)
 10. [Graded and Staged Tensor Programs](10-graded-and-staged.html)
 11. [TorchScript and the JIT](11-torchscript-and-jit.html)
+12. [Lenses](12-lenses.html)
 
 Looking for a reference? See the [API docs][api-docs] hosted on
 [hasktorch.org][hasktorch-org].
