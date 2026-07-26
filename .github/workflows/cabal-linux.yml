@@ -111,6 +111,17 @@ jobs:
         name: tutorial
         path: public/tutorial
 
+    # Same deployment the (now dead-commented) stack-linux step performed
+    # until 2024-01: publish the rendered tutorial to the website repository.
+    - name: Deploy tutorial
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+        external_repository: hasktorch/hasktorch.github.io
+        publish_branch: tutorial
+        publish_dir: ./public
+
     # - name: Benchmark
     #   run: |
     #     cabal v2-bench hasktorch:runtime --benchmark-options='--output benchmark-runtime.html'
