@@ -192,6 +192,7 @@ test-suite spec
                     , Torch.Typed.StagedSpec
                     , Torch.Typed.NMSSpec
                     , Torch.Typed.IndexSpec
+                    , Torch.Typed.LensSpec
                     , Torch.Typed.SerializeSpec
                     , SerializeSpec
                     , RandomSpec

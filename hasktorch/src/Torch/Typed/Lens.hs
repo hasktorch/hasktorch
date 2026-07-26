@@ -33,9 +33,10 @@ import qualified Torch.Device as D
 import qualified Torch.Functional as D hiding (select)
 import qualified Torch.Functional.Internal as I
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
-import Torch.Lens (Lens, Lens', Traversal, Traversal')
+import Torch.Lens (HasTypes (..), Lens, Lens', Traversal, Traversal')
 import qualified Torch.Tensor as T
 import Torch.Typed.Auxiliary hiding (If)
+import Torch.Typed.Parameter (Parameter)
 import Torch.Typed.Tensor
 
 class HasName (name :: Type -> Type) shape where
@@ -158,3 +159,97 @@ instance (GFieldId field f, GFieldId field g) => GFieldId field (f :+: g) where
     case (gfieldId' @field (Proxy :: Proxy f), gfieldId' @field (Proxy :: Proxy g)) of
       ((Nothing, _), a1) -> a1
       (a0@(Just _, _), _) -> a0
+
+--------------------------------------------------------------------------------
+-- HasTypes leaves for typed tensors: shape-selective structure traversals
+--------------------------------------------------------------------------------
+
+-- $typedTypes
+--
+-- The generic 'Torch.Lens.types' traversal is polymorphic in its target type,
+-- so it works over typed tensors as well - and becomes /shape-selective/:
+-- where the untyped @types \@Tensor@ visits every tensor in a structure,
+--
+-- > over (types @(Tensor '( 'D.CPU, 0) 'D.Float '[2, 3])) f model
+--
+-- visits only the tensors of exactly that device, dtype and shape, leaving
+-- every other field (including tensors of other shapes) untouched.  The
+-- instances below tell the generic machinery which leaves to visit, which
+-- tensor leaves to skip (a shape mismatch), and that primitive fields are
+-- never targets.
+
+-- visit: the leaf is exactly the target
+instance {-# OVERLAPPING #-} HasTypes (Tensor device dtype shape) (Tensor device dtype shape) where
+  types_ f = f
+
+instance {-# OVERLAPPING #-} HasTypes (NamedTensor device dtype shape) (NamedTensor device dtype shape) where
+  types_ f = f
+
+instance {-# OVERLAPPING #-} HasTypes (Parameter device dtype shape) (Parameter device dtype shape) where
+  types_ f = f
+
+-- skip: a tensor leaf whose device, dtype or shape does not match the target
+instance {-# OVERLAPPING #-} HasTypes (Tensor device dtype shape) (Tensor device' dtype' shape') where
+  types_ _ = pure
+
+instance {-# OVERLAPPING #-} HasTypes (NamedTensor device dtype shape) (NamedTensor device' dtype' shape') where
+  types_ _ = pure
+
+instance {-# OVERLAPPING #-} HasTypes (Parameter device dtype shape) (Parameter device' dtype' shape') where
+  types_ _ = pure
+
+-- skip: leaves of a different tensor kind than the target
+instance {-# OVERLAPPING #-} HasTypes (Tensor device dtype shape) (NamedTensor device' dtype' shape') where
+  types_ _ = pure
+
+instance {-# OVERLAPPING #-} HasTypes (Tensor device dtype shape) (Parameter device' dtype' shape') where
+  types_ _ = pure
+
+instance {-# OVERLAPPING #-} HasTypes (NamedTensor device dtype shape) (Tensor device' dtype' shape') where
+  types_ _ = pure
+
+instance {-# OVERLAPPING #-} HasTypes (NamedTensor device dtype shape) (Parameter device' dtype' shape') where
+  types_ _ = pure
+
+instance {-# OVERLAPPING #-} HasTypes (Parameter device dtype shape) (Tensor device' dtype' shape') where
+  types_ _ = pure
+
+instance {-# OVERLAPPING #-} HasTypes (Parameter device dtype shape) (NamedTensor device' dtype' shape') where
+  types_ _ = pure
+
+-- skip: primitive fields are never typed-tensor targets
+instance HasTypes Int (Tensor device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Float (Tensor device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Double (Tensor device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Bool (Tensor device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Int (NamedTensor device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Float (NamedTensor device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Double (NamedTensor device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Bool (NamedTensor device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Int (Parameter device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Float (Parameter device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Double (Parameter device dtype shape) where
+  types_ _ = pure
+
+instance HasTypes Bool (Parameter device dtype shape) where
+  types_ _ = pure

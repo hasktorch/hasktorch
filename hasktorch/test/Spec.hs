@@ -25,6 +25,7 @@ import qualified Torch.Typed.AuxiliarySpec
 import qualified Torch.Typed.FactoriesSpec
 import qualified Torch.Typed.GradedSpec
 import qualified Torch.Typed.IndexSpec
+import qualified Torch.Typed.LensSpec
 import qualified Torch.Typed.FunctionalSpec0
 import qualified Torch.Typed.FunctionalSpec1
 import qualified Torch.Typed.FunctionalSpec2
@@ -70,6 +71,7 @@ main = hspec $ do
   Torch.Typed.FactoriesSpec.spec
   Torch.Typed.GradedSpec.spec
   Torch.Typed.IndexSpec.spec
+  Torch.Typed.LensSpec.spec
   Torch.Typed.FunctionalSpec0.spec
   Torch.Typed.FunctionalSpec1.spec
   Torch.Typed.FunctionalSpec2.spec

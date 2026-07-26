@@ -159,3 +159,21 @@ half-precision model as far as GHC is concerned. Every forward pass,
 loss, and optimizer step is now checked against `'D.Half`, so a stray
 `'D.Float` batch fed to it — the classic silent-upcast bug of mixed
 precision work — is a compile-time error, not a performance mystery.
+
+The `types` traversal itself also works at *typed* targets, where it
+gains an ability the untyped version cannot have: shape selectivity.
+`Torch.Typed.Lens` provides the leaf instances, and then
+
+```haskell
+over (types @(Tensor '( 'D.CPU, 0) 'D.Float '[2, 3])) f model
+flattenValues (types @(Parameter '( 'D.CPU, 0) 'D.Float '[5, 10])) model
+replaceValues (types @(Tensor ... '[2, 3])) model newTensors
+```
+
+visit exactly the tensors (or parameters) of the named device, dtype
+and shape inside a structure — a `'[3, 4]` layer sitting next to a
+`'[2, 3]` one is left untouched. Where untyped `types @Tensor` means
+"every tensor", the typed version means "every tensor *of this
+structure*", which is what makes targeted surgery on a model — swap
+these embeddings, freeze that projection — expressible as one
+traversal.
