@@ -112,3 +112,50 @@ Note the granularity: `tabulate` is efficient (one `asTensor` call),
 not for loops over all elements. For whole-tensor element-wise
 computation, see [Graded and Staged Tensor
 Programs](10-graded-and-staged.html).
+
+## Lenses over whole models: changing dtype and device
+
+Field and dimension lenses address parts of one tensor. The other
+direction lenses work in Hasktorch is *outward*: traversing every
+tensor inside an arbitrary structure — a model record, a tuple of
+parameters, a list of batches.
+
+In the untyped API this is `Torch.Lens`'s `HasTypes` traversal, and
+the conversions built on it:
+
+```haskell
+import Torch
+
+modelHalf = toType Half model      -- every tensor inside, converted
+modelCuda = toDevice (Device CUDA 0) model
+edited    = over (types @Tensor @MyModel) f model  -- any tensor rewrite
+```
+
+`HasTypes` is derived generically, so any record of tensors (or of
+records of tensors) works without instances. This is how you switch a
+whole network to half precision, or move it to a GPU, in one line —
+but nothing in `model`'s *type* records that it happened.
+
+The typed API has the same one-liners, with one important difference:
+the conversion changes the type of the structure.
+
+```haskell
+import qualified Torch.Typed.DType as D
+import qualified Torch.Typed.Device as Dev
+
+model                                :: Linear 10 1 'D.Float '( 'D.CPU, 0)
+D.toDType @'D.Half @'D.Float model   :: Linear 10 1 'D.Half  '( 'D.CPU, 0)
+Dev.toDevice @'( 'D.CUDA, 0) @'( 'D.CPU, 0) model
+                                     :: Linear 10 1 'D.Float '( 'D.CUDA, 0)
+```
+
+`HasToDType`/`HasToDevice` are again derived generically for records
+of layers, and the `ReplaceDType` type family rewrites the dtype
+parameter everywhere it occurs in the model's type. The functional
+dependencies make the conversion bidirectional and unambiguous.
+
+The payoff is downstream: after `toDType @'D.Half`, the model *is* a
+half-precision model as far as GHC is concerned. Every forward pass,
+loss, and optimizer step is now checked against `'D.Half`, so a stray
+`'D.Float` batch fed to it — the classic silent-upcast bug of mixed
+precision work — is a compile-time error, not a performance mystery.
