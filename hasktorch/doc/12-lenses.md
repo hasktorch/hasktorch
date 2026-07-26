@@ -27,12 +27,13 @@ import qualified Torch.DType
 
 ```haskell top
 import Torch
-import Torch.Index (lslice)
+import Torch.Index (lslice, slice)
 import Torch.Lens (types, flattenValues, replaceValues)
 import Lens.Family
 import GHC.Generics (Generic)
 import qualified Torch.Typed as T
 import qualified Torch.Typed.Lens as TL
+import qualified Torch.Typed.Index as TI
 import Data.Vector.Sized (Vector)
 ```
 
@@ -132,6 +133,24 @@ T.toDynamic (img ^. TL.field @"r")
 
 ```haskell eval
 T.toDynamic (img & TL.field @"g" .~ T.fromUnnamed T.zeros)
+```
+
+Slicing lenses exist here too: `sliceLens` is the typed `lslice`,
+built from `getSlice` and `setSlice`, and the same `slice` quasiquoter
+works in type position.  The focused shape is computed at compile
+time, so writing a wrongly-shaped value through the lens does not
+compile.
+
+```haskell do
+let tt = T.ones :: T.Tensor '( 'CPU, 0) 'Float '[2, 3]
+```
+
+```haskell eval
+T.toDynamic (tt ^. TI.sliceLens @[slice| 1 |])
+```
+
+```haskell eval
+T.toDynamic (tt & TI.sliceLens @[slice| :, 1 |] %~ (* 100))
 ```
 
 The outward traversal also exists in typed form, where it becomes

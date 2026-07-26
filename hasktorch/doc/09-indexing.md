@@ -62,10 +62,16 @@ getSlice @[slice| :, ::2 |] t         -- every second element of dimension 1
 ```
 
 `setSlice` is the writing counterpart; the value's shape is forced to
-match what `getSlice` with the same indices would produce:
+match what `getSlice` with the same indices would produce.  The two
+combine into `sliceLens`, the typed counterpart of the untyped
+`lslice` lens:
 
 ```haskell
 u = setSlice @'[SliceAt 0] t zeros
+
+t ^. sliceLens @[slice| 1, : |]
+t &  sliceLens @[slice| 0 |] .~ zeros
+t &  sliceLens @[slice| :, 1 |] %~ (* 100)
 ```
 
 ## What the types catch

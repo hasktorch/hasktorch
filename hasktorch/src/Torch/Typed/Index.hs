@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -41,6 +42,7 @@ module Torch.Typed.Index
     -- * Indexing
     getSlice,
     setSlice,
+    sliceLens,
     KnownIndices (..),
   )
 where
@@ -50,6 +52,7 @@ import Data.Type.Bool (If)
 import GHC.TypeLits
 import qualified Language.Haskell.TH as TH
 import System.IO.Unsafe (unsafePerformIO)
+import Torch.Lens (Lens')
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Tensor as T
 import Torch.Typed.Auxiliary (natValI)
@@ -221,6 +224,21 @@ getSlice ::
 getSlice t = unsafePerformIO $ do
   raws <- rawIndices @ixs
   pure . UnsafeMkTensor $ toDynamic t T.! RawIndices raws
+
+-- | The lens made of 'getSlice' and 'setSlice': the typed counterpart of the
+-- untyped 'Torch.Index.lslice' quasiquoter.  Read a slice with @^.@, write
+-- one with @.~@, modify one with @%~@:
+--
+-- > t ^. sliceLens @[slice| 1, : |]
+-- > t &  sliceLens @[slice| 0 |] .~ zeros
+-- > t &  sliceLens @[slice| :, 1 |] %~ (* 100)
+sliceLens ::
+  forall ixs device dtype shape.
+  KnownIndices ixs =>
+  Lens'
+    (Tensor device dtype shape)
+    (Tensor device dtype (IndexedShape ixs shape))
+sliceLens f t = setSlice @ixs t <$> f (getSlice @ixs t)
 
 -- | Replace the indexed part of a tensor.  The value must have exactly the
 -- shape that 'slice' with the same indices would produce.

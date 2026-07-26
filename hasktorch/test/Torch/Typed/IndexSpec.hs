@@ -9,6 +9,7 @@
 module Torch.Typed.IndexSpec (spec) where
 
 import Data.Proxy
+import Lens.Family ((&), (.~), (^.), (%~))
 import Test.Hspec
 import qualified Torch.DType as D
 import qualified Torch.Device as D
@@ -65,6 +66,13 @@ spec = do
       shape (getSlice @[slice| None, :, 1:3 |] t) `shouldBe` [1, 2, 2, 4]
       elems (getSlice @[slice| 1:2, :2, 1::2 |] t) `shouldBe` [13, 15, 17, 19]
       shape (getSlice @[slice| :, ::2 |] t) `shouldBe` [2, 2, 4]
+  describe "sliceLens" $ do
+    it "reads, writes and modifies through the lens" $ do
+      elems (t ^. sliceLens @'[SliceAt 1]) `shouldBe` [12 .. 23]
+      elems (getSlice @'[SliceAt 0] (t & sliceLens @[slice| 0 |] .~ zeros)) `shouldBe` replicate 12 0
+      let u = t & sliceLens @[slice| :, 1 |] %~ (* 100)
+      elems (getSlice @[slice| :, 1 |] u) `shouldBe` map (* 100) ([4 .. 7] ++ [16 .. 19])
+      elems (getSlice @[slice| :, 0 |] u) `shouldBe` ([0 .. 3] ++ [12 .. 15])
   describe "setSlice" $ do
     it "replaces the indexed part and leaves the rest" $ do
       let u = setSlice @'[SliceAt 0] t zeros
