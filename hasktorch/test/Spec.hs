@@ -22,6 +22,7 @@ import qualified Torch.Distributions.BernoulliSpec
 import qualified Torch.Distributions.CategoricalSpec
 import qualified Torch.Distributions.ConstraintsSpec
 import qualified Torch.Typed.ArrowSpec
+import qualified Torch.Typed.ResNetSpec
 import qualified Torch.Typed.AttentionSpec
 import qualified Torch.Typed.AutogradSpec
 import qualified Torch.Typed.AuxiliarySpec
@@ -71,6 +72,7 @@ main = hspec $ do
   Torch.Distributions.CategoricalSpec.spec
   Torch.Distributions.ConstraintsSpec.spec
   Torch.Typed.ArrowSpec.spec
+  Torch.Typed.ResNetSpec.spec
   Torch.Typed.AttentionSpec.spec
   Torch.Typed.AutogradSpec.spec
   Torch.Typed.AuxiliarySpec.spec

@@ -36,6 +36,7 @@ module Torch.Typed.NN.Arrow
   ( Net (..),
     layer,
     residual,
+    residualWith,
   )
 where
 
@@ -67,4 +68,9 @@ layer m = Net (forwardStoch m)
 
 -- | A skip connection: @residual f@ computes @f x + x@.
 residual :: Num a => Net a a -> Net a a
-residual f = (id &&& f) >>> arr (uncurry (+))
+residual = residualWith id
+
+-- | A skip connection with a projection on the skip path, as in ResNet
+-- downsampling blocks: @residualWith skip f@ computes @f x + skip x@.
+residualWith :: Num c => Net a c -> Net a c -> Net a c
+residualWith skip f = (skip &&& f) >>> arr (uncurry (+))

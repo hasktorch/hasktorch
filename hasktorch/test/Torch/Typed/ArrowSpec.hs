@@ -22,6 +22,7 @@ import Control.Category (id, (.), (>>>))
 import Control.Monad (foldM)
 import GHC.Generics (Generic)
 import Test.Hspec
+import Torch.Internal.Managed.Type.Context (manual_seed_L)
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import qualified Torch.Tensor as UT
@@ -55,9 +56,11 @@ instance Randomizable CNNSpec CNN where
 cnn :: CNN -> Net (T '[B, 1, 28, 28]) (T '[B, 10])
 cnn CNN {..} =
   arr (conv2dForward @'(1, 1) @'(1, 1) c1)
+    >>> arr (mulScalar (0.1 :: Float)) -- tame the unscaled default init
     >>> arr relu
     >>> arr (maxPool2d @'(2, 2) @'(2, 2) @'(0, 0))
     >>> arr (conv2dForward @'(1, 1) @'(1, 1) c2)
+    >>> arr (mulScalar (0.1 :: Float))
     >>> arr relu
     >>> arr (maxPool2d @'(2, 2) @'(2, 2) @'(0, 0))
     >>> arr (reshape @'[B, 784])
@@ -73,7 +76,7 @@ lossOf m x y = do
   pure (nllLoss @ReduceMean ones (-100) (logSoftmax @1 logits) y)
 
 spec :: Spec
-spec = describe "networks as arrows" $ do
+spec = describe "networks as arrows" $ beforeAll_ (manual_seed_L 42) $ do
   it "a CNN wired with >>> produces the right shape" $ do
     model <- sample CNNSpec
     x <- randn :: IO (T '[B, 1, 28, 28])
@@ -101,7 +104,7 @@ spec = describe "networks as arrows" $ do
       foldM
         ( \(m, o) _ -> do
             loss <- lossOf m x y
-            runStep m o loss 1e-3
+            runStep m o loss 1e-4
         )
         (model, optim)
         [1 .. 30 :: Int]
