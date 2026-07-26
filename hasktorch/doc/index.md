@@ -28,6 +28,7 @@ The tutorial chapters:
 10. [Graded and Staged Tensor Programs](10-graded-and-staged.html)
 11. [TorchScript and the JIT](11-torchscript-and-jit.html)
 12. [Lenses](12-lenses.html)
+13. [Attention, Equation by Equation](13-attention.html)
 
 Looking for a reference? See the [API docs][api-docs] hosted on
 [hasktorch.org][hasktorch-org].
