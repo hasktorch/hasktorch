@@ -85,6 +85,32 @@ jobs:
         cabal v2-exec codegen-exe
         cabal v2-exec xor-mlp
 
+    - name: Build tutorial
+      run: |
+        # tintin (hasktorch's GHC 9.8/cabal fork) renders hasktorch/doc/;
+        # the documentation pages execute real hasktorch code via runghc.
+        git clone --depth 1 -b feature/ghc98-cabal https://github.com/hasktorch/tintin.git /tmp/tintin
+        (cd /tmp/tintin && cabal v2-build --jobs=2 exe:tintin exe:inlitpp)
+        (cd /tmp/tintin && cabal install --lib inliterate --package-env /tmp/inlit.env)
+        TINTIN=$(cd /tmp/tintin && cabal list-bin exe:tintin)
+        INLITPP_DIR=$(dirname "$(cd /tmp/tintin && cabal list-bin exe:inlitpp)")
+        # runghc needs a package environment in which both hasktorch (built
+        # in-place above) and inliterate (in the cabal store) are visible
+        sed "s|^package-db dist-newstyle/|package-db ${GITHUB_WORKSPACE}/dist-newstyle/|" .ghc.environment.* > /tmp/tutorial.env
+        grep -E "^package-db|^package-id inliterate" /tmp/inlit.env >> /tmp/tutorial.env
+        export GHC_ENVIRONMENT=/tmp/tutorial.env
+        export PATH="$INLITPP_DIR:$PATH"
+        export LD_LIBRARY_PATH="${GITHUB_WORKSPACE}/deps/libtorch/lib:${GITHUB_WORKSPACE}/deps/mklml/lib:${LD_LIBRARY_PATH}"
+        mkdir -p public/tutorial
+        (cd hasktorch && "$TINTIN" run --runghc --outputDirectory "${GITHUB_WORKSPACE}/public/tutorial")
+        ls public/tutorial
+
+    - name: Archive tutorial
+      uses: actions/upload-artifact@v4
+      with:
+        name: tutorial
+        path: public/tutorial
+
     # - name: Benchmark
     #   run: |
     #     cabal v2-bench hasktorch:runtime --benchmark-options='--output benchmark-runtime.html'
