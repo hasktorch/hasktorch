@@ -93,6 +93,28 @@ instance Fractional Tensor where
   recip t = unsafePerformIO $ cast1 ATen.reciprocal_t t
   fromRational i = asTensor @Float $ fromRational @Float i
 
+-- | Pointwise transcendental functions on tensors.  Together with the 'Num'
+-- and 'Fractional' instances this lets element-wise code written against
+-- @Floating a => a -> a@ run vectorized at @a = Tensor@.
+instance Floating Tensor where
+  pi = asTensor @Float pi
+  exp t = unsafePerformIO $ cast1 ATen.exp_t t
+  log t = unsafePerformIO $ cast1 ATen.log_t t
+  sqrt t = unsafePerformIO $ cast1 ATen.sqrt_t t
+  (**) a b = unsafePerformIO $ cast2 ATen.pow_tt a b
+  sin t = unsafePerformIO $ cast1 ATen.sin_t t
+  cos t = unsafePerformIO $ cast1 ATen.cos_t t
+  tan t = unsafePerformIO $ cast1 ATen.tan_t t
+  asin t = unsafePerformIO $ cast1 ATen.asin_t t
+  acos t = unsafePerformIO $ cast1 ATen.acos_t t
+  atan t = unsafePerformIO $ cast1 ATen.atan_t t
+  sinh t = unsafePerformIO $ cast1 ATen.sinh_t t
+  cosh t = unsafePerformIO $ cast1 ATen.cosh_t t
+  tanh t = unsafePerformIO $ cast1 ATen.tanh_t t
+  asinh t = unsafePerformIO $ cast1 ATen.asinh_t t
+  acosh t = unsafePerformIO $ cast1 ATen.acosh_t t
+  atanh t = unsafePerformIO $ cast1 ATen.atanh_t t
+
 -- Return upper or lower triangular matrices
 data Tri = Upper | Lower deriving (Eq, Show)
 

@@ -94,3 +94,69 @@ any device and for any data type and tensor shape.
 This is the essence of typed Hasktorch. As soon as the compiler gives
 its OK, we hold a proof that our program will run without shape or
 CUDA errors.
+
+## Autograd with typed tensors
+
+Chapter [4](04-automatic-differentiation.html) introduced automatic
+differentiation through the untyped API. The typed API exposes the
+same machinery — the same ATen tape runs underneath — but the types
+document and enforce the calling convention that the untyped API
+leaves implicit.
+
+Trainable values are `Parameter device dtype shape`, the typed
+counterpart of the untyped `IndependentTensor`:
+
+```haskell
+w  <- makeIndependent =<< randn @'[2, 1] @'D.Float @'( 'D.CPU, 0)
+let w' = toDependent w   -- Tensor '( 'D.CPU, 0) 'D.Float '[2, 1], tracked
+```
+
+Gradients are computed with `grad`:
+
+```haskell
+grad :: Tensor device dtype '[] -> a -> b
+```
+
+Two things are worth reading off this signature. First, the loss
+argument has shape `'[]`: *the type demands a scalar*. Calling
+autograd on a non-scalar — a runtime error (or a silent
+implicit-sum surprise) in dynamic frameworks — does not compile
+here. Second, `grad loss (flattenParameters model)` returns an
+`HList` of gradient tensors whose shapes are, by type, exactly the
+shapes of the parameters they belong to. A shape mismatch between a
+parameter and its gradient update cannot be expressed.
+
+Models are ordinary records of typed layers; deriving `Generic` and
+`Parameterized` gives parameter traversal for free, and `HasForward`
+states the shape contract of the forward pass:
+
+```haskell
+data MLP ... = MLP
+  { layer0 :: Linear inputFeatures hiddenFeatures dtype device,
+    layer1 :: Linear hiddenFeatures outputFeatures dtype device
+  }
+  deriving (Show, Generic, Parameterized)
+
+instance ... => HasForward (MLP ...)
+    (Tensor device dtype '[batchSize, inputFeatures])
+    (Tensor device dtype '[batchSize, outputFeatures])
+  where
+  forward MLP {..} = forward layer1 . tanh . forward layer0
+```
+
+Random initialization comes from `Randomizable` (`sample MLPSpec`),
+and a training step is one call:
+
+```haskell
+(model', optim') <- runStep model optim loss learningRate
+```
+
+where `optim` is `mkGD`, `mkGDM`, or `mkAdam`, and
+`loss = mseLoss @ReduceMean actual expected` is again forced by its
+type to be a scalar on the right device and dtype. The complete
+program is in `examples/static-xor-mlp`.
+
+The end-to-end guarantee is the one this chapter has been building
+towards: if the program compiles, the forward pass, the loss, every
+gradient, and every optimizer update agree about shapes, dtype, and
+device — the whole training loop, not just individual operations.

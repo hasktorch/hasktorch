@@ -19,6 +19,7 @@ import Text.Megaparsec as M
 import Text.Megaparsec.Char hiding (space)
 import Text.Megaparsec.Char.Lexer
 import Torch.Tensor
+import qualified Torch.Typed.Index (parseIndices)
 
 type Parser = Parsec Void String
 
@@ -157,7 +158,11 @@ slice =
     { quoteExp = parseSlice >=> qconcat,
       quotePat = error "quotePat is not implemented for slice.",
       quoteDec = error "quoteDec is not implemented for slice.",
-      quoteType = error "quoteType is not implemented for slice."
+      -- In type position the same syntax produces the promoted
+      -- @'[Torch.Typed.Index.IndexType]@ list, so one quasiquoter serves the
+      -- untyped API (@t ! [slice|1,:|]@) and the typed one
+      -- (@getSlice \@[slice|1,:|] t@).
+      quoteType = Torch.Typed.Index.parseIndices
     }
   where
     qconcat :: [Exp] -> Q Exp
@@ -175,7 +180,7 @@ lslice =
     { quoteExp = parseSlice >=> qconcat,
       quotePat = error "quotePat is not implemented for slice.",
       quoteDec = error "quoteDec is not implemented for slice.",
-      quoteType = error "quoteType is not implemented for slice."
+      quoteType = error "quoteType is not implemented for lslice."
     }
   where
     qconcat :: [Exp] -> Q Exp

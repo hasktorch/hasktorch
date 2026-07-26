@@ -56,6 +56,7 @@ library
                     , Torch.Script
                     , Torch.HList
                     , Torch.Lens
+                    , Torch.Elementwise
                     , Torch.Typed
                     , Torch.Typed.Auxiliary
                     , Torch.Typed.Factories
@@ -85,6 +86,10 @@ library
                     , Torch.Typed.Vision
                     , Torch.Typed.Lens
                     , Torch.Typed.NamedTensor
+                    , Torch.Typed.Representable
+                    , Torch.Typed.Graded
+                    , Torch.Typed.Staged
+                    , Torch.Typed.Index
                     , Torch.Typed.VLTensor
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
@@ -159,6 +164,7 @@ test-suite spec
                     , GradSpec
                     , InitializerSpec
                     , LensSpec
+                    , ElementwiseSpec
                     , OptimSpec
                     , SparseSpec
                     , ScriptSpec
@@ -183,6 +189,13 @@ test-suite spec
                     , Torch.Typed.NN.TransformerSpec
                     , Torch.Typed.VisionSpec
                     , Torch.Typed.NamedTensorSpec
+                    , Torch.Typed.RepresentableSpec
+                    , Torch.Typed.GradedSpec
+                    , Torch.Typed.StagedSpec
+                    , Torch.Typed.NMSSpec
+                    , Torch.Typed.IndexSpec
+                    , Torch.Typed.LensSpec
+                    , Torch.Typed.AttentionSpec
                     , Torch.Typed.SerializeSpec
                     , SerializeSpec
                     , RandomSpec
@@ -213,6 +226,7 @@ test-suite spec
                     , pipes
                     , random
                     , vector-sized
+                    , finite-typelits
                     , lens-family-core
                     , data-default-class
                     , half
