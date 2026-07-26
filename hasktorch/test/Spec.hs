@@ -2,6 +2,7 @@ module Main where
 
 import Test.Hspec (hspec)
 import qualified DimnameSpec
+import qualified ElementwiseSpec
 import qualified FactorySpec
 import qualified FunctionalSpec
 import qualified GradSpec
@@ -48,6 +49,7 @@ import qualified Torch.Typed.SerializeSpec
 main :: IO ()
 main = hspec $ do
   DimnameSpec.spec
+  ElementwiseSpec.spec
   FactorySpec.spec
   FunctionalSpec.spec
   GradSpec.spec

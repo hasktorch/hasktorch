@@ -76,7 +76,10 @@ inspect at `a = Tensor`), so it goes through the `Cond` class:
 `maxE`/`minE` are overridden with native ATen calls in the `Tensor`
 instance.
 
-The entry points:
+The classes live in the untyped layer — `Torch.Elementwise` — so this
+style is not tied to typed tensors: `emap relu' t` works on a plain
+`Tensor`, and the typed module re-exports the same `Cond`. The typed
+entry points add shape tracking on top:
 
 ```haskell
 emap     :: (forall a. (Floating a, Cond a) => a -> a)      -> NamedTensor d t s -> NamedTensor d t s

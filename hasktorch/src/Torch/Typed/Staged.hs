@@ -38,6 +38,9 @@
 -- the code inspectable.
 module Torch.Typed.Staged
   ( -- * Value-dependent control flow
+    --
+    -- | Re-exported from "Torch.Elementwise", their untyped home: the same
+    -- classes drive element-wise code over untyped tensors.
     Cond (..),
 
     -- * Vectorized element-wise operations
@@ -50,69 +53,13 @@ module Torch.Typed.Staged
 where
 
 import Data.Proxy (Proxy (..))
-import qualified Torch.DType as DT
+import Torch.Elementwise (Cond (..))
 import qualified Torch.Functional as F
-import qualified Torch.Functional.Internal as I
 import Torch.HList (HList, type (++))
 import qualified Torch.Tensor as D
 import Torch.Typed.Graded (TensorMonad, fromNamed, toNamed)
 import Torch.Typed.Representable
 import Torch.Typed.Tensor
-
--- | Branching and comparisons for staged element code.
---
--- @if@\/pattern matching on the element value cannot be reinterpreted at
--- @Tensor@ (there is no @Bool@ to inspect), so value-dependent control flow
--- goes through 'whereE', which compiles to @torch.where@.  Comparisons return
--- @0@\/@1@ masks in the same type @a@ so they compose with arithmetic.
-class Cond a where
-  -- | @whereE c t e@ is elementwise @if c /= 0 then t else e@.
-  whereE :: a -> a -> a -> a
-
-  ltE :: a -> a -> a
-  leE :: a -> a -> a
-  gtE :: a -> a -> a
-  geE :: a -> a -> a
-  eqE :: a -> a -> a
-  neE :: a -> a -> a
-
-  -- | Elementwise maximum.  The default goes through 'whereE'; instances can
-  -- (and the 'D.Tensor' instance does) override it with a native operation.
-  maxE :: a -> a -> a
-  maxE a b = whereE (gtE a b) a b
-
-  -- | Elementwise minimum, see 'maxE'.
-  minE :: a -> a -> a
-  minE a b = whereE (ltE a b) a b
-
-instance Cond Float where
-  whereE c t e = if c /= 0 then t else e
-  ltE a b = if a < b then 1 else 0
-  leE a b = if a <= b then 1 else 0
-  gtE a b = if a > b then 1 else 0
-  geE a b = if a >= b then 1 else 0
-  eqE a b = if a == b then 1 else 0
-  neE a b = if a /= b then 1 else 0
-
-instance Cond Double where
-  whereE c t e = if c /= 0 then t else e
-  ltE a b = if a < b then 1 else 0
-  leE a b = if a <= b then 1 else 0
-  gtE a b = if a > b then 1 else 0
-  geE a b = if a >= b then 1 else 0
-  eqE a b = if a == b then 1 else 0
-  neE a b = if a /= b then 1 else 0
-
-instance Cond D.Tensor where
-  whereE c t e = I.where' (F.toDType DT.Bool c) t e
-  ltE a b = F.toDType (D.dtype a) (F.lt a b)
-  leE a b = F.toDType (D.dtype a) (F.le a b)
-  gtE a b = F.toDType (D.dtype a) (F.gt a b)
-  geE a b = F.toDType (D.dtype a) (F.ge a b)
-  eqE a b = F.toDType (D.dtype a) (F.eq a b)
-  neE a b = F.toDType (D.dtype a) (F.ne a b)
-  maxE = I.maximum
-  minE = I.minimum
 
 -- | Element-wise map, executed as whole-tensor operations.
 --
