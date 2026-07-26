@@ -36,6 +36,10 @@ C.include "<torch/csrc/jit/serialization/export.h>"
 
 C.include "<torch/csrc/jit/frontend/tracer.h>"
 
+C.include "<torch/csrc/jit/codegen/fuser/interface.h>"
+
+C.include "<torch/csrc/jit/passes/tensorexpr_fuser.h>"
+
 C.include "<vector>"
 
 C.include "<iostream>"
@@ -485,4 +489,32 @@ dumpToStr obj print_method_bodies print_attr_values print_param_values =
     , $(bool print_attr_values)
     , $(bool print_param_values)
     ));
+  }|]
+
+-- | Allow the TorchScript executor to fuse pointwise chains on CPU.
+-- Off by default in libtorch; the TensorExpr fuser only consumes CPU graphs
+-- when this is set.
+overrideCanFuseOnCPU :: CBool -> IO ()
+overrideCanFuseOnCPU flag =
+  [C.throwBlock| void {
+    torch::jit::overrideCanFuseOnCPU($(bool flag));
+  }|]
+
+overrideCanFuseOnGPU :: CBool -> IO ()
+overrideCanFuseOnGPU flag =
+  [C.throwBlock| void {
+    torch::jit::overrideCanFuseOnGPU($(bool flag));
+  }|]
+
+-- | Enable/disable the TensorExpr (NNC) fusion pass in the profiling executor.
+setTensorExprFuserEnabled :: CBool -> IO ()
+setTensorExprFuserEnabled flag =
+  [C.throwBlock| void {
+    torch::jit::setTensorExprFuserEnabled($(bool flag));
+  }|]
+
+tensorExprFuserEnabled :: IO CBool
+tensorExprFuserEnabled =
+  [C.throwBlock| bool {
+    return torch::jit::tensorExprFuserEnabled();
   }|]
