@@ -111,16 +111,10 @@ jobs:
         name: tutorial
         path: public/tutorial
 
-    # Same deployment the (now dead-commented) stack-linux step performed
-    # until 2024-01: publish the rendered tutorial to the website repository.
-    - name: Deploy tutorial
-      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-        external_repository: hasktorch/hasktorch.github.io
-        publish_branch: tutorial
-        publish_dir: ./public
+    # The tutorial artifact uploaded above is consumed by
+    # hasktorch/hasktorch.github.io's deploy-pages workflow, which assembles
+    # the website (haddocks + tutorial) and deploys it branchlessly via
+    # actions/deploy-pages.  No deploy key is involved.
 
     # - name: Benchmark
     #   run: |
