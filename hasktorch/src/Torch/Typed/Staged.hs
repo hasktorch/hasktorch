@@ -39,8 +39,6 @@
 module Torch.Typed.Staged
   ( -- * Value-dependent control flow
     Cond (..),
-    maxE,
-    minE,
 
     -- * Vectorized element-wise operations
     emap,
@@ -78,6 +76,15 @@ class Cond a where
   eqE :: a -> a -> a
   neE :: a -> a -> a
 
+  -- | Elementwise maximum.  The default goes through 'whereE'; instances can
+  -- (and the 'D.Tensor' instance does) override it with a native operation.
+  maxE :: a -> a -> a
+  maxE a b = whereE (gtE a b) a b
+
+  -- | Elementwise minimum, see 'maxE'.
+  minE :: a -> a -> a
+  minE a b = whereE (ltE a b) a b
+
 instance Cond Float where
   whereE c t e = if c /= 0 then t else e
   ltE a b = if a < b then 1 else 0
@@ -96,14 +103,6 @@ instance Cond Double where
   eqE a b = if a == b then 1 else 0
   neE a b = if a /= b then 1 else 0
 
--- | Elementwise maximum, via 'whereE'.
-maxE :: Cond a => a -> a -> a
-maxE a b = whereE (gtE a b) a b
-
--- | Elementwise minimum, via 'whereE'.
-minE :: Cond a => a -> a -> a
-minE a b = whereE (ltE a b) a b
-
 instance Cond D.Tensor where
   whereE c t e = I.where' (F.toDType DT.Bool c) t e
   ltE a b = F.toDType (D.dtype a) (F.lt a b)
@@ -112,6 +111,8 @@ instance Cond D.Tensor where
   geE a b = F.toDType (D.dtype a) (F.ge a b)
   eqE a b = F.toDType (D.dtype a) (F.eq a b)
   neE a b = F.toDType (D.dtype a) (F.ne a b)
+  maxE = I.maximum
+  minE = I.minimum
 
 -- | Element-wise map, executed as whole-tensor operations.
 --

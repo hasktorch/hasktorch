@@ -200,15 +200,23 @@ boxIou ::
 boxIou dets = fromUnnamed . UnsafeMkTensor $ iou rows cols
   where
     n = natValI @n
-    rows = D.reshape [n, 1] <$> sides
-    cols = D.reshape [1, n] <$> sides
-    sides =
-      Box
-        (viewL (field @"x1"))
-        (viewL (field @"y1"))
-        (viewL (field @"x2"))
-        (viewL (field @"y2"))
-        (viewL (field @"score"))
+    rows = D.reshape [n, 1] <$> boxFields dets
+    cols = D.reshape [1, n] <$> boxFields dets
+
+-- | The fields of all detections at once, each as a plain @[n]@ tensor,
+-- extracted via the named-field lenses.
+boxFields ::
+  forall n device.
+  NamedTensor device 'D.Float '[Vector n, Box] ->
+  Box D.Tensor
+boxFields dets =
+  Box
+    (viewL (field @"x1"))
+    (viewL (field @"y1"))
+    (viewL (field @"x2"))
+    (viewL (field @"y2"))
+    (viewL (field @"score"))
+  where
     viewL ::
       Lens'
         (NamedTensor device 'D.Float '[Vector n, Box])
@@ -220,10 +228,12 @@ boxIou dets = fromUnnamed . UnsafeMkTensor $ iou rows cols
 -- remaining box whose IoU with it exceeds the threshold, recurse.  Returns
 -- indices into the input, best score first.
 --
--- The pairwise matrix costs @O(n^2)@ memory — with the pre-NMS top-k of a
--- typical detector (@n@ between 1000 and 6000) that is 4 to 144 MB.  The
--- suppression itself is plain list recursion, which is where the algorithm is
--- easiest to read.
+-- Only the IoU rows of boxes that are actually kept get computed: 'iou' is
+-- evaluated once per kept box — the box's fields as scalars, broadcast
+-- against all boxes at once — so memory stays @O(n)@ and no @n^2@ matrix is
+-- materialized.  ('boxIou' is there when the full matrix is wanted.)  The
+-- suppression itself is plain list recursion, which is where the algorithm
+-- is easiest to read.
 nms ::
   forall n device.
   KnownNat n =>
@@ -235,10 +245,14 @@ nms ::
   [Finite n]
 nms threshold dets = map (fromJust . packFinite . fromIntegral) (go order)
   where
-    n = natValI @n
     go [] = []
-    go (i : rest) = i : go [j | j <- rest, m VS.! (i * n + j) <= threshold]
+    go (i : rest) = i : go [j | j <- rest, row VS.! j <= threshold]
+      where
+        row = iouRow i
+    -- IoU of box i against every box: the same scalar formula, its left
+    -- argument a box of 0-dim tensors broadcast against [n] tensors
+    iouRow i = D.asValue (cpu (iou (D.select 0 i <$> allBoxes) allBoxes)) :: VS.Vector Float
+    allBoxes = boxFields dets
     order = map snd (sortOn (Down . fst) (zip (VS.toList scores) [0 ..]))
+    scores = D.asValue (cpu (score allBoxes)) :: VS.Vector Float
     cpu = D.toDevice (D.Device D.CPU 0)
-    scores = D.asValue (D.reshape [-1] (cpu (toDynamic (getConst (field @"score" Const dets))))) :: VS.Vector Float
-    m = D.asValue (D.reshape [-1] (cpu (toDynamic (boxIou dets)))) :: VS.Vector Float
