@@ -14,6 +14,7 @@ import qualified Torch.DType as D
 import qualified Torch.Device as D
 import qualified Torch.Tensor as D
 import Torch.Typed.Factories (zeros)
+import Torch.Index (slice)
 import Torch.Typed.Index
 import Torch.Typed.Tensor
 
@@ -39,33 +40,33 @@ testTrailing = id
 
 spec :: Spec
 spec = do
-  describe "slice" $ do
+  describe "getSlice" $ do
     it "selects with SliceAt, dropping the dimension" $ do
-      let s = slice @'[SliceAt 1] t
+      let s = getSlice @'[SliceAt 1] t
       shape s `shouldBe` [3, 4]
       elems s `shouldBe` [12 .. 23]
     it "reaches inner dimensions through SliceAll" $ do
-      let s = slice @'[SliceAll, SliceAt 0] t
+      let s = getSlice @'[SliceAll, SliceAt 0] t
       shape s `shouldBe` [2, 4]
       elems s `shouldBe` [0, 1, 2, 3, 12, 13, 14, 15]
     it "inserts a dimension with NewAxis" $ do
-      shape (slice @'[NewAxis] t) `shouldBe` [1, 2, 3, 4]
+      shape (getSlice @'[NewAxis] t) `shouldBe` [1, 2, 3, 4]
     it "slices ranges and steps" $ do
-      let s = slice @'[SliceFromUpTo 1 2, SliceUpTo 2, SliceFromWithStep 1 2] t
+      let s = getSlice @'[SliceFromUpTo 1 2, SliceUpTo 2, SliceFromWithStep 1 2] t
       shape s `shouldBe` [1, 2, 2]
       elems s `shouldBe` [13, 15, 17, 19]
     it "computes step lengths by ceiling division" $ do
-      let s = slice @'[SliceAll, SliceFromUpToWithStep 0 3 2] t
+      let s = getSlice @'[SliceAll, SliceFromUpToWithStep 0 3 2] t
       shape s `shouldBe` [2, 2, 4]
       elems s `shouldBe` ([0 .. 3] ++ [8 .. 11] ++ [12 .. 15] ++ [20 .. 23])
-    it "accepts PyTorch-style syntax via the ix quasiquoter" $ do
-      elems (slice @[ix| 1 |] t) `shouldBe` elems (slice @'[SliceAt 1] t)
-      elems (slice @[ix| :, 0 |] t) `shouldBe` elems (slice @'[SliceAll, SliceAt 0] t)
-      shape (slice @[ix| None, :, 1:3 |] t) `shouldBe` [1, 2, 2, 4]
-      elems (slice @[ix| 1:2, :2, 1::2 |] t) `shouldBe` [13, 15, 17, 19]
-      shape (slice @[ix| :, ::2 |] t) `shouldBe` [2, 2, 4]
+    it "accepts PyTorch-style syntax via the slice quasiquoter in type position" $ do
+      elems (getSlice @[slice| 1 |] t) `shouldBe` elems (getSlice @'[SliceAt 1] t)
+      elems (getSlice @[slice| :, 0 |] t) `shouldBe` elems (getSlice @'[SliceAll, SliceAt 0] t)
+      shape (getSlice @[slice| None, :, 1:3 |] t) `shouldBe` [1, 2, 2, 4]
+      elems (getSlice @[slice| 1:2, :2, 1::2 |] t) `shouldBe` [13, 15, 17, 19]
+      shape (getSlice @[slice| :, ::2 |] t) `shouldBe` [2, 2, 4]
   describe "setSlice" $ do
     it "replaces the indexed part and leaves the rest" $ do
       let u = setSlice @'[SliceAt 0] t zeros
-      elems (slice @'[SliceAt 0] u) `shouldBe` replicate 12 0
-      elems (slice @'[SliceAt 1] u) `shouldBe` [12 .. 23]
+      elems (getSlice @'[SliceAt 0] u) `shouldBe` replicate 12 0
+      elems (getSlice @'[SliceAt 1] u) `shouldBe` [12 .. 23]

@@ -27,7 +27,7 @@ The syntax is parsed at compile time, but the *semantics* are dynamic:
 shapes and bounds are only known when the program runs, so a mistake
 surfaces as a runtime error, exactly as in Python.
 
-## Typed: `slice` and the `ix` quasiquoter
+## Typed: `getSlice` and the `slice` quasiquoter
 
 In the typed API (`Torch.Typed.Index`) the index is a type-level
 list, and the result shape is computed by the `IndexedShape` type
@@ -38,9 +38,9 @@ import Torch.Typed.Index
 
 t :: Tensor '( 'D.CPU, 0) 'D.Float '[2, 3, 4]
 
-slice @'[SliceAt 1] t                   :: Tensor _ _ '[3, 4]
-slice @'[SliceAll, SliceAt 0] t         :: Tensor _ _ '[2, 4]
-slice @'[NewAxis, SliceFromUpTo 1 3] t  :: Tensor _ _ '[1, 2, 3, 4]
+getSlice @'[SliceAt 1] t                   :: Tensor _ _ '[3, 4]
+getSlice @'[SliceAll, SliceAt 0] t         :: Tensor _ _ '[2, 4]
+getSlice @'[NewAxis, SliceFromUpTo 1 3] t  :: Tensor _ _ '[1, 2, 3, 4]
 ```
 
 The index constructors follow the naming of the gradually-typed API's
@@ -49,19 +49,20 @@ indexing (PR #613): `SliceAt`, `SliceAll`, `NewAxis`, `SliceFrom`,
 are computed by ceiling division. Dimensions beyond the given indices
 are kept unchanged, as in PyTorch.
 
-Because the index is a type, PyTorch's textual syntax can live in a
-*type* quasiquoter, used inside the type application:
+Because the index is a type, the *same* `slice` quasiquoter that the
+untyped API uses in expression position works here in type position —
+one syntax for both APIs:
 
 ```haskell
-slice @[ix| 1, :, 1:3:2 |] t
--- ≡ slice @'[SliceAt 1, SliceAll, SliceFromUpToWithStep 1 3 2] t
+getSlice @[slice| 1, :, 1:3:2 |] t
+-- ≡ getSlice @'[SliceAt 1, SliceAll, SliceFromUpToWithStep 1 3 2] t
 
-slice @[ix| None, :, 1:3 |] t   -- insert an axis, keep, then slice
-slice @[ix| :, ::2 |] t         -- every second element of dimension 1
+getSlice @[slice| None, :, 1:3 |] t   -- insert an axis, keep, then slice
+getSlice @[slice| :, ::2 |] t         -- every second element of dimension 1
 ```
 
 `setSlice` is the writing counterpart; the value's shape is forced to
-match what `slice` with the same indices would produce:
+match what `getSlice` with the same indices would produce:
 
 ```haskell
 u = setSlice @'[SliceAt 0] t zeros
@@ -79,7 +80,7 @@ steps are all compile-time errors with readable messages:
 ```
 
 These checks compose with the quasiquoter. During development of the
-test suite, `slice @[ix| None, 1:3 |]` applied to a `'[2, 3, 4]`
+test suite, `getSlice @[slice| None, 1:3 |]` applied to a `'[2, 3, 4]`
 tensor was rejected at compile time — after `None` inserts an axis,
 the `1:3` lands on the dimension of size 2 — a mistake that in Python
 would only surface (or worse, silently clamp) at runtime.

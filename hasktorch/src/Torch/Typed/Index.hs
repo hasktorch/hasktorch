@@ -18,24 +18,28 @@
 --
 -- Given @t :: Tensor device dtype '[2, 3, 4]@:
 --
--- > slice @'[SliceAt 1] t                    :: Tensor device dtype '[3, 4]
--- > slice @'[SliceAll, SliceAt 0] t          :: Tensor device dtype '[2, 4]
--- > slice @'[NewAxis, SliceFromUpTo 1 3] t   :: Tensor device dtype '[1, 2, 3, 4]
--- > slice @'[SliceFromUpToWithStep 0 3 2] t  :: Tensor device dtype '[2, 3, 4]
+-- > getSlice @'[SliceAt 1] t                    :: Tensor device dtype '[3, 4]
+-- > getSlice @'[SliceAll, SliceAt 0] t          :: Tensor device dtype '[2, 4]
+-- > getSlice @'[NewAxis, SliceFromUpTo 1 3] t   :: Tensor device dtype '[1, 2, 3, 4]
+-- > getSlice @'[SliceFromUpToWithStep 0 3 2] t  :: Tensor device dtype '[2, 3, 4]
 --
--- @slice \@'[SliceAt 5] t@ on a dimension of size 2 does not compile.
+-- @getSlice \@'[SliceAt 5] t@ on a dimension of size 2 does not compile.
 module Torch.Typed.Index
   ( -- * The index language
     IndexType (..),
 
     -- * PyTorch-style syntax
-    ix,
+    --
+    -- | The 'Torch.Index.slice' quasiquoter works in type position and
+    -- produces the promoted @'[IndexType]@ list; 'parseIndices' is its
+    -- implementation.
+    parseIndices,
 
     -- * Result-shape computation
     IndexedShape,
 
     -- * Indexing
-    slice,
+    getSlice,
     setSlice,
     KnownIndices (..),
   )
@@ -45,7 +49,6 @@ import Data.Char (isDigit, isSpace)
 import Data.Type.Bool (If)
 import GHC.TypeLits
 import qualified Language.Haskell.TH as TH
-import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import System.IO.Unsafe (unsafePerformIO)
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Tensor as T
@@ -208,13 +211,14 @@ instance T.TensorIndex RawIndices where
 -- | Index a tensor with a type-level list of indices; the result shape is
 -- computed (and bounds are checked) at compile time.
 --
--- > slice @'[SliceAt 1, SliceFromUpTo 0 2] t
-slice ::
+-- > getSlice @'[SliceAt 1, SliceFromUpTo 0 2] t
+-- > getSlice @[slice| 1, 0:2 |] t              -- Torch.Index's quasiquoter, in type position
+getSlice ::
   forall ixs device dtype shape.
   KnownIndices ixs =>
   Tensor device dtype shape ->
   Tensor device dtype (IndexedShape ixs shape)
-slice t = unsafePerformIO $ do
+getSlice t = unsafePerformIO $ do
   raws <- rawIndices @ixs
   pure . UnsafeMkTensor $ toDynamic t T.! RawIndices raws
 
@@ -234,24 +238,6 @@ setSlice t v = unsafePerformIO $ do
 -- PyTorch-style syntax
 --------------------------------------------------------------------------------
 
--- | A /type/ quasiquoter for PyTorch indexing syntax, usable wherever the
--- type-level index list goes:
---
--- > slice @[ix| 1, :, 1:3:2 |] t  ==  slice @'[SliceAt 1, SliceAll, SliceFromUpToWithStep 1 3 2] t
---
--- Supported per-dimension forms, as in PyTorch: @i@, @:@, @::@, @from:@,
--- @:to@, @from:to@, @from::step@, @:to:step@, @::step@, @from:to:step@ and
--- @None@ (insert an axis).  Negative indices, @...@ and boolean\/tensor
--- indices are not supported; indices here are type-level naturals.
-ix :: QuasiQuoter
-ix =
-  QuasiQuoter
-    { quoteType = parseIndices,
-      quoteExp = const (fail "ix is a type quasiquoter; use it as slice @[ix|...|] t"),
-      quotePat = const (fail "ix is a type quasiquoter; use it as slice @[ix|...|] t"),
-      quoteDec = const (fail "ix is a type quasiquoter; use it as slice @[ix|...|] t")
-    }
-
 parseIndices :: String -> TH.Q TH.Type
 parseIndices str = do
   items <-
@@ -263,7 +249,7 @@ parseIndices str = do
     nat :: String -> TH.Q TH.Type
     nat s
       | not (null s) && all isDigit s = pure (TH.LitT (TH.NumTyLit (read s)))
-      | otherwise = fail ("ix: expected a natural number, got " <> show s)
+      | otherwise = fail ("slice: expected a natural number, got " <> show s)
     con :: TH.Name -> [TH.Q TH.Type] -> TH.Q TH.Type
     con name args = foldl (\acc a -> TH.AppT <$> acc <*> a) (pure (TH.PromotedT name)) args
     parseItem :: String -> TH.Q TH.Type
@@ -282,7 +268,7 @@ parseIndices str = do
       [f, "", s'] -> con 'SliceFromWithStep [nat f, nat s']
       ["", t, s'] -> con 'SliceUpToWithStep [nat t, nat s']
       [f, t, s'] -> con 'SliceFromUpToWithStep [nat f, nat t, nat s']
-      _ -> fail ("ix: cannot parse index " <> show s)
+      _ -> fail ("slice: cannot parse index " <> show s)
 
 splitOn :: Char -> String -> [String]
 splitOn c s = case break (== c) s of
