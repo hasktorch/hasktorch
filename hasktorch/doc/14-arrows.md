@@ -156,3 +156,42 @@ composition point was an ambiguous type for the compiler, `deriving
 Parameterized` broke, and examples needed `PartialTypeSignatures`.
 Records for state, arrows for wiring — each side does what it is good
 at.
+
+## Folding a stack of layers
+
+`Net` is a real `Category`, and that pays off when a model is a
+*stack* of same-shaped blocks: composition has an identity, so a whole
+list of layers folds into one network.
+
+```haskell do
+let blocks = map (\k -> residual (arr (T.mulScalar (k :: Float))))
+             [1, 2, 3] :: [Net (T.Tensor '( 'T.CPU, 0) 'T.Float '[2]) (T.Tensor '( 'T.CPU, 0) 'T.Float '[2])]
+    stack = foldr (>>>) id blocks
+out3 <- runNet stack T.ones
+```
+
+Each block computes `x + k*x = (1+k)x`, so the folded stack multiplies
+by `2 * 3 * 4`:
+
+```haskell eval
+T.toDynamic out3
+```
+
+The same fold works when every layer has its own parameter record in
+an `HList` — the seed is still `id`, the combining step is still
+`>>>`, just expressed with `hfoldr` and an `Apply'` instance.
+
+## In the wild
+
+For a full-scale example, see
+[gpt2-haskell](https://github.com/collinarnett/gpt2-haskell) by Collin
+Arnett, whose GPT-2 decoder stack is wired exactly in this style —
+
+```haskell
+residual (layer ln >>> selfAttention mha mask) >>> transformerMLP
+```
+
+— with the causal mask written as its `tabulate` formula and typed
+slicing (`getSlice`) replacing runtime shape proofs that previously
+needed `unsafeCoerce`.  Its migration PR is a good study in porting an
+existing model to these APIs.
