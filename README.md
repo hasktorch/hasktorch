@@ -27,8 +27,40 @@ The documentation is divided into several sections:
 
 ## Getting Started
 
-The following steps will get you started.
-They assume the hasktorch repository has just been cloned.
+### Using Hasktorch in your own project — no manual installation
+
+You do **not** need to install libtorch (or anything else) by hand.
+Add `hasktorch` to your project's `build-depends`:
+
+```cabal
+build-depends: base, hasktorch
+```
+
+The first time you run `cabal build`, the build downloads the
+official libtorch binaries from `download.pytorch.org` automatically
+and caches them under `~/.cache/libtorch/<version>/<platform>/<flavor>`.
+Later builds — and every other project on the machine — reuse that
+cache; nothing is downloaded twice. The linker rpath is set for you,
+so the built binaries find the libraries at runtime without any
+environment variables.
+
+Supported out of the box:
+
+| Platform | Backend |
+|---|---|
+| Linux x86_64 | CPU (default), or CUDA with `export LIBTORCH_CUDA_VERSION=cu118` (etc.) before building — the needed NVIDIA libraries are downloaded automatically too |
+| macOS Apple Silicon | CPU; the binary also includes Apple's MPS backend (`Device MPS 0`) |
+| macOS Intel | CPU |
+
+Environment variables, all optional: `LIBTORCH_VERSION` (pin a
+libtorch version), `LIBTORCH_HOME` (cache location),
+`LIBTORCH_CUDA_VERSION` (`cpu`, `cu118`, `cu121`, …), and
+`LIBTORCH_SKIP_DOWNLOAD` (use a system-provided libtorch instead).
+Nix builds skip the download; the flake provides libtorch itself.
+
+### Working on hasktorch itself
+
+The following steps assume the hasktorch repository has just been cloned.
 After setup is done, read the [online tutorials](https://hasktorch.github.io/tutorial/) and [API documents](https://hasktorch.github.io/).
 
 * [linux+cabal+cpu](#linuxcabalcpu)
