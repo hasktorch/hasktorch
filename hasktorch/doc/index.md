@@ -58,11 +58,20 @@ derived from them.
 
 15. [TorchScript and the JIT](15-torchscript-and-jit.html) — tracing models from Haskell, and measured reality about fusion
 
+## Part V — Training in practice
+
+The engineering around the math: getting data in, updating
+parameters efficiently, and getting trained models out.
+
+16. [Data Pipelines](16-data-pipelines.html) — streaming datasets in constant memory: CSV rows as records, shuffling, prefetch
+17. [Optimizers](17-optimizers.html) — purely functional optimizers whose state is a value, and libtorch's in-place ones; when each wins
+18. [Saving and Loading](18-serialization.html) — checkpoints, and pickle interop with PyTorch in both directions
+
 Chapters 1–6 assume no Haskell type-level programming at all.
 Chapters 7–10 use type-level naturals and records. Chapters 11–15 are
-where the research-flavoured ideas live — each grounded in code that
-is compiled, executed, and tested in CI, with the rendered output on
-these very pages.
+where the research-flavoured ideas live, and 16–18 need only Part I
+again — every chapter is grounded in code that is compiled, executed,
+and tested in CI, with the rendered output on these very pages.
 
 Looking for a reference? See the [API docs][api-docs] hosted on
 [hasktorch.org][hasktorch-org].
