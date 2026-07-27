@@ -36,7 +36,7 @@ import Torch (Tensor)
 ```
 
 ```haskell top
-import Data.Default.Class (Default)
+import Data.Default.Class (Default, def)
 import Data.Vector.Sized (Vector)
 import GHC.Generics (Generic)
 import Torch.HList
@@ -110,6 +110,125 @@ T.toDynamic gu
 
 After the split, each gate takes its *own* nonlinearity —
 `sigmoid gi`, `tanh gu` — selected by field name, not by offset.
+
+## `vmap`, `scan`, `grad`: the JAX trio
+
+Once a dimension can move between tensor and structure, JAX's `vmap`
+is one composition away, and `Torch.Typed.Representable` provides it:
+
+```haskell
+vmap :: (NamedTensor device dtype shape  -> NamedTensor device' dtype' shape')
+     ->  NamedTensor device dtype (f ': shape)
+     ->  NamedTensor device' dtype' (f ': shape')
+```
+
+`vmap g` applies `g` to every position of the outermost dimension,
+with *per-position semantics*: each slice is handed to `g` on its
+own, exactly as if you had written `dimDown . fmap g . dimUp` — that
+equation is the specification, and the test suite holds `vmap` to it.
+The function may change the shape under the mapped dimension; the
+dimension itself survives in the type. Summing away the pixel axis of
+each channel of the image from above:
+
+```haskell do
+let sums = vmap (T.sumNamedDim @(Vector 4)) img
+```
+
+```haskell eval
+T.toDynamic sums
+```
+
+The input had shape `'[RGB, Vector 4]`, the per-channel function maps
+`'[Vector 4]` to a scalar `'[]`, and the result is `'[RGB]` — the
+compiler tracked the mapped axis through the whole trip, with no
+annotation needed. `vmap2` is the two-argument version, zipping along
+a shared dimension whose *type* is what guarantees the two sides
+agree in length.
+
+For this particular job, though, named dimensions already made `vmap`
+unnecessary: `sumNamedDim` targets its dimension by *name*, wherever
+it sits, so the reduction works directly on the full tensor —
+
+```haskell eval
+T.toDynamic (T.sumNamedDim @(Vector 4) img)
+```
+
+— and that is the general pattern. Name-directed operations
+(`sumNamedDim`, `meanNamedDim`, `sortNamedDim`, …) and broadcasting
+pointwise math cover the cases JAX users reach for `vmap` first.
+`vmap` earns its keep when the per-slice function is a *black box* —
+a whole forward pass under a `Batch` dimension, an arbitrary pipeline
+somebody else wrote.
+
+### `vmap` and `emap` are the same idea, split by transparency
+
+The [staged chapter](11-graded-and-staged.html)'s `emap` also lifts a
+function over "everything under a dimension" — there, a scalar
+formula over every element. The difference is what the lifted
+function *is*. `emap` takes a polymorphic formula
+(`forall a. (Floating a, Cond a) => a -> a`), which it can interpret
+symbolically: one interpretation at the tensor type runs the whole
+thing as a handful of fused, vectorized kernels. `vmap` takes an
+opaque Haskell function, which it cannot look inside — so it must
+call it once per position (an `unbind` and a `stack` at the
+boundary), and in exchange the function may be anything at all,
+including shape-changing. Transparent and fast, or opaque and
+general: JAX's `vmap` refuses the choice by *tracing* — every
+function is made transparent at run time, then rewritten by batching
+rules. Doing that for whole-tensor functions here is the natural
+extension of the staged chapter's move, not a current feature.
+
+### Recurrence: `vscan`
+
+The same door admits JAX's other structural primitive. `vscan` folds
+a carry along the dimension and stacks the intermediate carries — a
+recurrence, processed sequentially because that is what a recurrence
+means:
+
+```haskell
+vscan :: (carry -> slice -> carry) -> carry
+      -> NamedTensor device dtype (f ': shape) -> NamedTensor device' dtype' (f ': shape')
+```
+
+Running sums along the channel axis:
+
+```haskell do
+let running = vscan (+) def img
+```
+
+```haskell eval
+T.toDynamic running
+```
+
+The rows are `r`, `r + g`, `r + g + b`: the last position of a scan
+is the fold. An RNN unrolled over a `Vector n` time axis is exactly
+`vscan cell h0`.
+
+### Differentiating through it all
+
+`unbind` and `stack` are ordinary autograd ops, so gradients flow
+through `vmap` and `vscan` with nothing special. Weighting the pixel
+axis with a trainable parameter and pushing a scalar loss backwards:
+
+```haskell do
+w <- T.makeIndependent (T.ones :: T.CPUTensor 'T.Float '[4])
+let wn = T.fromUnnamed (T.toDependent w) :: T.NamedTensor '( 'T.CPU, 0) 'T.Float '[Vector 4]
+    total = T.sumNamedDim @(Vector 4) (T.sumNamedDim @RGB (vmap (\c -> c * wn) img))
+    gw :. HNil = T.grad (T.toUnnamed total) (w :. HNil)
+```
+
+```haskell eval
+T.toDynamic gw
+```
+
+The loss is `img · w` summed over every channel and pixel, so its
+gradient in `w` is the per-pixel sums over channels — the same
+numbers the scan's last row just showed. One seam is visible in this snippet and worth
+naming: the parameter enters the named world through
+`fromUnnamed`, because parameters (`Parameter`, `makeIndependent`)
+live in the positional typed API and there is no named parameter type
+yet. That conversion is internals showing through — the missing
+piece, not the idiom.
 
 ## Trees: the dimension that cannot be an axis
 

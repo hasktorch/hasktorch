@@ -368,6 +368,30 @@ meanNamedDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.mean_tl input _di
   where
     _dim = natValI @(FindDim dim shape)
 
+-- | Computes the sum and reduces the tensor over the specified named
+-- dimension.  The dimension is addressed by its type, wherever it sits in
+-- the shape.
+--
+-- >>> import Torch.Typed.Factories
+-- >>> import Data.Default.Class
+-- >>> t = def :: NamedTensor '( D.CPU, 0) 'D.Float '[Vector 3, Vector 4, Vector 5]
+-- >>> dtype &&& shape $ sumNamedDim @(Vector 4) t
+-- (Float,[3,5])
+sumNamedDim ::
+  forall dim shape' shape dtype dtype' device.
+  ( KnownNat (FindDim dim shape),
+    shape' ~ DropNamedValue shape dim,
+    SumDTypeIsValid device dtype,
+    dtype' ~ SumDType dtype
+  ) =>
+  -- | input
+  NamedTensor device dtype shape ->
+  -- | output
+  NamedTensor device dtype' shape'
+sumNamedDim input = unsafePerformIO $ ATen.cast2 ATen.Managed.sum_tl input _dim
+  where
+    _dim = natValI @(FindDim dim shape)
+
 -- | Computes the mean and optionally reduces the tensor over the specified dimension.
 --
 -- See https://pytorch.org/docs/stable/torch.html#torch.mean for more information.

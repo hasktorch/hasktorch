@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -30,7 +31,10 @@ import qualified Torch.Device as D
 import Torch.HList
 import qualified Torch.Tensor as D
 import qualified Data.Vector.Sized as V
-import Torch.Typed.Factories ()
+import Torch.Typed.Autograd (grad)
+import Torch.Typed.Factories (ones)
+import Torch.Typed.Functional (sumNamedDim)
+import Torch.Typed.Parameter (makeIndependent, toDependent)
 import Torch.Typed.Representable
 import Torch.Typed.Tensor
 
@@ -41,7 +45,7 @@ data RGB a = RGB
     g :: a,
     b :: a
   }
-  deriving (Show, Eq, Generic, Default)
+  deriving (Show, Eq, Generic, Default, Functor)
 
 -- 'ToNat' is derived from 'Generic', so a user-defined structure needs no
 -- registration to be usable as a dimension.
@@ -113,3 +117,27 @@ spec = do
       let t = tabulate (\(i :. j :. HNil) -> fromIntegral (fromEnum i) * 10 + fromIntegral (fromEnum j)) :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 3, RGB]
           rows = dimUp t :: Vector 3 (NamedTensor '(D.CPU, 0) 'D.Float '[RGB])
       (D.asValue (toDynamic (V.index rows 1)) :: [Float]) `shouldBe` [10, 11, 12]
+  describe "vmap" $ do
+    -- rows r=[0,1], g=[10,11], b=[20,21]
+    let t = tabulate (\(i :. j :. HNil) -> fromIntegral (fromEnum i) * 10 + fromIntegral (fromEnum j)) :: NamedTensor '(D.CPU, 0) 'D.Float '[RGB, Vector 2]
+    it "matches its specification, dimDown . fmap g . dimUp" $ do
+      let g :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2] -> NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2]
+          g x = fromUnnamed (toUnnamed x * toUnnamed x)
+      (D.asValue (toDynamic (vmap g t)) :: [[Float]])
+        `shouldBe` (D.asValue (toDynamic (dimDown (fmap g (dimUp t)))) :: [[Float]])
+    it "maps a reduction, changing the shape under the mapped dimension" $ do
+      let sums = vmap (sumNamedDim @(Vector 2)) t :: NamedTensor '(D.CPU, 0) 'D.Float '[RGB]
+      (D.asValue (toDynamic sums) :: [Float]) `shouldBe` [1, 21, 41]
+    it "vmap2 zips along the shared dimension" $ do
+      let s = vmap2 (\a b -> a + b) t t :: NamedTensor '(D.CPU, 0) 'D.Float '[RGB, Vector 2]
+      (D.asValue (toDynamic s) :: [[Float]]) `shouldBe` [[0, 2], [20, 22], [40, 42]]
+    it "vscan carries state along the dimension" $ do
+      let s = vscan (+) (def :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2]) t
+      (D.asValue (toDynamic s) :: [[Float]]) `shouldBe` [[0, 1], [10, 12], [30, 33]]
+    it "gradients flow through vmap" $ do
+      w <- makeIndependent (ones :: Tensor '(D.CPU, 0) 'D.Float '[2])
+      let wn = fromUnnamed (toDependent w) :: NamedTensor '(D.CPU, 0) 'D.Float '[Vector 2]
+          total = sumNamedDim @(Vector 2) (sumNamedDim @RGB (vmap (\c -> c * wn) t))
+          gw :. HNil = grad (toUnnamed total) (w :. HNil)
+      -- d/dw_j of sum_{c,j} t_{c,j} * w_j is the column sums of t
+      (D.asValue (toDynamic gw) :: [Float]) `shouldBe` [30, 33]

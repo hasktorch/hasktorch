@@ -52,6 +52,20 @@ module Torch.Typed.Representable
     -- same names.
     dimUp,
     dimDown,
+
+    -- * Mapping under a dimension
+    --
+    -- | 'vmap' applies a function on tensors of shape @shape@ to every
+    -- position of a tensor of shape @f ': shape@ — JAX's @vmap@, with the
+    -- mapped dimension tracked in the type.  Semantically it is
+    --
+    -- > vmap g == dimDown . fmap g . dimUp
+    --
+    -- for any 'Functor' @f@, but it never materialises the @f@-structure, so
+    -- it needs no instances and @f@ may change nothing but the type.
+    vmap,
+    vmap2,
+    vscan,
   )
 where
 
@@ -221,3 +235,79 @@ dimDown =
     . F.stack (F.Dim 0)
     . map toDynamic
     . flattenValues (types @(NamedTensor device dtype shape))
+
+-- | Map a tensor function over the outermost dimension, with per-position
+-- semantics: each slice is passed to the function on its own, exactly as if
+-- the dimension were a Haskell structure.  The function may change the
+-- shape, dtype, and device of the slices; the mapped dimension @f@ is
+-- preserved.
+--
+-- Use it when the function does /not/ already broadcast — a per-example
+-- model applied under a @Batch@ dimension, a reduction applied under a time
+-- dimension.  Pointwise operations broadcast on their own and need no
+-- 'vmap'.
+--
+-- The cost model is honest rather than clever: one call of the function per
+-- position (libtorch @unbind@ / @stack@ at the boundary, no copies of the
+-- slices themselves).  That is negligible when the function is a whole
+-- forward pass and wasteful when it is a single op — there is no batching-
+-- rule rewriter behind it.
+vmap ::
+  forall f shape shape' dtype dtype' device device'.
+  (NamedTensor device dtype shape -> NamedTensor device' dtype' shape') ->
+  NamedTensor device dtype (f ': shape) ->
+  NamedTensor device' dtype' (f ': shape')
+vmap g =
+  fromUnnamed
+    . UnsafeMkTensor
+    . F.stack (F.Dim 0)
+    . map (toDynamic . g . fromUnnamed . UnsafeMkTensor)
+    . flip I.unbind 0
+    . toDynamic
+
+-- | Zip two tensors along a shared outermost dimension.  The dimension @f@
+-- being the same type on both sides is what guarantees the slice counts
+-- match.
+vmap2 ::
+  forall f shapeA shapeB shape' dtypeA dtypeB dtype' device device'.
+  ( NamedTensor device dtypeA shapeA ->
+    NamedTensor device dtypeB shapeB ->
+    NamedTensor device' dtype' shape'
+  ) ->
+  NamedTensor device dtypeA (f ': shapeA) ->
+  NamedTensor device dtypeB (f ': shapeB) ->
+  NamedTensor device' dtype' (f ': shape')
+vmap2 g t u =
+  fromUnnamed . UnsafeMkTensor . F.stack (F.Dim 0) $
+    zipWith
+      (\a b -> toDynamic (g (fromUnnamed (UnsafeMkTensor a)) (fromUnnamed (UnsafeMkTensor b))))
+      (I.unbind (toDynamic t) 0)
+      (I.unbind (toDynamic u) 0)
+
+-- | Carry state along the outermost dimension — JAX's @scan@.  The step
+-- function folds a carry through the positions in order, and the carries are
+-- stacked as the result, one per position: the outermost slice of the result
+-- at the last position is the fold's final value.
+--
+-- This is the shape of recurrence — an RNN unrolled over a @Vector n@ time
+-- axis is @vscan cell h0@ — and like 'vmap' it is honest about cost: the
+-- positions are processed sequentially, which is what a recurrence means.
+-- Gradients flow through it; @unbind@ and @stack@ are ordinary autograd ops.
+vscan ::
+  forall f shape shape' dtype dtype' device.
+  ( NamedTensor device dtype' shape' ->
+    NamedTensor device dtype shape ->
+    NamedTensor device dtype' shape'
+  ) ->
+  NamedTensor device dtype' shape' ->
+  NamedTensor device dtype (f ': shape) ->
+  NamedTensor device dtype' (f ': shape')
+vscan step c0 =
+  fromUnnamed
+    . UnsafeMkTensor
+    . F.stack (F.Dim 0)
+    . map toDynamic
+    . tail
+    . scanl (\c x -> step c (fromUnnamed (UnsafeMkTensor x))) c0
+    . flip I.unbind 0
+    . toDynamic
