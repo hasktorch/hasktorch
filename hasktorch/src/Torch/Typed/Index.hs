@@ -25,6 +25,13 @@
 -- > getSlice @'[SliceFromUpToWithStep 0 3 2] t  :: Tensor device dtype '[2, 3, 4]
 --
 -- @getSlice \@'[SliceAt 5] t@ on a dimension of size 2 does not compile.
+--
+-- __Acknowledgement__: the design — a type-level index list whose result
+-- shape is computed by a type family, with the index constructors named
+-- @SliceAt@\/@SliceAll@\/@NewAxis@\/… — follows Julius Marozas's
+-- lens-based typed indexing prototype
+-- (<https://gist.github.com/jul1u5/7c5fadb51a9c5f8d7f2a722d6071c1da>)
+-- and its continuation in PR #613 for the gradually-typed API.
 module Torch.Typed.Index
   ( -- * The index language
     IndexType (..),

@@ -123,4 +123,4 @@ Indicative CPU timings (FHD-scale boxes, `n` = pre-NMS top-k):
 `n`=1000 ≈ 8 ms, `n`=3000 ≈ 22 ms, `n`=6000 ≈ 48 ms. A native C++
 kernel is still a few times faster at the top end — the remaining gap
 is eager per-op dispatch, discussed in
-[TorchScript and the JIT](11-torchscript-and-jit.html).
+[TorchScript and the JIT](15-torchscript-and-jit.html).

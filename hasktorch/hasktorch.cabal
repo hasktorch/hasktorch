@@ -198,6 +198,7 @@ test-suite spec
                     , Torch.Typed.IndexSpec
                     , Torch.Typed.LensSpec
                     , Torch.Typed.AttentionSpec
+                    , Torch.Typed.TreeLSTMSpec
                     , Torch.Typed.ArrowSpec
                     , Torch.Typed.ResNetSpec
                     , Torch.Typed.SerializeSpec

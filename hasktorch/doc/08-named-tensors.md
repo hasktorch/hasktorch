@@ -111,7 +111,7 @@ Note the granularity: `tabulate` is efficient (one `asTensor` call),
 `index` costs a few FFI calls per element, so it is for spot reads,
 not for loops over all elements. For whole-tensor element-wise
 computation, see [Graded and Staged Tensor
-Programs](10-graded-and-staged.html).
+Programs](11-graded-and-staged.html).
 
 ## Lenses over whole models: changing dtype and device
 

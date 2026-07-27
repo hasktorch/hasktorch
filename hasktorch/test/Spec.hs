@@ -24,6 +24,7 @@ import qualified Torch.Distributions.ConstraintsSpec
 import qualified Torch.Typed.ArrowSpec
 import qualified Torch.Typed.ResNetSpec
 import qualified Torch.Typed.AttentionSpec
+import qualified Torch.Typed.TreeLSTMSpec
 import qualified Torch.Typed.AutogradSpec
 import qualified Torch.Typed.AuxiliarySpec
 import qualified Torch.Typed.FactoriesSpec
@@ -74,6 +75,7 @@ main = hspec $ do
   Torch.Typed.ArrowSpec.spec
   Torch.Typed.ResNetSpec.spec
   Torch.Typed.AttentionSpec.spec
+  Torch.Typed.TreeLSTMSpec.spec
   Torch.Typed.AutogradSpec.spec
   Torch.Typed.AuxiliarySpec.spec
   Torch.Typed.FactoriesSpec.spec
