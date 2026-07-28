@@ -61,6 +61,7 @@ library
                     , Torch.Typed.Auxiliary
                     , Torch.Typed.Factories
                     , Torch.Typed.Functional
+                    , Torch.Typed.Random
                     , Torch.Typed.NN
                     , Torch.Typed.NN.Convolution
                     , Torch.Typed.NN.Normalization
@@ -178,6 +179,7 @@ test-suite spec
                     , Torch.Typed.TensorSpec0
                     , Torch.Typed.TensorSpec1
                     , Torch.Typed.FactoriesSpec
+                    , Torch.Typed.RandomSpec
                     , Torch.Typed.FunctionalSpec0
                     , Torch.Typed.FunctionalSpec1
                     , Torch.Typed.FunctionalSpec2

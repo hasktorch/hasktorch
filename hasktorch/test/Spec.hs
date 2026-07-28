@@ -42,6 +42,7 @@ import qualified Torch.Typed.NN.TransformerSpec
 import qualified Torch.Typed.NNSpec
 import qualified Torch.Typed.NamedTensorSpec
 import qualified Torch.Typed.OptimSpec
+import qualified Torch.Typed.RandomSpec
 import qualified Torch.Typed.RepresentableSpec
 import qualified Torch.Typed.NMSSpec
 import qualified Torch.Typed.StagedSpec
@@ -93,6 +94,7 @@ main = hspec $ do
   Torch.Typed.NNSpec.spec
   Torch.Typed.NamedTensorSpec.spec
   Torch.Typed.OptimSpec.spec
+  Torch.Typed.RandomSpec.spec
   Torch.Typed.RepresentableSpec.spec
   Torch.Typed.NMSSpec.spec
   Torch.Typed.StagedSpec.spec

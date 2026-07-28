@@ -11,6 +11,7 @@ module Torch.Typed
     module Torch.Typed.NN,
     module Torch.Typed.Optim,
     module Torch.Typed.Parameter,
+    module Torch.Typed.Random,
     module Torch.Typed.Serialize,
     module Torch.Typed.Tensor,
     module Torch.Typed.Vision,
@@ -38,6 +39,7 @@ import Torch.Typed.Functional
 import Torch.Typed.NN
 import Torch.Typed.Optim
 import Torch.Typed.Parameter hiding (parameterToDType, parameterToDevice)
+import Torch.Typed.Random
 import Torch.Typed.Serialize
 import Torch.Typed.Tensor hiding (toDType, toDevice)
 import Torch.Typed.Vision
