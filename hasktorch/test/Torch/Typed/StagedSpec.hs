@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE KindSignatures #-}
@@ -12,6 +14,8 @@
 
 module Torch.Typed.StagedSpec (spec) where
 
+import Data.Default.Class (Default)
+import qualified Data.Vector.Sized as V
 import Data.Vector.Sized (Vector)
 import GHC.Generics
 import GHC.TypeLits
@@ -32,7 +36,11 @@ data RGB a = RGB
     g :: a,
     b :: a
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Generic, Functor, Default)
+
+-- The element view of '[Vector 3, RGB]: an ordinary type synonym is enough,
+-- because Nested reduces structurally.
+type Triangle a = Vector 3 (RGB a)
 
 type M = TensorMonad '(D.CPU, 0) 'D.Float
 
@@ -86,6 +94,25 @@ stagedG ::
   M '[Batch 2, RGB]
 stagedG k = gbindV @'[RGB] baseT k
 
+-- a batch of two triangles: tri[k,i,c] = k*100 + i*10 + c
+tri :: NamedTensor '(D.CPU, 0) 'D.Float '[Batch 2, Vector 3, RGB]
+tri = tabulateList @'[Batch 2, Vector 3, RGB] @'D.Float @'(D.CPU, 0) (\[k, i, c] -> fromIntegral (k * 100 + i * 10 + c))
+
+-- structured formulas, each written once, polymorphically
+
+sLum :: (Floating a, Cond a) => Triangle a -> Vector 3 a
+sLum = fmap (\(RGB r' g' b') -> (r' + g' + b') / 3)
+
+sCentroid :: (Floating a, Cond a) => Triangle a -> RGB a
+sCentroid = fmap (/ 3) . foldr1 addRGB
+  where
+    addRGB (RGB x y z) (RGB x' y' z') = RGB (x + x') (y + y') (z + z')
+
+sDist2 :: (Floating a, Cond a) => Triangle a -> Triangle a -> Vector 3 a
+sDist2 =
+  V.zipWith
+    (\(RGB x y z) (RGB x' y' z') -> (x - x') ^ 2 + (y - y') ^ 2 + (z - z') ^ 2)
+
 spec :: Spec
 spec = do
   describe "Staged element-wise ops" $ do
@@ -103,6 +130,28 @@ spec = do
     it "emap preserves shape and dtype" $ do
       shape (emap fPoly timg) `shouldBe` [2, 3]
       dtype (emap fPoly timg) `shouldBe` D.Float
+  describe "structured elements (emapS / ezipWithS)" $ do
+    it "emapS id is the identity" $ do
+      elemsOf (emapS @'[Vector 3, RGB] @'[Vector 3, RGB] id tri) `shouldBe` elemsOf tri
+    it "structural operations work: vertex reversal" $ do
+      elemsOf (emapS @'[Vector 3, RGB] @'[Vector 3, RGB] V.reverse tri)
+        `shouldBe` [20, 21, 22, 10, 11, 12, 0, 1, 2, 120, 121, 122, 110, 111, 112, 100, 101, 102]
+    it "changes the element structure: per-vertex channel mean" $ do
+      let out = emapS @'[Vector 3, RGB] @'[Vector 3] sLum tri
+      shape out `shouldBe` [2, 3]
+      elemsOf out `shouldBe` [1, 11, 21, 101, 111, 121]
+    it "folds over the structure: centroid of the vertices" $ do
+      elemsOf (emapS @'[Vector 3, RGB] @'[RGB] sCentroid tri)
+        `shouldBe` [10, 11, 12, 110, 111, 112]
+    it "agrees with the same formula instantiated per element at a = Float" $ do
+      let idx k i c = indexList tri [k, i, c]
+          refK k = V.toList (sLum (V.generate (\i -> RGB (idx k (fromEnum i) 0) (idx k (fromEnum i) 1) (idx k (fromEnum i) 2))))
+      elemsOf (emapS @'[Vector 3, RGB] @'[Vector 3] sLum tri)
+        `shouldBe` (refK 0 ++ refK 1)
+    it "ezipWithS: squared distance between corresponding vertices" $ do
+      let shifted = emapS @'[Vector 3, RGB] @'[Vector 3, RGB] (fmap (fmap (+ 1))) tri
+      elemsOf (ezipWithS @'[Vector 3, RGB] @'[Vector 3, RGB] @'[Vector 3] sDist2 tri shifted)
+        `shouldBe` [3, 3, 3, 3, 3, 3]
   describe "gbindV vs gbind (oracle)" $ do
     it "satisfies gbindV m k == gbind m (fromNamed . tabulate . k) (affine)" $ do
       elemsOf (toNamed (stagedG kAffine)) `shouldBe` elemsOf (toNamed (oracleG kAffine))

@@ -95,6 +95,14 @@ two instantiations of a formula built from `+`, `*`, comparisons and
 `whereE` agree bit-for-bit (IEEE basic operations are deterministic);
 only transcendental functions differ within float tolerance.
 
+The element of an `emap` need not be a scalar: `emapS` and
+`ezipWithS` read the *trailing dimensions* of a tensor as the inside
+of a compound element — a batch of triangles `'[Batch n, Vector 3,
+RGB]` becomes a batch of `Vector 3 (RGB a)` values, and a polymorphic
+function on that structure runs once, vectorized over the batch. The
+[Moving Dimensions chapter](12-dimensions.html) demonstrates this
+where it compares transparency with `vmap`.
+
 ## Case study: non-maximum suppression
 
 `Torch.Typed.Vision` implements NMS in this style. The whole

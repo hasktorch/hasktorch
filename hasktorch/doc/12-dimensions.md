@@ -23,6 +23,7 @@ positions differently.
 ```haskell top hide
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -42,6 +43,7 @@ import GHC.Generics (Generic)
 import Torch.HList
 import qualified Torch.Typed as T
 import Torch.Typed.Representable
+import Torch.Typed.Staged (emapS)
 ```
 
 ```haskell top hide
@@ -51,7 +53,7 @@ instance AskInliterate Tensor
 ## Channels by name
 
 ```haskell top
-data RGB a = RGB { r :: a, g :: a, b :: a } deriving (Show, Generic, Default)
+data RGB a = RGB { r :: a, g :: a, b :: a } deriving (Show, Generic, Functor, Default)
 ```
 
 ```haskell do
@@ -175,8 +177,42 @@ boundary), and in exchange the function may be anything at all,
 including shape-changing. Transparent and fast, or opaque and
 general: JAX's `vmap` refuses the choice by *tracing* — every
 function is made transparent at run time, then rewritten by batching
-rules. Doing that for whole-tensor functions here is the natural
-extension of the staged chapter's move, not a current feature.
+rules.
+
+There is a middle point, and it ships: when the element structure is
+*small and static*, tracing is unnecessary because the structure can
+simply be unrolled. `emapS` (from `Torch.Typed.Staged`) reads the
+trailing dimensions of a tensor as the inside of a compound element.
+A batch of triangles — three vertices, each an RGB value — is
+`'[Vector 2, Vector 3, RGB]`, or equally a 2-vector of `Triangle a =
+Vector 3 (RGB a)` elements, and a polymorphic function on `Triangle`
+runs once, vectorized over the batch:
+
+```haskell do
+let tris = tabulate (\(k :. i :. c :. HNil) ->
+                       fromIntegral (fromEnum k) * 100 + fromIntegral (fromEnum i) * 10 + fromIntegral (fromEnum c))
+             :: T.NamedTensor '( 'T.CPU, 0) 'T.Float '[Vector 2, Vector 3, RGB]
+    lum = emapS @'[Vector 3, RGB] @'[Vector 3]
+            (fmap (\(RGB r' g' b') -> (r' + g' + b') / 3))
+            tris
+```
+
+```haskell eval
+T.toDynamic lum
+```
+
+The formula pattern-matches on fields and folds over vertices like
+any Haskell function — but because it is polymorphic
+(`forall a. (Floating a, Cond a) => Triangle a -> Vector 3 a`), it is
+interpreted once at the tensor type: each scalar operation in it is
+one whole-batch kernel, nine `select`s in, three `stack`s out, and
+*no* per-batch-element loop. The same formula at `a = Float` is the
+per-triangle reference implementation — the oracle discipline as
+always. `ezipWithS` is the two-argument version (per-vertex distances
+between two batches of triangles, say). What remains genuinely out of
+reach without tracing is `vmap`-fusing an *arbitrary opaque* slice
+function; for the structured-element case, unrolling gets you there
+today.
 
 ### Recurrence: `vscan`
 
