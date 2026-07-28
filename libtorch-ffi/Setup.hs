@@ -64,9 +64,17 @@ main = defaultMainWithHooks $ simpleUserHooks
           -- Call the default configuration hook with updated flags
           lbi <- confHook simpleUserHooks (gpd, hbi) updatedFlags
           
-          -- Add RPath so the binary finds the libs at runtime
+          -- Add RPath so the binary finds the libs at runtime.
+          --
+          -- Exception: for dynamically-linked executables on macOS, Cabal
+          -- already emits an rpath entry for every extra-lib-dir, so adding
+          -- one here produces a binary with a duplicate LC_RPATH — which
+          -- recent dyld rejects at load time ("duplicate LC_RPATH ...").
+          let dynExe = fromFlagOrDefault False (configDynExe flags)
           case buildOS of
-            OSX -> return $ lbi { withPrograms = addRPath libDir $ addLdClassicFlag (withPrograms lbi) }
+            OSX
+              | dynExe -> return $ lbi { withPrograms = addLdClassicFlag (withPrograms lbi) }
+              | otherwise -> return $ lbi { withPrograms = addRPath libDir $ addLdClassicFlag (withPrograms lbi) }
             Linux -> return $ lbi { withPrograms = addRPath libDir (withPrograms lbi) }
             _ -> return $ lbi
   }
