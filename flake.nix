@@ -39,7 +39,7 @@
           ...
         }:
         let
-          ghc = "ghc984";
+          ghc = "ghc912";
           mnist = (pkgs.callPackage ./nix/datasets.nix { }).mnist;
           mkHasktorchPackageSet =
             t: p:
@@ -47,7 +47,7 @@
               lib.genAttrs [
                 "codegen"
                 "hasktorch"
-                # Cannot be built until type-level-rewrite-rules supports GHC 9.8
+                # Cannot be built until type-level-rewrite-rules supports GHC 9.12
                 # "hasktorch-gradually-typed"
                 "libtorch-ffi"
                 "libtorch-ffi-helper"
@@ -57,7 +57,7 @@
         {
           packages =
             {
-              examples = pkgs.haskell.packages.${ghc}.callCabal2nix "examples" ./examples { };
+              examples = pkgs.haskell.packages.${ghc}.examples;
             }
             // (mkHasktorchPackageSet "cuda" pkgsCuda)
             // (mkHasktorchPackageSet "cpu" pkgs);
@@ -66,8 +66,9 @@
               packages =
                 p: with p; [
                   codegen
+                  examples
                   hasktorch
-                  # Cannot be built until type-level-rewrite-rules supports GHC 9.8
+                  # Cannot be built until type-level-rewrite-rules supports GHC 9.12
                   # hasktorch-gradually-typed
                   libtorch-ffi
                   libtorch-ffi-helper

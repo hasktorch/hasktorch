@@ -8,11 +8,18 @@ let
     appendConfigureFlag
     doJailbreak
     dontCheck
+    overrideCabal
     ;
   torch = libtorch-bin;
   c10 = libtorch-bin;
   torch_cpu = libtorch-bin;
-  ghcName = "ghc984";
+  ghcName = "ghc912";
+  # Put the in-place package database on the test suite's search path.
+  withInplacePackageDb = overrideCabal (drv: {
+    preCheck = (drv.preCheck or "") + ''
+      export NIX_GHC_PACKAGE_PATH_FOR_TEST=$PWD/dist/package.conf.inplace/:$packageConfDir:
+    '';
+  });
 in
 {
   haskell = prev.haskell // {
@@ -28,6 +35,7 @@ in
           #     dontCheck
           #     #  disableLibraryProfiling
           #   ];
+          examples = hfinal.callCabal2nix "examples" ../examples { };
           hasktorch = hfinal.callCabal2nix "hasktorch" ../hasktorch { };
           libtorch-ffi-helper = hfinal.callCabal2nix "libtorch-ffi-helper" ../libtorch-ffi-helper { };
           libtorch-ffi =
@@ -37,7 +45,7 @@ in
               ];
 
           # Hasktorch Forks
-          # WARNING: Does not build with GHC 9.8
+          # WARNING: Does not build with GHC 9.12
           # typelevel-rewrite-rules =
           #   doJailbreak((overrideSrc hprev.typelevel-rewrite-rules {
           #     src = prev.fetchFromGitHub {
@@ -70,6 +78,14 @@ in
           #   };
           # };
           singletons-base = dontCheck hprev.singletons-base;
+
+          # GHC 9.12 needs newer typelits plugins than the package set defaults
+          # to. Their test suites look for the in-place package database, which
+          # the nixpkgs Setup.hs wrapper does not put on the search path; see
+          # https://github.com/NixOS/nixpkgs/pull/524100.
+          ghc-typelits-extra = withInplacePackageDb hprev.ghc-typelits-extra_0_5_3;
+          ghc-typelits-knownnat = withInplacePackageDb hprev.ghc-typelits-knownnat_0_8_3;
+          ghc-typelits-natnormalise = withInplacePackageDb hprev.ghc-typelits-natnormalise_0_9_5;
         }
       );
     };
