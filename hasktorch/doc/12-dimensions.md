@@ -40,6 +40,7 @@ import Torch (Tensor)
 import Data.Default.Class (Default, def)
 import Data.Vector.Sized (Vector)
 import GHC.Generics (Generic)
+import Data.Functor.Compose (Compose, getCompose)
 import Torch.HList
 import qualified Torch.Typed as T
 import Torch.Typed.Representable
@@ -214,6 +215,47 @@ reach without tracing is `vmap`-fusing an *arbitrary opaque* slice
 function; for the structured-element case, unrolling gets you there
 today.
 
+### Naming a compound dimension
+
+The triangle's two axes can also be *one* dimension with a name. A
+partially applied `Compose` is a legal shape entry whose size is the
+product of its factors (`ToNat (Compose f g) = ToNat f * ToNat g`,
+following hasktorch-naperian's `Size (Compose f g) = Size f * Size g`
+instance), and since it needs no type argument, an ordinary nullary
+synonym names it:
+
+```haskell top
+type TriangleDim = Compose (Vector 3) RGB
+```
+
+`dimGroup` moves between the factored and the grouped spelling — it
+is a `reshape`, so no data moves:
+
+```haskell do
+let gTris = dimGroup tris :: T.NamedTensor '( 'T.CPU, 0) 'T.Float '[Vector 2, TriangleDim]
+```
+
+```haskell eval
+T.toDynamic gTris
+```
+
+The nine positions are row-major over (vertex, channel), matching
+`Log (Compose f g) = (Log f, Log g)`. Everything in this chapter
+works on the grouped dimension — `dimUp` yields `Compose`-wrapped
+structure, and `emapS` sees the same triangle element behind one
+`getCompose`:
+
+```haskell eval
+T.toDynamic (emapS @'[TriangleDim] @'[Vector 3] (fmap (\(RGB r' g' b' ) -> (r' + g' + b') / 3) . getCompose) gTris)
+```
+
+`dimUngroup` is the exact inverse. (If you prefer a `newtype
+Triangle a = Triangle (Vector 3 (RGB a))` for the element view, it
+works too — a newtype does not unify with its contents, so `coerce`
+it at the formula boundary; only the *shape* entry needs to be the
+`Compose` spelling, because dimension sizes are computed by the
+closed `ToNat` family, which cannot see through user newtypes.)
+
 ### Recurrence: `vscan`
 
 The same door admits JAX's other structural primitive. `vscan` folds
@@ -315,6 +357,71 @@ lets you pick a point on it — including the middle: group nodes by
 depth, `dimDown` each level into a batch axis, and process level by
 level, which recovers most of the batching without giving up the
 typed structure.
+
+## Which tool when?
+
+This chapter and the [staged chapter](11-graded-and-staged.html) have
+accumulated a family of ways to "apply a function under a dimension",
+and they can blur together. Two questions separate them:
+
+1. **What is the element** — a scalar, a small *static* structure
+   (vertices, gates, channels), or a whole slice of arbitrary size?
+2. **Is the function transparent** — a polymorphic formula the
+   library can reinterpret at the tensor type — **or opaque** — an
+   ordinary monomorphic Haskell function it cannot look inside?
+
+Transparent functions execute *once*, as fused whole-tensor kernels,
+whatever the batch size. Opaque functions must be *called once per
+position*. Everything below is placed by those two answers.
+
+| You write | Element | Function | Execution | Reach for it when |
+|---|---|---|---|---|
+| plain ops: `t + u`, `matmul`, `sigmoid` | — | fixed op | fused / broadcast | the operation already exists and broadcasts; **always the first choice** |
+| `sumNamedDim @d`, `meanNamedDim @d`, … | one axis | fixed op | one kernel | reducing or sorting *one dimension, addressed by name*, wherever it sits |
+| `emap`, `ezipWith` | scalar | transparent formula | one kernel per operation in the formula | a per-element formula with branching (`whereE`) that should double as its own `Float` reference |
+| `emapS`, `ezipWithS` | static structure | transparent formula | as `emap`, plus one `select`/`stack` per position of the structure | per-vertex / per-gate math: pattern match fields, fold over the structure, still no batch loop |
+| `gbindV` | scalar + output index | transparent formula | one formula evaluation per *inner* index | generating new dimensions whose values depend on the output position |
+| `vmap`, `vmap2` | whole slice | **opaque** | one call per position | somebody else's function, a whole model forward, or slices whose shapes differ between the two arguments |
+| `vscan` | whole slice | **opaque** | sequential by definition | recurrences: RNN cells, cumulative statistics along an axis |
+| `dimUp` / `dimDown` | — | — | `unbind` / `stack` | positions need *different code by name* (gates), or structure enters/leaves the tensor (tree children) |
+| `dimGroup` / `dimUngroup` | — | — | free (`reshape`) | renaming: two axes become one named compound axis, or back |
+
+Concrete tasks, mapped:
+
+- *Scale and shift every value; add two tensors* — plain ops. If you
+  find yourself writing `vmap (\x -> x * 2)`, stop: pointwise
+  operations broadcast on their own.
+- *Mean over the class axis, wherever it is in the shape* —
+  `meanNamedDim @Classes`. No `vmap`, no transposes.
+- *A custom activation with a branch, trusted because the same code
+  runs per-element at `Float` in the tests* — `emap`
+  ([chapter 11](11-graded-and-staged.html)'s worked NMS example is
+  this at scale).
+- *Per-vertex color math on a batch of triangles* — `emapS`, as
+  above: field names and folds instead of slice arithmetic, one
+  interpretation for the whole batch.
+- *Run a trained per-example forward pass under a `Batch` dimension*
+  — `vmap (forward model)`. The model is opaque; per-position calls
+  are the honest price, and they are cheap when each call is a whole
+  forward pass.
+- *Exponential moving average over a time axis; unrolling an RNN
+  cell* — `vscan`. Sequential is what a recurrence *means*; no tool
+  removes that.
+- *Four LSTM gates, each with its own nonlinearity* — one fused
+  matmul, then `dimUp` and field names (the Tree-LSTM below).
+- *Give `'[Vector 3, RGB]` a single name* — `type TriangleDim =
+  Compose (Vector 3) RGB` and `dimGroup`. Purely a naming operation;
+  the data never moves.
+
+Rules of thumb, compressed: **prefer the highest row that fits.**
+Moving down the table trades fusion for generality — `emap` beats
+`emapS` beats `vmap` in kernels launched, and `vmap` beats manual
+loops in nothing but convenience. The structured tools (`emapS`,
+`dimUp`) are for *small, static* structure; if the "structure" has
+thousands of positions, it is a tensor dimension and should stay one.
+And when a formula can be written transparently, it should be — not
+only for fusion, but because the `Float` instantiation is the
+reference implementation your tests get for free.
 
 ## Lineage
 

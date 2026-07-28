@@ -15,6 +15,7 @@
 module Torch.Typed.StagedSpec (spec) where
 
 import Data.Default.Class (Default)
+import Data.Functor.Compose (Compose (..))
 import qualified Data.Vector.Sized as V
 import Data.Vector.Sized (Vector)
 import GHC.Generics
@@ -152,6 +153,10 @@ spec = do
       let shifted = emapS @'[Vector 3, RGB] @'[Vector 3, RGB] (fmap (fmap (+ 1))) tri
       elemsOf (ezipWithS @'[Vector 3, RGB] @'[Vector 3, RGB] @'[Vector 3] sDist2 tri shifted)
         `shouldBe` [3, 3, 3, 3, 3, 3]
+    it "works over a grouped Compose dimension" $ do
+      let grouped = dimGroup tri :: NamedTensor '(D.CPU, 0) 'D.Float '[Batch 2, Compose (Vector 3) RGB]
+          out = emapS @'[Compose (Vector 3) RGB] @'[Vector 3] (sLum . getCompose) grouped
+      elemsOf out `shouldBe` elemsOf (emapS @'[Vector 3, RGB] @'[Vector 3] sLum tri)
   describe "gbindV vs gbind (oracle)" $ do
     it "satisfies gbindV m k == gbind m (fromNamed . tabulate . k) (affine)" $ do
       elemsOf (toNamed (stagedG kAffine)) `shouldBe` elemsOf (toNamed (oracleG kAffine))

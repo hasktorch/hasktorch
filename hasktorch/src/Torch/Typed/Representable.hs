@@ -52,6 +52,8 @@ module Torch.Typed.Representable
     -- same names.
     dimUp,
     dimDown,
+    dimGroup,
+    dimUngroup,
 
     -- * Mapping under a dimension
     --
@@ -71,6 +73,7 @@ where
 
 import Data.Default.Class (Default (..))
 import Data.Finite (Finite, getFinite, packFinite)
+import Data.Functor.Compose (Compose (..))
 import Data.Kind (Type)
 import Data.Proxy (Proxy (..))
 import Data.Vector.Sized (Vector)
@@ -205,6 +208,45 @@ instance HasTypes a t => HasTypes (Vector n a) t where
 
 instance (KnownNat n, Default a) => Default (Vector n a) where
   def = V.replicate def
+
+-- ('HasTypes' needs no such instance: 'Compose' is 'Generic', so the generic
+-- traversal already reaches through it.)
+instance Default (f (g a)) => Default (Compose f g a) where
+  def = Compose def
+
+-- | Merge two adjacent dimensions under a leading (batch) dimension into one
+-- named by their composition: @'[Batch n, Vector 3, RGB]@ becomes
+-- @'[Batch n, Compose (Vector 3) RGB]@, a dimension of size @3 * 3@.  A
+-- partially applied type constructor is a legal shape entry, so the composite
+-- can be named with an ordinary nullary synonym:
+--
+-- > type Triangle = Compose (Vector 3) RGB
+-- > dimGroup t :: NamedTensor device dtype '[Batch n, Triangle]
+--
+-- The leading dimension stays put — the same convention as 'vmap' and
+-- 'Torch.Typed.Staged.emapS', whose compound elements this names.  The data
+-- does not move (this is a @reshape@), and the flat index order is row-major,
+-- matching hasktorch-naperian's @Log (Compose f g) = (Log f, Log g)@.
+dimGroup ::
+  forall b f g shape device dtype.
+  NamedTensor device dtype (b ': f ': g ': shape) ->
+  NamedTensor device dtype (b ': Compose f g ': shape)
+dimGroup t =
+  case D.shape (toDynamic t) of
+    (n : a : b' : rest) -> fromUnnamed (UnsafeMkTensor (D.reshape (n : (a * b') : rest) (toDynamic t)))
+    _ -> error "dimGroup: tensor has fewer than three dimensions"
+
+-- | Split a composed dimension back into its two factors.  Inverse of
+-- 'dimGroup'.
+dimUngroup ::
+  forall b f g shape device dtype.
+  (KnownNat (ToNat f), KnownNat (ToNat g)) =>
+  NamedTensor device dtype (b ': Compose f g ': shape) ->
+  NamedTensor device dtype (b ': f ': g ': shape)
+dimUngroup t =
+  case D.shape (toDynamic t) of
+    (n : _ : rest) -> fromUnnamed (UnsafeMkTensor (D.reshape (n : natValI @(ToNat f) : natValI @(ToNat g) : rest) (toDynamic t)))
+    _ -> error "dimUngroup: tensor has fewer than two dimensions"
 
 -- | Move the outermost dimension out of the tensor: the result is the
 -- dimension's functor, holding one smaller tensor per position.  With

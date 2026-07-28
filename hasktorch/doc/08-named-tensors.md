@@ -177,3 +177,39 @@ and shape inside a structure — a `'[3, 4]` layer sitting next to a
 structure*", which is what makes targeted surgery on a model — swap
 these embeddings, freeze that projection — expressible as one
 traversal.
+
+## Lineage: "Tensor Considered Harmful"
+
+The case for named dimensions was made by Alexander Rush's essay
+[Tensor Considered Harmful](https://blog.rush-nlp.com/named-tensor.html)
+(2019, with the `namedtensor` library; it later grew into the *Named
+Tensor Notation* paper and PyTorch's experimental named tensors). The
+essay diagnoses three traps of positional tensors — dimensions kept
+private *by convention* only, broadcasting *by alignment* rather than
+by meaning, and access *by comments* (`# batch x height x width`) —
+and proposes a discipline: dimensions get human-readable names, no
+function takes a `dim` argument, broadcasting matches by name, and
+positional indexing is banned.
+
+Hasktorch's named tensors are that proposal pushed one level up: the
+names live in the *types*, so the discipline is checked by the
+compiler instead of at runtime.
+
+| Tensor Considered Harmful | Hasktorch |
+|---|---|
+| names are runtime strings: `("batch", "height", …)` | names are types: `'[Batch n, Height, Width]` — misspelling one is a compile error, and each name carries its *size* |
+| `.mean("batch")` — "no function should have a dim argument" | `meanNamedDim @Batch`, `sumNamedDim @Batch`, `sortNamedDim @Seq` — `FindDim` locates the axis by name at compile time |
+| broadcasting by name matching, checked when the op runs | shapes are types, so an inconsistent combination fails to *compile*; underneath, execution still uses positional kernels |
+| "ban dimension based indexing" | indexing is by one bounds-checked `Finite` per named dimension (`index t (b :. h :. HNil)`, chapter section above) |
+| `.split(h=…)` / `.stack(bh=…)` reshape by name | `dimGroup` / `dimUngroup` name a compound axis (`Compose (Vector 3) RGB`), and `dimUp` / `dimDown` go further — the dimension becomes actual Haskell structure ([chapter 12](12-dimensions.html)) |
+| "private dimensions should be protected": a rotation should not know about `batch` | `vmap` and `emapS` take functions written against the *element* shape only; the batch dimension does not appear in their types at all ([chapter 12](12-dimensions.html)) |
+| names should impose no runtime cost | `NamedTensor` is a zero-cost wrapper over the positional tensor; every name is erased at compile time |
+
+Two things here have no counterpart in the essay. Names are
+*structured*: a dimension can be a record (`RGB`), so its positions
+are fields you can pattern-match — the essay's names identify an
+axis, but cannot give its positions meanings. And the static setting
+changes what "checking" means: the essay's names are verified while
+the program runs, per operation; here a shape mistake is a type
+error before anything runs, which is also why the names can be
+erased completely.

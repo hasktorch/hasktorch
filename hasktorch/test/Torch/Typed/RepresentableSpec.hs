@@ -21,6 +21,7 @@ module Torch.Typed.RepresentableSpec (spec) where
 
 import Data.Default.Class
 import Data.Finite (Finite)
+import Data.Functor.Compose (Compose (..))
 import Data.Proxy
 import Data.Vector.Sized (Vector)
 import GHC.Generics
@@ -64,6 +65,9 @@ testElem ::
 testElem = id
 
 type Image = NamedTensor '(D.CPU, 0) 'D.Float '[Batch 2, RGB]
+
+-- a compound dimension named by an ordinary nullary synonym
+type Triangle = Compose (Vector 3) RGB
 
 spec :: Spec
 spec = do
@@ -141,3 +145,22 @@ spec = do
           gw :. HNil = grad (toUnnamed total) (w :. HNil)
       -- d/dw_j of sum_{c,j} t_{c,j} * w_j is the column sums of t
       (D.asValue (toDynamic gw) :: [Float]) `shouldBe` [30, 33]
+  describe "dimGroup and dimUngroup" $ do
+    let tri = tabulate (\(k :. i :. c :. HNil) -> fromIntegral (fromEnum k) * 100 + fromIntegral (fromEnum i) * 10 + fromIntegral (fromEnum c)) :: NamedTensor '(D.CPU, 0) 'D.Float '[Batch 2, Vector 3, RGB]
+    it "a Compose dimension has the product size" $ do
+      dimsOf (Proxy @(NamedTensor '(D.CPU, 0) 'D.Float '[Batch 2, Triangle]))
+        `shouldBe` [2, 9]
+    it "dimGroup merges two dimensions without moving data" $ do
+      let grouped = dimGroup tri :: NamedTensor '(D.CPU, 0) 'D.Float '[Batch 2, Triangle]
+      shape grouped `shouldBe` [2, 9]
+      (D.asValue (D.reshape [-1] (toDynamic grouped)) :: [Float])
+        `shouldBe` (D.asValue (D.reshape [-1] (toDynamic tri)) :: [Float])
+    it "dimUngroup is the inverse of dimGroup" $ do
+      let roundtrip = dimUngroup (dimGroup tri) :: NamedTensor '(D.CPU, 0) 'D.Float '[Batch 2, Vector 3, RGB]
+      shape roundtrip `shouldBe` [2, 3, 3]
+      (D.asValue (D.reshape [-1] (toDynamic roundtrip)) :: [Float])
+        `shouldBe` (D.asValue (D.reshape [-1] (toDynamic tri)) :: [Float])
+    it "indexes the grouped dimension flat, row-major" $ do
+      -- flat position 5 is (vertex 1, channel 2)
+      let grouped = dimGroup tri :: NamedTensor '(D.CPU, 0) 'D.Float '[Batch 2, Triangle]
+      index grouped (1 :. 5 :. HNil) `shouldBe` 112
