@@ -39,6 +39,7 @@ import Foreign.ForeignPtr
 import Foreign.Storable
 import GHC.Exts
 import GHC.Generics
+import Data.Functor.Compose (Compose)
 import GHC.TypeLits
 import qualified Torch.DType as D
 import qualified Torch.Device as D
@@ -160,6 +161,9 @@ type family ToNat (shape :: Size) :: Nat where
   ToNat (K1 _ _) = 1
   ToNat U1 = 1
   ToNat (Vector n) = n
+  -- A composed dimension is the product of its factors, following
+  -- hasktorch-naperian's @Size (Compose f g) = Size f * Size g@.
+  ToNat (Compose f g) = ToNat f * ToNat g
   ToNat a = ToNat (Rep (a ()))
 
 type family ToNats (shape :: Shape) :: [Nat] where

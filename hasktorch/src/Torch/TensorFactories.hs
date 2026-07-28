@@ -2,6 +2,7 @@
 
 module Torch.TensorFactories where
 
+import Data.Default.Class
 import Foreign.ForeignPtr
 import System.IO.Unsafe
 import Torch.Dimname
@@ -256,6 +257,13 @@ ones' = mkDefaultFactory ones
 
 zeros' :: [Int] -> Tensor
 zeros' = mkDefaultFactory zeros
+
+-- | The default tensor is a zero-dimensional zero.  This mainly serves
+-- generic machinery that needs a placeholder tensor to replace (e.g. building
+-- a record of tensors with "Torch.Lens"), mirroring the typed
+-- @Default (Tensor device dtype shape)@ instance in "Torch.Typed.Factories".
+instance Default Tensor where
+  def = zeros' []
 
 randIO' :: [Int] -> IO Tensor
 randIO' = mkDefaultFactory randIO

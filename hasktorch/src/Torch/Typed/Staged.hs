@@ -47,15 +47,37 @@ module Torch.Typed.Staged
     emap,
     ezipWith,
 
+    -- * Structured elements
+    --
+    -- | 'emapS' and 'ezipWithS' generalize 'emap'\/'ezipWith' from scalar
+    -- elements to /structured/ elements: the trailing dimensions of a tensor
+    -- are read as the inside of a compound element.  A batch of triangles,
+    -- each described by three vertices with RGB values, is
+    -- @'[Batch n, Vector 3, RGB]@ — or equally a tensor of shape
+    -- @'[Batch n]@ whose elements are @Vector 3 (RGB a)@.  The 'Nested'
+    -- family maps between the two readings.
+    Nested,
+    ExplodeShape (..),
+    emapS,
+    ezipWithS,
+
     -- * Staged graded bind
     gbindV,
   )
 where
 
+import Data.Default.Class (Default (..))
+import Data.Kind (Type)
+import Data.Maybe (fromJust)
 import Data.Proxy (Proxy (..))
+import Data.Vector.Sized (Vector)
+import qualified Data.Vector.Sized as V
+import GHC.TypeLits (KnownNat)
 import Torch.Elementwise (Cond (..))
 import qualified Torch.Functional as F
+import qualified Torch.Functional.Internal as I
 import Torch.HList (HList, type (++))
+import Torch.Lens (HasTypes, flattenValues, replaceValues, types)
 import qualified Torch.Tensor as D
 import Torch.Typed.Graded (TensorMonad, fromNamed, toNamed)
 import Torch.Typed.Representable
@@ -81,6 +103,90 @@ ezipWith ::
   NamedTensor device dtype shape ->
   NamedTensor device dtype shape
 ezipWith f x y = fromUnnamed . UnsafeMkTensor $ f (toDynamic x) (toDynamic y)
+
+-- | The element type a trailing shape describes: @Nested '[Vector 3, RGB] a@
+-- is @Vector 3 (RGB a)@.  Because the family reduces structurally, formulas
+-- may be written against ordinary type synonyms like
+-- @type Triangle a = Vector 3 (RGB a)@.
+type family Nested (shape :: Shape) (a :: Type) :: Type where
+  Nested '[] a = a
+  Nested (f ': fs) a = f (Nested fs a)
+
+-- | Shapes whose dimensions can be unrolled into (and re-rolled from) actual
+-- Haskell structure, one tensor component per position.  The tensors handled
+-- here always keep one leading batch dimension; 'explode' peels the trailing
+-- dimensions off into structure, so each component has the batch dimension
+-- only.
+class ExplodeShape (sh :: Shape) where
+  explode :: D.Tensor -> Nested sh D.Tensor
+  implode :: Nested sh D.Tensor -> D.Tensor
+
+instance ExplodeShape '[] where
+  explode = id
+  implode = id
+
+instance (KnownNat n, ExplodeShape fs) => ExplodeShape (Vector n ': fs) where
+  explode t = fromJust . V.fromList $ map (explode @fs) (I.unbind t 1)
+  implode v = F.stack (F.Dim 1) (map (implode @fs) (V.toList v))
+
+instance
+  {-# OVERLAPS #-}
+  ( Default (g (Nested fs D.Tensor)),
+    HasTypes (g (Nested fs D.Tensor)) (Nested fs D.Tensor),
+    ExplodeShape fs
+  ) =>
+  ExplodeShape (g ': fs)
+  where
+  explode t = replaceValues (types @(Nested fs D.Tensor)) def (map (explode @fs) (I.unbind t 1))
+  implode s = F.stack (F.Dim 1) (map (implode @fs) (flattenValues (types @(Nested fs D.Tensor)) s))
+
+-- | 'emap' with structured elements.  The trailing dimensions @sh@ of the
+-- input are unrolled into the Haskell structure @'Nested' sh a@, the
+-- polymorphic function runs /once/ at @a = Tensor@ — every scalar operation
+-- in it becomes one whole-batch kernel — and the resulting structure's
+-- dimensions @sh'@ are rolled back into the tensor.  The structure may change
+-- shape: averaging the channels of each vertex is
+--
+-- > emapS (fmap (\(RGB r g b) -> (r + g + b) / 3))
+-- >   :: NamedTensor device dtype '[Batch n, Vector 3, RGB]
+-- >   -> NamedTensor device dtype '[Batch n, Vector 3]
+--
+-- and structural operations (folds over vertices, permutations, pattern
+-- matching on fields) are ordinary Haskell on the structure, still vectorized
+-- over the batch.
+--
+-- Cost: the structure is unrolled positionally — @numel sh@ @select@s in, one
+-- kernel per scalar operation in the formula, @numel sh'@ tensors stacked
+-- out.  This is the fusion of 'emap' extended to compound elements, and like
+-- 'gbindV' it suits /small, static/ element structures (vertices, channels,
+-- gates); it is not for structures with thousands of positions.  Where
+-- 'Torch.Typed.Representable.vmap' calls an opaque slice function once per
+-- batch position, 'emapS' runs a transparent one once in total.
+--
+-- The result shape @sh'@ is generally not inferable from the formula (the
+-- 'Nested' family is not injective), so annotate the result or apply the
+-- shapes with type applications: @emapS \@sh \@sh'@.
+emapS ::
+  forall sh sh' b dtype device.
+  (ExplodeShape sh, ExplodeShape sh') =>
+  (forall a. (Floating a, Cond a) => Nested sh a -> Nested sh' a) ->
+  NamedTensor device dtype (b ': sh) ->
+  NamedTensor device dtype (b ': sh')
+emapS f =
+  fromUnnamed . UnsafeMkTensor . implode @sh' . f @D.Tensor . explode @sh . toDynamic
+
+-- | 'ezipWith' with structured elements: the two-argument 'emapS'.  The two
+-- inputs share the batch dimension but may have different element structures.
+ezipWithS ::
+  forall shA shB sh' b dtype device.
+  (ExplodeShape shA, ExplodeShape shB, ExplodeShape sh') =>
+  (forall a. (Floating a, Cond a) => Nested shA a -> Nested shB a -> Nested sh' a) ->
+  NamedTensor device dtype (b ': shA) ->
+  NamedTensor device dtype (b ': shB) ->
+  NamedTensor device dtype (b ': sh')
+ezipWithS f x y =
+  fromUnnamed . UnsafeMkTensor . implode @sh' $
+    f @D.Tensor (explode @shA (toDynamic x)) (explode @shB (toDynamic y))
 
 -- | Staged version of 'Torch.Typed.Graded.gbind'.  Definitionally,
 --
