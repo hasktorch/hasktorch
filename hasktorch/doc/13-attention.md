@@ -17,9 +17,9 @@ learns.
 
 A paper writes attention as
 
-> M ∈ ℝ^{s×s},  M_{ij} = 0 if j ≤ i, −∞ otherwise
->
-> Attention(Q, K, V) = softmax(QKᵀ/√d + M) V
+$$M \in \mathbb{R}^{s \times s}, \qquad M_{ij} = 0 \text{ if } j \le i, \text{ and } -\infty \text{ otherwise}$$
+
+$$\mathrm{Attention}(Q, K, V) = \mathrm{softmax}\left(\frac{Q K^{\top}}{\sqrt{d}} + M\right) V$$
 
 and the code says exactly that. The mask is a tensor *defined by its
 formula*, through `tabulate`:
@@ -31,8 +31,8 @@ causalMask = toUnnamed (tabulateList @'[Vector S, Vector S] @'D.Float @Dev mask)
     mask [i, j] = if j <= i then 0 else -1 / 0
 ```
 
-and attention is its equation, with the ℝ^{s×e} annotations moved
-into the type where the compiler can read them:
+and attention is its equation, with the paper's ℝ shape annotations
+moved into the type where the compiler can read them:
 
 ```haskell
 attend :: T '[S, E] -> T '[S, E] -> T '[S, E] -> T '[S, E]
@@ -83,4 +83,4 @@ The practical reading order is therefore: understand this chapter's
 sixty lines first, then read the library transformer as "the same
 equations, made reusable" — and let the types tell you which of its
 parameters is which, because every shape annotation in its long
-signatures is one of the ℝ^{...} superscripts from the paper, checked.
+signatures is one of the paper's ℝ superscripts, checked.
