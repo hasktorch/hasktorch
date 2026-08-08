@@ -114,6 +114,10 @@ data Adam = Adam
 
 instance NFData Adam
 
+-- | Convenience constructor with standard defaults
+mkDefaultAdam :: [Parameter] -> AdamW
+mkDefaultAdam = mkAdam 0 0.9 0.999 0.01
+
 mkAdam ::
   Int ->
   Float ->
@@ -178,6 +182,10 @@ data AdamW = AdamW
   deriving (Show, Generic)
 
 instance NFData AdamW
+
+-- | Convenience constructor with standard defaults
+mkDefaultAdamW :: [Parameter] -> AdamW
+mkDefaultAdamW = mkAdamW 0 0.9 0.999 0.01
 
 mkAdamW ::
   Int ->
