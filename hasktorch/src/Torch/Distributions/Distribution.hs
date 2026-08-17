@@ -57,8 +57,8 @@ clampProbs probs =
 probsToLogits :: Bool -> D.Tensor -> D.Tensor -- isBinary=False
 probsToLogits isBinary probs =
   if isBinary
-    then F.log10 psClamped `F.sub` F.log1p (F.mulScalar (-1.0 :: Float) psClamped)
-    else F.log10 psClamped
+    then F.log psClamped `F.sub` F.log1p (F.mulScalar (-1.0 :: Float) psClamped)
+    else F.log psClamped
   where
     psClamped = clampProbs probs
 
