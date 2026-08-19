@@ -131,29 +131,29 @@ library
                     , vector >= 0.13 && < 0.14
                     , bytestring >= 0.11.5 && < 0.13
                     , safe-exceptions
-                    , zlib >= 0.6 && < 0.8
-                    , pipes >= 4.3.16 && < 4.4
-                    , pipes-group >= 1.0.12 && < 1.1
-                    , pipes-concurrency >= 2.0.14 && < 2.1
-                    , pipes-safe >= 2.3.5 && < 2.4
-                    , pipes-bytestring >= 2.1.7 && < 2.2
-                    , pipes-csv >= 1.4.3 && < 1.5
-                    , lens-family-core >= 2.1.3 && < 2.2
-                    , cassava >= 0.5.3 && < 0.6
-                    , lifted-async >= 0.10.2 && < 0.12
-                    , monad-control >= 1.0.3 && < 1.1
-                    , foldl >= 1.4 && < 1.5
-                    , transformers-base >= 0.4.6 && < 0.5
-                    , array >= 0.5.5 && < 0.6
-                    , data-default-class >= 0.1 && < 0.3
-                    , containers >= 0.6.7 && < 0.8
-                    , inline-c >= 0.9.1 && < 0.10
-                    , vector-sized >= 1.5 && < 1.7
-                    , template-haskell >= 2.20.0 && < 2.24
-                    , megaparsec >= 9.5 && < 9.8
-                    , half >= 0.3 && < 0.4
-                    , constraints >= 0.14 && < 0.15
-                    , deepseq >= 1.4.8 && < 1.6
+                    , zlib >= 0.6
+                    , pipes >= 4.3
+                    , pipes-group
+                    , pipes-concurrency
+                    , pipes-safe
+                    , pipes-bytestring
+                    , pipes-csv
+                    , lens-family-core
+                    , cassava
+                    , lifted-async
+                    , monad-control
+                    , foldl
+                    , transformers-base
+                    , array
+                    , data-default-class
+                    , containers
+                    , inline-c
+                    , vector-sized
+                    , template-haskell
+                    , megaparsec
+                    , half
+                    , constraints
+                    , auto-update
 
  default-extensions:  Strict
                     , StrictData

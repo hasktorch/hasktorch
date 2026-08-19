@@ -10,6 +10,8 @@ import Torch.Autograd
 import Torch.Functional
 import Torch.Internal.GC (mallocTrim)
 import Torch.NN
+import System.IO.Unsafe (unsafePerformIO)
+import Control.Debounce
 import Torch.Tensor
 import Torch.TensorFactories
 import Prelude hiding (sqrt)
@@ -27,6 +29,21 @@ newtype OptimizerState option = OptimizerState option
 grad' :: Loss -> [Parameter] -> Gradients
 grad' t p = Gradients (grad t p)
 
+-- | Action that performs garbage collection with a minimum waiting time between calls to `performGC`. This prevents a space leak, that occurs when calling `performGC` too frequently.
+--
+-- The debounced action is created once as a CAF and shared across all calls.
+-- The @NOINLINE@ pragma is required: without it GHC may inline\/duplicate this
+-- CAF, yielding several independent debouncers that each track their own timer,
+-- which would defeat the rate limiting and reintroduce the space leak.
+performGC' :: IO ()
+performGC' = unsafePerformIO $ do
+  mkDebounce defaultDebounceSettings
+    { debounceAction = performGC
+    , debounceEdge = leadingEdge
+    , debounceFreq = 1000000
+    }
+{-# NOINLINE performGC' #-}
+
 class Optimizer optimizer where
   step :: LearningRate -> Gradients -> [Tensor] -> optimizer -> ([Tensor], optimizer)
 
@@ -37,7 +54,7 @@ class Optimizer optimizer where
   -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
   runStep' :: (Parameterized model) => model -> optimizer -> Gradients -> LearningRate -> IO (model, optimizer)
   runStep' paramState optState gradients lr = do
-    performGC
+    performGC'
     mallocTrim 0
     let (flatParameters', optState') = step lr gradients depParameters optState
     newFlatParam <- mapM makeIndependent flatParameters'
