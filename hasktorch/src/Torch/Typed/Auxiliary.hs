@@ -313,6 +313,7 @@ type family DTypeIsFloatingPoint (device :: (D.DeviceType, Nat)) (dtype :: D.DTy
   DTypeIsFloatingPoint _ 'D.Half = ()
   DTypeIsFloatingPoint _ 'D.Float = ()
   DTypeIsFloatingPoint _ 'D.Double = ()
+  DTypeIsFloatingPoint _ 'D.BFloat16 = ()
   DTypeIsFloatingPoint '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 type family DTypeIsIntegral (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
@@ -327,6 +328,10 @@ type family DTypeIsIntegral (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :
 type family DTypeIsNotHalf (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   DTypeIsNotHalf '(deviceType, _) D.Half = UnsupportedDTypeForDevice deviceType D.Half
   DTypeIsNotHalf _ _ = ()
+
+type family DTypeIsNotDouble (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
+  DTypeIsNotDouble '(deviceType, _) D.Double = UnsupportedDTypeForDevice deviceType D.Double
+  DTypeIsNotDouble _ _ = ()
 
 type family DTypeIsNotBool (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
   DTypeIsNotBool '(deviceType, _) D.Bool = UnsupportedDTypeForDevice deviceType D.Bool
@@ -348,6 +353,10 @@ type family StandardFloatingPointDTypeValidation (device :: (D.DeviceType, Nat))
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
   StandardFloatingPointDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+  StandardFloatingPointDTypeValidation '( 'D.MPS, 0) dtype =
+    ( DTypeIsFloatingPoint '( 'D.MPS, 0) dtype,
+      DTypeIsNotDouble '( 'D.MPS, 0) dtype
+    )
   StandardFloatingPointDTypeValidation '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 type family StandardDTypeValidation (device :: (D.DeviceType, Nat)) (dtype :: D.DType) :: Constraint where
@@ -356,6 +365,10 @@ type family StandardDTypeValidation (device :: (D.DeviceType, Nat)) (dtype :: D.
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
   StandardDTypeValidation '( 'D.CUDA, deviceIndex) dtype = DTypeIsNotBool '( 'D.CUDA, deviceIndex) dtype
+  StandardDTypeValidation '( 'D.MPS, 0) dtype =
+    ( DTypeIsNotBool '( 'D.MPS, 0) dtype,
+      DTypeIsNotDouble '( 'D.MPS, 0) dtype
+    )
   StandardDTypeValidation '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 

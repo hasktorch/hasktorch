@@ -24,12 +24,17 @@ import Data.List (intercalate)
 import Data.Proxy
 import Data.Reflection
 import qualified Data.Vector as V
+import qualified Data.Vector.Storable as VS
+import qualified Data.Vector.Unboxed as VU
+import qualified Data.Vector.Generic as VG
 import Data.Word (Word8)
 import Foreign.C.Types
 import Foreign.ForeignPtr
+import Foreign.Marshal.Utils (copyBytes)
 import Foreign.Ptr
 import Foreign.Storable
 import GHC.Generics
+import GHC.ForeignPtr(mallocPlainForeignPtrBytes)
 import Numeric
 import System.IO.Unsafe
 import Torch.DType
@@ -44,6 +49,7 @@ import qualified Torch.Internal.Managed.Type.Context as ATen
 import qualified Torch.Internal.Managed.Type.StdArray as ATen
 import qualified Torch.Internal.Managed.Type.StdString as ATen
 import qualified Torch.Internal.Managed.Type.Tensor as ATen
+import qualified Torch.Internal.Managed.Type.StdOptional as ATen
 import qualified Torch.Internal.Managed.Type.TensorIndex as ATen
 import qualified Torch.Internal.Managed.Type.TensorOptions as ATen
 import qualified Torch.Internal.Managed.Type.Extra as ATen
@@ -51,11 +57,15 @@ import qualified Torch.Internal.Type as ATen
 import qualified Torch.Internal.Unmanaged.Type.Tensor as Unmanaged (tensor_data_ptr)
 import Torch.Lens
 import Torch.TensorOptions
+import Control.DeepSeq (NFData, rnf)
 
 type ATenTensor = ForeignPtr ATen.Tensor
 
 -- do not use the constructor
 newtype Tensor = Unsafe ATenTensor
+
+instance NFData Tensor where
+  rnf (Unsafe _) = ()
 
 instance Castable Tensor ATenTensor where
   cast (Unsafe aten_tensor) f = f aten_tensor
@@ -68,6 +78,39 @@ newMutableTensor tensor = MutableTensor <$> cast1 ATen.detach_t tensor
 
 toImmutable :: MutableTensor -> IO Tensor
 toImmutable (MutableTensor tensor) = cast1 ATen.detach_t tensor
+
+type ATenOptionalTensor = ForeignPtr (ATen.StdOptional ATen.Tensor)
+
+-- do not use the constructor
+newtype OptionalTensor = UnsafeOptional ATenOptionalTensor
+
+instance Castable OptionalTensor ATenOptionalTensor where
+  cast (UnsafeOptional aten_optional_tensor) f = f aten_optional_tensor
+  uncast aten_optional_tensor f = f $ UnsafeOptional aten_optional_tensor
+
+instance Castable (Maybe Tensor) OptionalTensor where
+  cast Nothing f = do
+    ptr <- ATen.stdOptionalTensor_empty
+    f (UnsafeOptional ptr)
+  cast (Just tensor) f = do
+    cast tensor $ \atenTensor -> do
+      ptr <- ATen.stdOptionalTensor_create atenTensor
+      f (UnsafeOptional ptr)
+  uncast (UnsafeOptional ptr) f = do
+    hasValue <- ATen.stdOptionalTensor_has_value ptr
+    if hasValue /= 0
+      then do
+        atenTensor <- ATen.stdOptionalTensor_value ptr
+        uncast atenTensor $ \tensor -> f (Just tensor)
+      else f Nothing
+
+instance Castable (Maybe Tensor) ATenOptionalTensor where
+  cast maybeTensor f = do
+    cast maybeTensor $ \(optTensor :: OptionalTensor) -> do
+      cast optTensor f
+  uncast ptr f = do
+    uncast ptr $ \(optTensor :: OptionalTensor) -> do
+      uncast optTensor f
 
 --------------------------------------------------------------------------------
 -- Basic tensor properties
@@ -134,11 +177,19 @@ device t = unsafePerformIO $ do
     then do
       isCUDA <- cast1 ATen.tensor_is_cuda t :: IO Bool
       if isCUDA then cuda <$> cast1 ATen.tensor_get_device t else pure cpu
-    else pure cpu
+    else do
+      hasMPS <- cast0 ATen.hasMPS :: IO Bool
+      if hasMPS
+        then do
+        isMPS <- cast1 ATen.tensor_is_mps t :: IO Bool
+        if isMPS then pure mps else pure cpu
+      else
+        pure cpu
   where
     cpu = Device {deviceType = CPU, deviceIndex = 0}
     cuda :: Int -> Device
     cuda di = Device {deviceType = CUDA, deviceIndex = fromIntegral di}
+    mps = Device {deviceType = MPS, deviceIndex = 0}
 
 -- | Returns the data type of the input tensor
 dtype ::
@@ -221,7 +272,10 @@ _toDevice ::
   -- | output
   Tensor
 _toDevice device' t = unsafePerformIO $ do
-  hasCUDA <- cast0 ATen.hasCUDA :: IO Bool
+  hasDevice <- case deviceType device' of
+    CPU -> pure True
+    CUDA -> cast0 ATen.hasCUDA
+    MPS -> cast0 ATen.hasMPS
   let device = Torch.Tensor.device t
   t' <-
     toDevice'
@@ -229,7 +283,7 @@ _toDevice device' t = unsafePerformIO $ do
       (deviceType device')
       (deviceIndex device)
       (deviceIndex device')
-      hasCUDA
+      hasDevice
   check
     (deviceType device')
     (deviceType $ Torch.Tensor.device t')
@@ -241,6 +295,8 @@ _toDevice device' t = unsafePerformIO $ do
     toDevice' CUDA CUDA di di' True | di /= di' = getOpts t >>= withDeviceIndex di' >>= to t -- copy from di to di'
     toDevice' CPU CUDA 0 di' True | di' >= 0 = getOpts t >>= withDeviceIndex di' >>= to t -- copy from cpu:0 to cuda:di'
     toDevice' CUDA CPU di 0 True | di >= 0 = getOpts t >>= withDeviceType CPU >>= to t -- copy from cuda:di to cpu:0
+    toDevice' CPU MPS 0 0 True = getOpts t >>= withDeviceType MPS >>= to t -- copy from cpu:0 to mps:0'
+    toDevice' MPS CPU 0 0 True = getOpts t >>= withDeviceType CPU >>= to t -- copy from mps:0 to cpu:0
     toDevice' dt dt' di di' _ =
       error $
         "cannot move tensor from \""
@@ -275,6 +331,58 @@ _toDevice device' t = unsafePerformIO $ do
           <> ":"
           <> show di'
           <> "\""
+
+-- | Non-blocking variant of _toDevice for async H2D transfers.
+-- IMPORTANT: Caller must synchronize before using the tensor (e.g., via
+-- cudaStreamSynchronize or a synchronizing CUDA operation).
+_toDeviceNonBlocking ::
+  -- | device to cast input to
+  Device ->
+  -- | input
+  Tensor ->
+  -- | output (may still be transferring)
+  Tensor
+_toDeviceNonBlocking device' t = unsafePerformIO $ do
+  hasDevice <- case deviceType device' of
+    CPU -> pure True
+    CUDA -> cast0 ATen.hasCUDA
+    MPS -> cast0 ATen.hasMPS
+  let device = Torch.Tensor.device t
+  toDevice'
+    (deviceType device)
+    (deviceType device')
+    (deviceIndex device)
+    (deviceIndex device')
+    hasDevice
+  where
+    toDevice' dt dt' di di' _ | dt == dt' && di == di' = pure t
+    toDevice' CUDA CUDA di di' True | di /= di' = getOpts t >>= withDeviceIndex di' >>= toNonBlocking t
+    toDevice' CPU CUDA 0 di' True | di' >= 0 = getOpts t >>= withDeviceIndex di' >>= toNonBlocking t
+    toDevice' CUDA CPU di 0 True | di >= 0 = getOpts t >>= withDeviceType CPU >>= toNonBlocking t
+    toDevice' CPU MPS 0 0 True = getOpts t >>= withDeviceType MPS >>= toNonBlocking t
+    toDevice' MPS CPU 0 0 True = getOpts t >>= withDeviceType CPU >>= toNonBlocking t
+    toDevice' dt dt' di di' _ =
+      error $
+        "cannot move tensor from \""
+          <> show dt
+          <> ":"
+          <> show di
+          <> "\" to \""
+          <> show dt'
+          <> ":"
+          <> show di'
+          <> "\""
+    getOpts :: Tensor -> IO TensorOptions
+    getOpts = cast1 ATen.tensor_options
+    withDeviceType :: DeviceType -> TensorOptions -> IO TensorOptions
+    withDeviceType dt opts = cast2 ATen.tensorOptions_device_D opts dt
+    withDeviceIndex :: Int16 -> TensorOptions -> IO TensorOptions
+    withDeviceIndex di opts = cast2 ATen.tensorOptions_device_index_s opts di
+    toNonBlocking :: Tensor -> TensorOptions -> IO Tensor
+    toNonBlocking t opts = cast4 ATen.tensor_to_obb t opts nonBlocking copy
+      where
+        nonBlocking = True
+        copy = False
 
 toDeviceWithTensor :: Tensor -> Tensor -> Tensor
 toDeviceWithTensor reference input = unsafePerformIO $ cast2 ATen.tensor_to_device reference input
@@ -312,7 +420,7 @@ indexSelect' ::
   Tensor ->
   -- | output
   Tensor
-indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (asTensor' indexList t)
+indexSelect' dim indexList t = unsafePerformIO $ (cast3 ATen.index_select_tlt) t dim (_toDevice (device t) (asTensor indexList))
 
 -- | Slices the input tensor along the selected dimension at the given range.
 sliceDim ::
@@ -351,7 +459,7 @@ reshape shape t = unsafePerformIO $ cast2 ATen.reshape_tl t shape
 --------------------------------------------------------------------------------
 
 toSparse :: Tensor -> Tensor
-toSparse t = unsafePerformIO $ (cast1 ATen.tensor_to_sparse) t
+toSparse t = unsafePerformIO $ (cast2 ATen.tensor_to_sparse_l) t (dimCUnsafe t)
 
 toDense :: Tensor -> Tensor
 toDense t = unsafePerformIO $ (cast1 ATen.tensor_to_dense) t
@@ -364,6 +472,9 @@ toCPU t = unsafePerformIO $ (cast1 ATen.tensor_cpu) t
 
 toCUDA :: Tensor -> Tensor
 toCUDA t = unsafePerformIO $ (cast1 ATen.tensor_cuda) t
+
+toMPS :: Tensor -> Tensor
+toMPS t = unsafePerformIO $ (cast1 ATen.tensor_mps) t
 
 --------------------------------------------------------------------------------
 -- Indexing support
@@ -685,6 +796,45 @@ instance {-# OVERLAPPING #-} TensorLike a => TensorLike [a] where
           if product (_dims d) == width -- This validation may be slow.
             then (_pokeElemOff @a) ptr (offset + i * width) d
             else throwIO $ userError $ "There are lists having different length."
+
+instance {-# OVERLAPPING #-} (Reifies a DType, Storable a) => TensorLike (VS.Vector a) where
+  asTensor v = unsafePerformIO $ do
+    t <- ((cast2 ATen.new_empty_tensor) :: [Int] -> TensorOptions -> IO Tensor) [VS.length v] $ withDType (_dtype @a) defaultOpts
+    _withTensor t $ \ptr -> do
+      VS.unsafeWith v $ \vptr -> do
+        copyBytes
+          (castPtr ptr)
+          (castPtr vptr)
+          (VS.length v * (sizeOf (undefined :: a)))
+    return t
+
+  _asValue t = unsafePerformIO $
+    let len = head (shape t)
+    in
+      withTensor t $ \ptr -> do
+        fp <- mallocPlainForeignPtrBytes (len * (sizeOf (undefined :: a)))
+        withForeignPtr fp $ \vptr -> do
+          copyBytes
+            (castPtr vptr)
+            (castPtr ptr)
+            (len * (sizeOf (undefined :: a)))
+        return $ VS.unsafeFromForeignPtr fp 0 len
+
+  _dtype = reflect (Proxy :: Proxy a)
+  _dims v = [VS.length v]
+  _deepDims v = Just [VS.length v]
+  _peekElemOff = error "Not implemented for storable vector"
+  _pokeElemOff = error "Not implemented for storable vector"
+
+instance {-# OVERLAPPING #-} (Reifies a DType, Storable a, VG.Vector VU.Vector a) => TensorLike (VU.Vector a) where
+  asTensor v = asTensor (VG.convert v :: VS.Vector a)
+  _asValue t = VG.convert (_asValue t :: VS.Vector a)
+
+  _dtype = reflect (Proxy :: Proxy a)
+  _dims v = [VG.length v]
+  _deepDims v = Just [VG.length v]
+  _peekElemOff = error "Not implemented for unboxed vector"
+  _pokeElemOff = error "Not implemented for unboxed vector"
 
 class AsTensors as where
   toTensors :: as -> V.Vector Tensor

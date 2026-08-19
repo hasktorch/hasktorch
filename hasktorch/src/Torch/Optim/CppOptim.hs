@@ -241,3 +241,45 @@ saveState (CppOptimizerState _ optimizer) file = cast2 LibTorch.save optimizer f
 
 loadState :: CppOptimizerState option -> FilePath -> IO ()
 loadState (CppOptimizerState _ optimizer) file = cast2 LibTorch.load optimizer file
+
+data AdamwParamGroupOptions = AdamwParamGroupOptions
+  { adamwPgLr :: Double,
+    adamwPgBetas :: (Double, Double),
+    adamwPgEps :: Double,
+    adamwPgWeightDecay :: Double,
+    adamwPgAmsgrad :: Bool
+  }
+  deriving (Show, Eq)
+
+instance Default AdamwParamGroupOptions where
+  def =
+    AdamwParamGroupOptions
+      { adamwPgLr = 1e-3,
+        adamwPgBetas = (0.9, 0.999),
+        adamwPgEps = 1e-8,
+        adamwPgWeightDecay = 1e-2,
+        adamwPgAmsgrad = False
+      }
+
+initAdamwWithGroups :: AdamwParamGroupOptions -> [Tensor] -> [Tensor] -> IO (CppOptimizerState AdamwParamGroupOptions)
+initAdamwWithGroups opt@AdamwParamGroupOptions {..} decayParams noDecayParams = do
+  v <- cast8 LibTorch.adamwWithParamGroups adamwPgLr (fst adamwPgBetas) (snd adamwPgBetas) adamwPgEps adamwPgWeightDecay adamwPgAmsgrad decayParams noDecayParams
+  return $ CppOptimizerState opt v
+
+cppOptimizerStepOnly :: CppOptimizerState option -> IO ()
+cppOptimizerStepOnly (CppOptimizerState _ optimizer) = cast1 LibTorch.stepOnly optimizer
+
+cppOptimizerZeroGrad :: CppOptimizerState option -> IO ()
+cppOptimizerZeroGrad (CppOptimizerState _ optimizer) = cast1 LibTorch.zeroGrad optimizer
+
+cppOptimizerSetGrads :: CppOptimizerState option -> [Tensor] -> IO ()
+cppOptimizerSetGrads (CppOptimizerState _ optimizer) grads = cast2 LibTorch.setParamGrads optimizer grads
+
+cppOptimizerGetAllParams :: CppOptimizerState option -> IO [Tensor]
+cppOptimizerGetAllParams (CppOptimizerState _ optimizer) = cast1 LibTorch.getAllParams optimizer
+
+cppOptimizerSetLr :: CppOptimizerState option -> Double -> IO ()
+cppOptimizerSetLr (CppOptimizerState _ optimizer) lr = cast2 LibTorch.setLr optimizer lr
+
+cppOptimizerSetGroupLr :: CppOptimizerState option -> Int -> Double -> IO ()
+cppOptimizerSetGroupLr (CppOptimizerState _ optimizer) groupIdx lr = cast3 LibTorch.setGroupLr optimizer groupIdx lr

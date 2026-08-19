@@ -2,6 +2,7 @@ module Main where
 
 import Test.Hspec (hspec)
 import qualified DimnameSpec
+import qualified ElementwiseSpec
 import qualified FactorySpec
 import qualified FunctionalSpec
 import qualified GradSpec
@@ -20,9 +21,16 @@ import qualified VisionSpec
 import qualified Torch.Distributions.BernoulliSpec
 import qualified Torch.Distributions.CategoricalSpec
 import qualified Torch.Distributions.ConstraintsSpec
+import qualified Torch.Typed.ArrowSpec
+import qualified Torch.Typed.ResNetSpec
+import qualified Torch.Typed.AttentionSpec
+import qualified Torch.Typed.TreeLSTMSpec
 import qualified Torch.Typed.AutogradSpec
 import qualified Torch.Typed.AuxiliarySpec
 import qualified Torch.Typed.FactoriesSpec
+import qualified Torch.Typed.GradedSpec
+import qualified Torch.Typed.IndexSpec
+import qualified Torch.Typed.LensSpec
 import qualified Torch.Typed.FunctionalSpec0
 import qualified Torch.Typed.FunctionalSpec1
 import qualified Torch.Typed.FunctionalSpec2
@@ -34,13 +42,19 @@ import qualified Torch.Typed.NN.TransformerSpec
 import qualified Torch.Typed.NNSpec
 import qualified Torch.Typed.NamedTensorSpec
 import qualified Torch.Typed.OptimSpec
+import qualified Torch.Typed.RandomSpec
+import qualified Torch.Typed.RepresentableSpec
+import qualified Torch.Typed.NMSSpec
+import qualified Torch.Typed.StagedSpec
 import qualified Torch.Typed.TensorSpec0
 import qualified Torch.Typed.TensorSpec1
 import qualified Torch.Typed.VisionSpec
+import qualified Torch.Typed.SerializeSpec
 
 main :: IO ()
 main = hspec $ do
   DimnameSpec.spec
+  ElementwiseSpec.spec
   FactorySpec.spec
   FunctionalSpec.spec
   GradSpec.spec
@@ -59,9 +73,16 @@ main = hspec $ do
   Torch.Distributions.BernoulliSpec.spec
   Torch.Distributions.CategoricalSpec.spec
   Torch.Distributions.ConstraintsSpec.spec
+  Torch.Typed.ArrowSpec.spec
+  Torch.Typed.ResNetSpec.spec
+  Torch.Typed.AttentionSpec.spec
+  Torch.Typed.TreeLSTMSpec.spec
   Torch.Typed.AutogradSpec.spec
   Torch.Typed.AuxiliarySpec.spec
   Torch.Typed.FactoriesSpec.spec
+  Torch.Typed.GradedSpec.spec
+  Torch.Typed.IndexSpec.spec
+  Torch.Typed.LensSpec.spec
   Torch.Typed.FunctionalSpec0.spec
   Torch.Typed.FunctionalSpec1.spec
   Torch.Typed.FunctionalSpec2.spec
@@ -73,7 +94,12 @@ main = hspec $ do
   Torch.Typed.NNSpec.spec
   Torch.Typed.NamedTensorSpec.spec
   Torch.Typed.OptimSpec.spec
+  Torch.Typed.RandomSpec.spec
+  Torch.Typed.RepresentableSpec.spec
+  Torch.Typed.NMSSpec.spec
+  Torch.Typed.StagedSpec.spec
   Torch.Typed.TensorSpec0.spec
   Torch.Typed.TensorSpec1.spec
   Torch.Typed.VisionSpec.spec
+  Torch.Typed.SerializeSpec.spec
 

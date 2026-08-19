@@ -14,7 +14,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeInType #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -34,7 +33,7 @@ import Torch.DType (DType)
 import Torch.Device (DeviceType)
 import Torch.HList
 import qualified Torch.NN (Parameter, Randomizable (..), sample)
-import qualified Torch.Tensor (toType, _toDevice)
+import qualified Torch.Tensor (MutableTensor, toType, _toDevice)
 import Torch.Typed.Auxiliary
 import Torch.Typed.Factories
 import Torch.Typed.Functional
@@ -169,6 +168,11 @@ instance Parameterized (Parameter device dtype shape) where
   type Parameters (Parameter device dtype shape) = '[Parameter device dtype shape]
   flattenParameters = (:. HNil)
   replaceParameters _ (parameter :. HNil) = parameter
+
+instance Parameterized Torch.Tensor.MutableTensor where
+  type Parameters Torch.Tensor.MutableTensor = '[]
+  flattenParameters _ = HNil
+  replaceParameters = const
 
 instance Parameterized Int where
   type Parameters Int = '[]

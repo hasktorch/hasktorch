@@ -24,6 +24,7 @@ where
 
 import Data.Default.Class
 import Data.Foldable (for_)
+import Data.Kind (Type)
 import qualified Debug.Trace as Debug
 import Foreign.ForeignPtr
 import System.Mem (performGC)
@@ -50,7 +51,7 @@ import Torch.Typed.Tensor
 
 type CppOptimizerRef = ForeignPtr ATen.Optimizer
 
-data CppOptimizerState option (params :: [*])
+data CppOptimizerState option (params :: [Type])
   = CppOptimizerState option CppOptimizerRef
 
 data ToParameter = ToParameter

@@ -36,8 +36,7 @@ import Type.Errors.Pretty (type (%), type (<>))
 -- LinearWithBiasF WeightShape BiasShape InputShape :: Shape
 --                                                       [Dim (Name Symbol) (Size Natural)]
 -- = 'Shape
---     '[ 'Dim ('Name "batch") ('Size 20),
---        'Dim ('Name "output") ('Size 10)]
+--     ['Dim ('Name "batch") ('Size 20), 'Dim ('Name "output") ('Size 10)]
 type family LinearWithBiasF (weightShape :: Shape [Dim (Name Symbol) (Size Nat)]) (biasShape :: Shape [Dim (Name Symbol) (Size Nat)]) (inputShape :: Shape [Dim (Name Symbol) (Size Nat)]) :: Shape [Dim (Name Symbol) (Size Nat)] where
   LinearWithBiasF ('Shape '[]) _ _ = TypeError (LinearWeightDimsErrorMessage '[])
   LinearWithBiasF ('Shape '[weightDim]) _ _ = TypeError (LinearWeightDimsErrorMessage '[weightDim])
@@ -102,20 +101,20 @@ type LinearWeightDimsErrorMessage (weightDims :: [Dim (Name Symbol) (Size Nat)])
 -- >>> g <- sMkGenerator (SDevice SCPU) 0
 -- >>> sRandn' = sRandn . TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat)
 -- >>> (weight, g') <- sRandn' weightShape g
--- [W TensorImpl.h:1463] Warning: Named tensors and all their associated APIs are an experimental feature and subject to change. Please do not use them for anything important until they are released as stable. (function operator())
+-- ...
 -- >>> (bias, g'') <- sRandn' biasShape g'
 -- >>> (input, _) <- sRandn' inputShape g''
 -- >>> result = linearWithBias weight bias input
 -- >>> :type result
 -- result
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "batch") ('Size 20),
---              'Dim ('Name "output") ('Size 10)])
+--           ['Dim ('Name "batch") ('Size 20),
+--            'Dim ('Name "output") ('Size 10)])
 linearWithBias ::
   forall gradient layout device dataType shape gradient' layout' device' dataType' shape' gradient'' layout'' device'' dataType'' shape''.
   -- | weight

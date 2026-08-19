@@ -1,20 +1,26 @@
+cabal-version:       3.0
 name:                hasktorch
-version:             0.2.0.0
-synopsis:            Functional differentiable programming in Haskell
--- description:
+version:             0.2.2.0
+synopsis:            Haskell bindings to libtorch, supporting both typed and untyped tensors.
+description:         Hasktorch is a library for tensors and neural networks in Haskell. It is an independent open source community project which leverages the core C++ libraries shared by PyTorch.
 homepage:            https://github.com/hasktorch/hasktorch#readme
-license:             BSD3
+license:             BSD-3-Clause
+license-file:        LICENSE
 author:              Hasktorch Contributor Team
 maintainer:          hasktorch@gmail.com
 copyright:           2019 Austin Huang
 category:            Codegen
 build-type:          Custom
-cabal-version:       1.24
+extra-source-files:
+  CHANGELOG.md
+  ./test/data/numpy_rawfile
+  ./test/data/mnist-sample-labels-idx1-ubyte.gz
+  ./test/data/mnist-sample-images-idx3-ubyte.gz
 
 custom-setup
   setup-depends:
       base >= 4.9 && < 5
-    , Cabal
+    , Cabal >= 3.10.1.0 && < 3.16
     , cabal-doctest >=1.0.9 && <1.1
 
 Flag disable-doctest
@@ -50,10 +56,12 @@ library
                     , Torch.Script
                     , Torch.HList
                     , Torch.Lens
+                    , Torch.Elementwise
                     , Torch.Typed
                     , Torch.Typed.Auxiliary
                     , Torch.Typed.Factories
                     , Torch.Typed.Functional
+                    , Torch.Typed.Random
                     , Torch.Typed.NN
                     , Torch.Typed.NN.Convolution
                     , Torch.Typed.NN.Normalization
@@ -68,6 +76,8 @@ library
                     , Torch.Typed.NN.Dropout
                     , Torch.Typed.NN.Sparse
                     , Torch.Typed.NN.DataParallel
+                    , Torch.Typed.NN.Arrow
+                    , Torch.Typed.NN.BatchNorm
                     , Torch.Typed.Tensor
                     , Torch.Typed.Parameter
                     , Torch.Typed.Device
@@ -79,6 +89,10 @@ library
                     , Torch.Typed.Vision
                     , Torch.Typed.Lens
                     , Torch.Typed.NamedTensor
+                    , Torch.Typed.Representable
+                    , Torch.Typed.Graded
+                    , Torch.Typed.Staged
+                    , Torch.Typed.Index
                     , Torch.Typed.VLTensor
                     , Torch.Distributions.Constraints
                     , Torch.Distributions.Distribution
@@ -95,26 +109,27 @@ library
                     , Torch.Index
                     , Torch.Jit
 
- other-modules:       Paths_hasktorch
  hs-source-dirs:      src
  default-language:    Haskell2010
  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -fplugin GHC.NotExport.Plugin
- build-depends:       async
+ if os(darwin)
+  cpp-options:        -D__APPLE__
+ build-depends:       async >= 2.2.5 && < 2.3
                     , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.11.*
-                    , libtorch-ffi-helper == 1.11.*
-                    , finite-typelits
-                    , ghc-typelits-extra
-                    , ghc-typelits-knownnat
-                    , ghc-typelits-natnormalise
-                    , mtl
-                    , safe-exceptions
-                    , random
-                    , reflection
-                    , stm
-                    , JuicyPixels
-                    , vector
-                    , bytestring
+                    , libtorch-ffi >= 2.0.2.0 && < 2.0.3
+                    , libtorch-ffi-helper == 2.0.0.*
+                    , finite-typelits >= 0.1 && < 0.3
+                    , ghc-typelits-extra >= 0.4.6 && < 0.6
+                    , ghc-typelits-knownnat >= 0.7.9 && < 0.9
+                    , ghc-typelits-natnormalise >= 0.7.9 && < 0.10
+                    , mtl >= 2.3.1 && < 2.4
+                    , safe-exceptions >= 0.1.7 && < 0.2
+                    , random >= 1.2.1 && < 1.4
+                    , reflection >= 2.1 && < 2.2
+                    , stm >= 2.5.1 && < 2.6
+                    , JuicyPixels >= 3.3 && < 3.4
+                    , vector >= 0.13 && < 0.14
+                    , bytestring >= 0.11.5 && < 0.13
                     , safe-exceptions
                     , zlib >= 0.6
                     , pipes >= 4.3
@@ -152,6 +167,7 @@ test-suite spec
                     , GradSpec
                     , InitializerSpec
                     , LensSpec
+                    , ElementwiseSpec
                     , OptimSpec
                     , SparseSpec
                     , ScriptSpec
@@ -163,6 +179,7 @@ test-suite spec
                     , Torch.Typed.TensorSpec0
                     , Torch.Typed.TensorSpec1
                     , Torch.Typed.FactoriesSpec
+                    , Torch.Typed.RandomSpec
                     , Torch.Typed.FunctionalSpec0
                     , Torch.Typed.FunctionalSpec1
                     , Torch.Typed.FunctionalSpec2
@@ -176,6 +193,17 @@ test-suite spec
                     , Torch.Typed.NN.TransformerSpec
                     , Torch.Typed.VisionSpec
                     , Torch.Typed.NamedTensorSpec
+                    , Torch.Typed.RepresentableSpec
+                    , Torch.Typed.GradedSpec
+                    , Torch.Typed.StagedSpec
+                    , Torch.Typed.NMSSpec
+                    , Torch.Typed.IndexSpec
+                    , Torch.Typed.LensSpec
+                    , Torch.Typed.AttentionSpec
+                    , Torch.Typed.TreeLSTMSpec
+                    , Torch.Typed.ArrowSpec
+                    , Torch.Typed.ResNetSpec
+                    , Torch.Typed.SerializeSpec
                     , SerializeSpec
                     , RandomSpec
                     , VisionSpec
@@ -185,7 +213,9 @@ test-suite spec
                     , IndexSpec
   default-language: Haskell2010
   ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
-  build-depends:      base >= 4.7 && < 5
+  if os(darwin)
+   cpp-options:       -D__APPLE__
+  build-depends:      base
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
                     , ghc-typelits-natnormalise
@@ -203,9 +233,11 @@ test-suite spec
                     , pipes
                     , random
                     , vector-sized
+                    , finite-typelits
                     , lens-family-core
                     , data-default-class
                     , half
+                    , vector
 
 test-suite doctests
   if os(darwin) || flag(disable-doctest)
@@ -217,10 +249,10 @@ test-suite doctests
   main-is:            doctests.hs
   ghc-options:        -Wall -threaded -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0
   default-language:   Haskell2010
-  build-depends:      doctest >=0.16.0.1 && <0.21
+  build-depends:      doctest >=0.16.0.1 && <0.26
                     , async
-                    , base >= 4.7 && < 5
-                    , libtorch-ffi == 1.11.*
+                    , base
+                    , libtorch-ffi
                     , finite-typelits
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
@@ -243,7 +275,7 @@ benchmark runtime
   main-is: Runtime.hs
   hs-source-dirs: bench
   build-depends:
-      base >=4.7 && <5
+      base
     , criterion
     , deepseq
     , hmatrix
@@ -263,7 +295,7 @@ benchmark alloc
   main-is: Alloc.hs
   hs-source-dirs: bench
   build-depends:
-      base >=4.7 && <5
+      base
     , deepseq
     , hmatrix
     , mwc-random

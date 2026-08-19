@@ -31,8 +31,15 @@ data StdArray a
 -- std::tuple<a>
 data StdTuple a
 
+-- std::optional<a>
+data StdOptional a
+
 -- at::Tensor
 data Tensor
+
+
+-- std::optional<at::Tensor>
+type OptionalTensor = StdOptional Tensor
 
 -- std::vector<at::Tensor>
 type TensorList = StdVector Tensor
@@ -93,6 +100,7 @@ data Optimizer
 typeTable :: Map.Map C.TypeSpecifier TH.TypeQ
 typeTable = Map.fromList [
         (C.TypeName "std::array", [t|StdArray|])
+      , (C.TypeName "std::optional", [t|StdOptional|])
       , (C.TypeName "std::vector", [t|StdVector|])
       , (C.TypeName "std::tuple", [t|StdTuple|])
       , (C.TypeName "at::Scalar", [t|Scalar|])

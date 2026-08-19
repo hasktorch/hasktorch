@@ -25,7 +25,10 @@ C.include "<torch/csrc/autograd/engine.h>"
 C.include "<ATen/core/functional.h>"
 
 grad :: Ptr Tensor -> Ptr TensorList -> IO (Ptr TensorList)
-grad y inputs = [C.throwBlock| std::vector<at::Tensor>* {
+grad = gradWithOptions 1 0 0
+
+gradWithOptions :: CBool -> CBool -> CBool -> Ptr Tensor -> Ptr TensorList -> IO (Ptr TensorList)
+gradWithOptions keepGraph createGraph accumulateGrad y inputs = [C.throwBlock| std::vector<at::Tensor>* {
     torch::autograd::Variable y = *$(at::Tensor* y);
     const auto & inputs = *$(std::vector<at::Tensor>* inputs);
 
@@ -59,9 +62,9 @@ grad y inputs = [C.throwBlock| std::vector<at::Tensor>* {
 
     auto & engine = torch::autograd::Engine::get_default_engine();
     auto outputs = engine.execute(roots, grads,
-                                  /*keep_graph=*/true,
-                                  /*create_graph=*/false,
-                                  /*accumulate_grad=*/false, // https://github.com/pytorch/pytorch/pull/46855
+                                  /*keep_graph=*/$(bool keepGraph),
+                                  /*create_graph=*/$(bool createGraph),
+                                  /*accumulate_grad=*/$(bool accumulateGrad), // https://github.com/pytorch/pytorch/pull/46855
                                                              // https://github.com/pytorch/pytorch/issues/46373
                                   output_edges);
 

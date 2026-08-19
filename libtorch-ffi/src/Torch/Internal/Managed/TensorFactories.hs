@@ -217,6 +217,27 @@ _empty_per_channel_affine_quantized_lttl
   -> IO (ForeignPtr Tensor)
 _empty_per_channel_affine_quantized_lttl = _cast4 Unmanaged._empty_per_channel_affine_quantized_lttl
 
+empty_quantized_ltoM
+  :: ForeignPtr IntArray
+  -> ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+empty_quantized_ltoM = _cast4 Unmanaged.empty_quantized_ltoM
+
+empty_quantized_lto
+  :: ForeignPtr IntArray
+  -> ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+empty_quantized_lto = _cast3 Unmanaged.empty_quantized_lto
+
+empty_quantized_lt
+  :: ForeignPtr IntArray
+  -> ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+empty_quantized_lt = _cast2 Unmanaged.empty_quantized_lt
+
 empty_like_toM
   :: ForeignPtr Tensor
   -> ForeignPtr TensorOptions
@@ -481,12 +502,6 @@ linspace_ssl
   -> IO (ForeignPtr Tensor)
 linspace_ssl = _cast3 Unmanaged.linspace_ssl
 
--- linspace_ss
---   :: ForeignPtr Scalar
---   -> ForeignPtr Scalar
---   -> IO (ForeignPtr Tensor)
--- linspace_ss = _cast2 Unmanaged.linspace_ss
-
 logspace_ssldo
   :: ForeignPtr Scalar
   -> ForeignPtr Scalar
@@ -510,12 +525,6 @@ logspace_ssl
   -> Int64
   -> IO (ForeignPtr Tensor)
 logspace_ssl = _cast3 Unmanaged.logspace_ssl
-
--- logspace_ss
---   :: ForeignPtr Scalar
---   -> ForeignPtr Scalar
---   -> IO (ForeignPtr Tensor)
--- logspace_ss = _cast2 Unmanaged.logspace_ss
 
 ones_lNo
   :: ForeignPtr IntArray
@@ -867,6 +876,17 @@ zeros_lN
   -> IO (ForeignPtr Tensor)
 zeros_lN = _cast2 Unmanaged.zeros_lN
 
+_efficientzerotensor_lo
+  :: ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_efficientzerotensor_lo = _cast2 Unmanaged._efficientzerotensor_lo
+
+_efficientzerotensor_l
+  :: ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+_efficientzerotensor_l = _cast1 Unmanaged._efficientzerotensor_l
+
 zeros_lo
   :: ForeignPtr IntArray
   -> ForeignPtr TensorOptions
@@ -896,22 +916,175 @@ zeros_like_t
   -> IO (ForeignPtr Tensor)
 zeros_like_t = _cast1 Unmanaged.zeros_like_t
 
--- _sparse_csr_tensor_tttlo
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr IntArray
---   -> ForeignPtr TensorOptions
---   -> IO (ForeignPtr Tensor)
--- _sparse_csr_tensor_tttlo = _cast5 Unmanaged._sparse_csr_tensor_tttlo
+sparse_compressed_tensor_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_compressed_tensor_tttlo = _cast5 Unmanaged.sparse_compressed_tensor_tttlo
 
--- _sparse_csr_tensor_ttto
---   :: ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr Tensor
---   -> ForeignPtr TensorOptions
---   -> IO (ForeignPtr Tensor)
--- _sparse_csr_tensor_ttto = _cast4 Unmanaged._sparse_csr_tensor_ttto
+sparse_csr_tensor_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_csr_tensor_tttlo = _cast5 Unmanaged.sparse_csr_tensor_tttlo
+
+sparse_csc_tensor_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_csc_tensor_tttlo = _cast5 Unmanaged.sparse_csc_tensor_tttlo
+
+sparse_bsr_tensor_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_bsr_tensor_tttlo = _cast5 Unmanaged.sparse_bsr_tensor_tttlo
+
+sparse_bsc_tensor_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_bsc_tensor_tttlo = _cast5 Unmanaged.sparse_bsc_tensor_tttlo
+
+sparse_compressed_tensor_ttto
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_compressed_tensor_ttto = _cast4 Unmanaged.sparse_compressed_tensor_ttto
+
+sparse_csr_tensor_ttto
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_csr_tensor_ttto = _cast4 Unmanaged.sparse_csr_tensor_ttto
+
+sparse_csc_tensor_ttto
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_csc_tensor_ttto = _cast4 Unmanaged.sparse_csc_tensor_ttto
+
+sparse_bsr_tensor_ttto
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_bsr_tensor_ttto = _cast4 Unmanaged.sparse_bsr_tensor_ttto
+
+sparse_bsc_tensor_ttto
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+sparse_bsc_tensor_ttto = _cast4 Unmanaged.sparse_bsc_tensor_ttto
+
+_sparse_compressed_tensor_unsafe_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_sparse_compressed_tensor_unsafe_tttlo = _cast5 Unmanaged._sparse_compressed_tensor_unsafe_tttlo
+
+_sparse_compressed_tensor_unsafe_tttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+_sparse_compressed_tensor_unsafe_tttl = _cast4 Unmanaged._sparse_compressed_tensor_unsafe_tttl
+
+_sparse_csr_tensor_unsafe_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_sparse_csr_tensor_unsafe_tttlo = _cast5 Unmanaged._sparse_csr_tensor_unsafe_tttlo
+
+_sparse_csr_tensor_unsafe_tttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+_sparse_csr_tensor_unsafe_tttl = _cast4 Unmanaged._sparse_csr_tensor_unsafe_tttl
+
+_sparse_csc_tensor_unsafe_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_sparse_csc_tensor_unsafe_tttlo = _cast5 Unmanaged._sparse_csc_tensor_unsafe_tttlo
+
+_sparse_csc_tensor_unsafe_tttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+_sparse_csc_tensor_unsafe_tttl = _cast4 Unmanaged._sparse_csc_tensor_unsafe_tttl
+
+_sparse_bsr_tensor_unsafe_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_sparse_bsr_tensor_unsafe_tttlo = _cast5 Unmanaged._sparse_bsr_tensor_unsafe_tttlo
+
+_sparse_bsr_tensor_unsafe_tttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+_sparse_bsr_tensor_unsafe_tttl = _cast4 Unmanaged._sparse_bsr_tensor_unsafe_tttl
+
+_sparse_bsc_tensor_unsafe_tttlo
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_sparse_bsc_tensor_unsafe_tttlo = _cast5 Unmanaged._sparse_bsc_tensor_unsafe_tttlo
+
+_sparse_bsc_tensor_unsafe_tttl
+  :: ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr Tensor
+  -> ForeignPtr IntArray
+  -> IO (ForeignPtr Tensor)
+_sparse_bsc_tensor_unsafe_tttl = _cast4 Unmanaged._sparse_bsc_tensor_unsafe_tttl
 
 sparse_coo_tensor_lo
   :: ForeignPtr IntArray
@@ -979,6 +1152,32 @@ _sparse_coo_tensor_with_dims_and_tensors_llltto
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 _sparse_coo_tensor_with_dims_and_tensors_llltto = _cast6 Unmanaged._sparse_coo_tensor_with_dims_and_tensors_llltto
+
+_to_copy_tobM
+  :: ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> CBool
+  -> MemoryFormat
+  -> IO (ForeignPtr Tensor)
+_to_copy_tobM = _cast4 Unmanaged._to_copy_tobM
+
+_to_copy_tob
+  :: ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> CBool
+  -> IO (ForeignPtr Tensor)
+_to_copy_tob = _cast3 Unmanaged._to_copy_tob
+
+_to_copy_to
+  :: ForeignPtr Tensor
+  -> ForeignPtr TensorOptions
+  -> IO (ForeignPtr Tensor)
+_to_copy_to = _cast2 Unmanaged._to_copy_to
+
+_to_copy_t
+  :: ForeignPtr Tensor
+  -> IO (ForeignPtr Tensor)
+_to_copy_t = _cast1 Unmanaged._to_copy_t
 
 tril_indices_lllo
   :: Int64

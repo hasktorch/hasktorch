@@ -21,6 +21,7 @@ module Torch.Functional
     Internal.logdet,
     Internal.lstsq,
     Internal.mv,
+    Internal.scaled_dot_product_attention,
     Internal.sumWithDimnames,
   )
 where
@@ -91,6 +92,28 @@ instance Fractional Tensor where
   a / b = unsafePerformIO $ cast2 ATen.div_tt a b
   recip t = unsafePerformIO $ cast1 ATen.reciprocal_t t
   fromRational i = asTensor @Float $ fromRational @Float i
+
+-- | Pointwise transcendental functions on tensors.  Together with the 'Num'
+-- and 'Fractional' instances this lets element-wise code written against
+-- @Floating a => a -> a@ run vectorized at @a = Tensor@.
+instance Floating Tensor where
+  pi = asTensor @Float pi
+  exp t = unsafePerformIO $ cast1 ATen.exp_t t
+  log t = unsafePerformIO $ cast1 ATen.log_t t
+  sqrt t = unsafePerformIO $ cast1 ATen.sqrt_t t
+  (**) a b = unsafePerformIO $ cast2 ATen.pow_tt a b
+  sin t = unsafePerformIO $ cast1 ATen.sin_t t
+  cos t = unsafePerformIO $ cast1 ATen.cos_t t
+  tan t = unsafePerformIO $ cast1 ATen.tan_t t
+  asin t = unsafePerformIO $ cast1 ATen.asin_t t
+  acos t = unsafePerformIO $ cast1 ATen.acos_t t
+  atan t = unsafePerformIO $ cast1 ATen.atan_t t
+  sinh t = unsafePerformIO $ cast1 ATen.sinh_t t
+  cosh t = unsafePerformIO $ cast1 ATen.cosh_t t
+  tanh t = unsafePerformIO $ cast1 ATen.tanh_t t
+  asinh t = unsafePerformIO $ cast1 ATen.asinh_t t
+  acosh t = unsafePerformIO $ cast1 ATen.acosh_t t
+  atanh t = unsafePerformIO $ cast1 ATen.atanh_t t
 
 -- Return upper or lower triangular matrices
 data Tri = Upper | Lower deriving (Eq, Show)
@@ -728,6 +751,84 @@ eq ::
 eq a b = unsafePerformIO $ cast2 ATen.eq_tt a b
 
 (==.) = eq
+
+-- | Computes input > scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+gtScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+gtScalar = Internal.gtScalar
+
+(.>) = gtScalar
+
+-- | Computes input < scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+ltScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+ltScalar = Internal.ltScalar
+
+(.<) = ltScalar
+
+-- | Computes input >= scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+geScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+geScalar = Internal.geScalar
+
+(.>=) = geScalar
+
+-- | Computes input <= scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+leScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+leScalar = Internal.leScalar
+
+(.<=) = leScalar
+
+-- | Computes input == scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+eqScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+eqScalar = Internal.eqScalar
+
+(.==) = eqScalar
+
+-- | Computes input /= scalar element-wise.
+-- The second argument is a scalar value that is compared against each element of the tensor.
+neScalar ::
+  -- | input
+  Tensor ->
+  -- | scalar
+  Float ->
+  -- | output
+  Tensor
+neScalar = Internal.neScalar
+
+(./=) = neScalar
 
 -- | Returns a new tensor with the elements of input at the given indices. The input tensor is treated as if it were viewed as a 1-D tensor. The result takes the same shape as the indices.
 take ::
@@ -1453,19 +1554,20 @@ symeig ::
   Tensor ->
   -- | output tensors
   (Tensor, Tensor)
-symeig eigenvectors upper t = unsafePerformIO $ cast3 ATen.symeig_tbb t eigenvectors boolUpper
+symeig eigenvectors upper t = unsafePerformIO $ cast3 ATen._linalg_eigh_tsb t boolUpper eigenvectors
   where
-    boolUpper = isUpper upper
+    boolUpper =
+      case upper of
+        Upper -> "U"
+        Lower -> "L"
 
 -- | Computes the eigenvalues and eigenvectors of a real square matrix
 eig ::
-  -- | bool to compute both eigenvalues and eigenvectors; otherwise, only eigenvalues will be computed
-  Bool ->
   -- | input (square matrix) for which the eigen values and eigen vectors are to be computed
   Tensor ->
   -- | output tensors
   (Tensor, Tensor)
-eig eigenvectors t = unsafePerformIO $ cast2 ATen.eig_tb t eigenvectors
+eig t = unsafePerformIO $ cast1 ATen.linalg_eig_t t
 
 -- | This function returns a namedtuple (U, S, V) which is the singular value decomposition of a input real matrix or batches of real matrices input such that input = U * diag(S) * V^T
 svd ::
@@ -1505,16 +1607,15 @@ choleskySolve upper t1 t2 = unsafePerformIO $ cast3 ATen.cholesky_solve_ttb t1 t
   where
     boolUpper = isUpper upper
 
--- | This function returns the solution to the system of linear equations represented by AX = BAX=B and the LU factorization of A, in order as a namedtuple solution, LU.
--- LU contains L and U factors for LU factorization of A
+-- | This function returns the solution to the system of linear equations represented by AX = BAX=B and the LU factorization of A, in order as a namedtuple solution.
 solve ::
   -- | input matrix
   Tensor ->
   -- | input square matrix
   Tensor ->
-  -- | output tuple with solution and LU
-  (Tensor, Tensor)
-solve b a = unsafePerformIO $ cast2 ATen.solve_tt b a
+  -- | output solution
+  Tensor
+solve b a = fst $ ((unsafePerformIO $ cast2 ATen.linalg_solve_ex_tt a b) :: (Tensor, Tensor))
 
 -- | Solves a linear system of equations with a positive semidefinite matrix to be inverted given its Cholesky factor matrix uu .
 choleskyInverse ::

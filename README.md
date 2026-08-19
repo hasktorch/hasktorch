@@ -4,9 +4,9 @@ Hasktorch is a library for tensors and neural networks in Haskell.
 It is an independent open source community project which leverages the core C++ libraries shared by PyTorch.
 
 This project is in active development, so expect changes to the library API as it evolves.
-We would like to invite new users to [join our Hasktorch slack space](#contributing) for questions and discussions. [Contributions/PR are encouraged](#contributing).
+We would like to invite new users to [join our Hasktorch discord space](#contributing) for questions and discussions. [Contributions/PR are encouraged](#contributing).
 
-Currently we are developing the second major release of Hasktorch (0.2). Note the 1st release, Hasktorch 0.1, on hackage is outdated and _should not_ be used.
+The second major release of Hasktorch (0.2) is currently available on hackage and nixpkgs.
 
 ## Documentation
 
@@ -27,8 +27,40 @@ The documentation is divided into several sections:
 
 ## Getting Started
 
-The following steps will get you started.
-They assume the hasktorch repository has just been cloned.
+### Using Hasktorch in your own project — no manual installation
+
+You do **not** need to install libtorch (or anything else) by hand.
+Add `hasktorch` to your project's `build-depends`:
+
+```cabal
+build-depends: base, hasktorch
+```
+
+The first time you run `cabal build`, the build downloads the
+official libtorch binaries from `download.pytorch.org` automatically
+and caches them under `~/.cache/libtorch/<version>/<platform>/<flavor>`.
+Later builds — and every other project on the machine — reuse that
+cache; nothing is downloaded twice. The linker rpath is set for you,
+so the built binaries find the libraries at runtime without any
+environment variables.
+
+Supported out of the box:
+
+| Platform | Backend |
+|---|---|
+| Linux x86_64 | CPU (default), or CUDA with `export LIBTORCH_CUDA_VERSION=cu118` (etc.) before building — the needed NVIDIA libraries are downloaded automatically too |
+| macOS Apple Silicon | CPU; the binary also includes Apple's MPS backend (`Device MPS 0`) |
+| macOS Intel | CPU |
+
+Environment variables, all optional: `LIBTORCH_VERSION` (pin a
+libtorch version), `LIBTORCH_HOME` (cache location),
+`LIBTORCH_CUDA_VERSION` (`cpu`, `cu118`, `cu121`, …), and
+`LIBTORCH_SKIP_DOWNLOAD` (use a system-provided libtorch instead).
+Nix builds skip the download; the flake provides libtorch itself.
+
+### Working on hasktorch itself
+
+The following steps assume the hasktorch repository has just been cloned.
 After setup is done, read the [online tutorials](https://hasktorch.github.io/tutorial/) and [API documents](https://hasktorch.github.io/).
 
 * [linux+cabal+cpu](#linuxcabalcpu)
@@ -46,10 +78,6 @@ After setup is done, read the [online tutorials](https://hasktorch.github.io/tut
 Starting from the top-level directory of the project, run:
 
 ```sh
-$ pushd deps       # Change to the deps directory and save the current directory.
-$ ./get-deps.sh    # Run the shell script to retrieve the libtorch dependencies.
-$ popd             # Go back to the root directory of the project.
-$ source setenv    # Set the shell environment to reference the shared library locations.
 $ ./setup-cabal.sh # Create a cabal project file
 ```
 
@@ -70,23 +98,26 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
-### linux+cabal+cuda11
+### linux+cabal+cuda
+
+First set the `LIBTORCH_CUDA_VERSION` environment variable to
+the CUDA version you're currently using. E.g
+
+`export LIBTORCH_CUDA_VERSION=cu118` for CUDA 11.8.
+
+If unspecified, Hasktorch defaults to downloading the cpu
+version.
 
 Starting from the top-level directory of the project, run:
 
 ```sh
-$ pushd deps              # Change to the deps directory and save the current directory.
-$ ./get-deps.sh -a cu113  # Run the shell script to retrieve the libtorch dependencies.
-$ popd                    # Go back to the root directory of the project.
-$ source setenv           # Set the shell environment to reference the shared library locations.
 $ ./setup-cabal.sh        # Create a cabal project file
 ```
 
@@ -107,11 +138,10 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE="cuda:0"        # Set device to CUDA for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE="cuda:0"                 # Set device to CUDA for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
@@ -120,10 +150,6 @@ $ cabal run static-mnist-cnn    # Run the MNIST CNN example.
 Starting from the top-level directory of the project, run:
 
 ```sh
-$ pushd deps       # Change to the deps directory and save the current directory.
-$ ./get-deps.sh    # Run the shell script to retrieve the libtorch dependencies.
-$ popd             # Go back to the root directory of the project.
-$ source setenv    # Set the shell environment to reference the shared library locations.
 $ ./setup-cabal.sh # Create a cabal project file
 ```
 
@@ -144,11 +170,10 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
@@ -157,15 +182,6 @@ $ cabal run static-mnist-cnn    # Run the MNIST CNN example.
 
 Install the Haskell Tool Stack if you haven't already, following [instructions here](https://docs.haskellstack.org/en/stable/README/)
 
-Starting from the top-level directory of the project, run:
-
-```sh
-$ pushd deps     # Change to the deps directory and save the current directory.
-$ ./get-deps.sh  # Run the shell script to retrieve the libtorch dependencies.
-$ popd           # Go back to the root directory of the project.
-$ source setenv  # Set the shell environment to reference the shared library locations.
-```
-
 To build and test the Hasktorch library, run:
 
 ```sh
@@ -183,26 +199,16 @@ $ stack test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ stack run static-mnist-cnn     # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 ### macos+stack+cpu
 
 Install the Haskell Tool Stack if you haven't already, following [instructions here](https://docs.haskellstack.org/en/stable/README/)
 
-Starting from the top-level directory of the project, run:
-
-```sh
-$ pushd deps     # Change to the deps directory and save the current directory.
-$ ./get-deps.sh  # Run the shell script to retrieve the libtorch dependencies.
-$ popd           # Go back to the root directory of the project.
-$ source setenv  # Set the shell environment to reference the shared library locations.
-```
-
 To build and test the Hasktorch library, run:
 
 ```sh
@@ -220,11 +226,10 @@ $ stack test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ stack run static-mnist-cnn     # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
@@ -262,11 +267,10 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE=cpu             # Set device to CPU for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE=cpu                      # Set device to CPU for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 
@@ -310,11 +314,10 @@ $ cabal test examples   # Build and run the Hasktorch example test suites.
 To run the MNIST CNN example, run:
 
 ```sh
-$ cd examples                   # Change to the examples directory.
-$ ./datasets/download-mnist.sh  # Download the MNIST dataset.
-$ mv mnist data                 # Move the MNIST dataset to the data directory.
-$ export DEVICE="cuda:0"        # Set device to CUDA for the MNIST CNN example.
-$ cabal run static-mnist-cnn    # Run the MNIST CNN example.
+$ cd examples                            # Change to the examples directory.
+$ ./datasets/download-mnist.sh           # Download the MNIST dataset.
+$ export DEVICE="cuda:0"                 # Set device to CUDA for the MNIST CNN example.
+$ cabal run static-mnist-cnn -- ./mnist/ # Run the MNIST CNN example.
 ```
 
 ### docker+jupyterlab+cuda11
@@ -329,6 +332,29 @@ $ docker run --gpus all -it --rm -p 8888:8888 htorch/hasktorch-jupyter:latest-cu
 ```
 
 ## Known Issues
+
+### MPS (Metal Performance Shaders) Support on macOS
+
+When using Hasktorch on Apple Silicon Macs with MPS device support, you must set the `PYTORCH_ENABLE_MPS_FALLBACK=1` environment variable before running your program:
+
+```sh
+$ export PYTORCH_ENABLE_MPS_FALLBACK=1
+$ cabal test hasktorch   # Run tests with MPS fallback enabled
+```
+
+Or run directly with:
+
+```sh
+$ PYTORCH_ENABLE_MPS_FALLBACK=1 cabal test hasktorch
+```
+
+This is required because some operations (like `erfc`) are not yet natively implemented for the MPS backend in PyTorch and need to fall back to CPU computation. Without this environment variable, you will see errors like:
+
+```
+The operator 'aten::erfc.out' is not currently implemented for the MPS device.
+```
+
+Note: When this environment variable is not set, MPS tests will be automatically skipped to prevent failures.
 
 ### Tensors Cannot Be Moved to CUDA
 
@@ -366,7 +392,7 @@ gcc: error: hasktorch/dist-newstyle/build/x86_64-linux/ghc-8.8.3/libtorch-ffi-1.
 
 We welcome new contributors.
 
-Contact us for access to the [hasktorch slack channel][slack].
+Contact us for access to the [hasktorch discord channel][discord].
 You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinvhuang][austin-twitter],
 [@SamStites][sam-twitter], [@tscholak][torsten-twitter], or [@junjihashimoto3][junji-twitter].
 
@@ -377,6 +403,7 @@ You can send an email to [hasktorch@gmail.com][email] or on twitter as [@austinv
 [junji-twitter]:https://twitter.com/junjihashimoto3
 [slack]:https://hasktorch.slack.com
 [gitter-dh]:https://gitter.im/dataHaskell/Lobby
+[discord]:https://discord.gg/a5Sw5x6RnG
 
 ## Notes for library developers
 

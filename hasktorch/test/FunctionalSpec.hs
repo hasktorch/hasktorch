@@ -97,9 +97,8 @@ spec = do
         next release. Please use :func:`torch.lstsq` instead.
   -}
   it "lstsq" $ do
-    let (x, qr) = lstsq (ones' [5, 2]) (ones' [5, 3])
-    shape x `shouldBe` [5, 2]
-    shape qr `shouldBe` [5, 3]
+    let x = lstsq (ones' [5, 2]) (ones' [5, 3])
+    shape x `shouldBe` [3, 2]
   it "diag" $ do
     let x = ones' [3]
     let y = diag (Diag 2) x
@@ -131,9 +130,8 @@ spec = do
   it "solve" $ do
     a <- randIO' [10, 10]
     b <- randIO' [10, 3]
-    let (x, lu) = solve b a
+    let x = solve b a
     shape x `shouldBe` [10, 3]
-    shape lu `shouldBe` [10, 10]
 
   it "cholesky decomposes" $ do
     let x = asTensor ([[4.0, 12.0, -16.0], [12.0, 37.0, -43.0], [-16.0, -43.0, 98.0]] :: [[Double]])
@@ -302,3 +300,16 @@ spec = do
       (asTensor ([[[0.1, 0.2, 0.7]]] :: [[[Float]]]))
       (asTensor ([2] :: [Int]))
       `shouldBe` asTensor (-0.7 :: Float)
+  it "scaled_dot_product_attention with Nothing mask" $ do
+    let query = ones' [2, 4, 8]
+        key = ones' [2, 4, 8]
+        value = ones' [2, 4, 8]
+        result = scaled_dot_product_attention query key value Nothing 0.0 True 1.0 False
+    shape result `shouldBe` [2, 4, 8]
+  it "scaled_dot_product_attention with Just mask" $ do
+    let query = ones' [2, 4, 8]
+        key = ones' [2, 4, 8]
+        value = ones' [2, 4, 8]
+        attn_mask = ones' [2, 4, 4]
+        result = scaled_dot_product_attention query key value (Just attn_mask) 0.0 False 1.0 False
+    shape result `shouldBe` [2, 4, 8]

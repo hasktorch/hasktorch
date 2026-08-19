@@ -40,10 +40,10 @@ import qualified Data.Vector.Generic.Sized.Internal as VGS
 import qualified Data.Vector.Sized as VS
 import Foreign.ForeignPtr (ForeignPtr)
 import GHC.Generics (Generic (..), K1 (..), M1 (..), U1 (..), (:*:) (..))
-import GHC.TypeLits (Nat, natVal, type (+))
+import GHC.TypeLits -- (Nat, natVal, type (+), SNat(..), SNat)
 import Torch.GraduallyTyped.Device (Device, DeviceType)
 import qualified Torch.GraduallyTyped.Internal.Vector as V
-import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
+-- import Torch.GraduallyTyped.Prelude.TypeLits (SNat (..))
 import Torch.GraduallyTyped.Random (Generator)
 import Torch.GraduallyTyped.Shape.Type (SDim)
 import Torch.GraduallyTyped.Tensor.Type (Tensor (..), TensorSpec (..), UncheckedTensor, sCheckedDataType, sCheckedLayout, sCheckedShape, sSetDevice, sSetGradient)
@@ -51,6 +51,9 @@ import qualified Torch.Internal.Type as ATen (Tensor)
 import qualified Torch.Script (IValue (..))
 import qualified Torch.Serialize (pickleLoad, pickleSave)
 import qualified Torch.Tensor (Tensor (Unsafe))
+-- import GHC.TypeNats
+--import GHC.TypeLits
+
 
 type NamedModel :: Type -> Type
 data NamedModel model = NamedModel Text model

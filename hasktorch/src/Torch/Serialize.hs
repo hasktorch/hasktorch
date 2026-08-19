@@ -8,6 +8,7 @@ import Control.Exception.Safe
 import Control.Monad (when)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Internal as BSI
+import Foreign.Marshal.Utils (copyBytes)
 import qualified Foreign.ForeignPtr as F
 import qualified Foreign.Ptr as F
 import System.IO
@@ -96,7 +97,7 @@ instance RawFile Tensor where
       when (len' < len) $ do
         throwIO $ userError $ "Read data's size is less than input tensor's one(" <> show len <> ")."
       F.withForeignPtr fptr $ \ptr2 -> do
-        BSI.memcpy (F.castPtr ptr1) (F.castPtr ptr2) (Prelude.min len len')
+        copyBytes (F.castPtr ptr1) (F.castPtr ptr2) (Prelude.min len len')
         return t
 
   saveBinary handle tensor = do

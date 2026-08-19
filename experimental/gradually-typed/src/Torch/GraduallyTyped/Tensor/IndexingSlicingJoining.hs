@@ -63,33 +63,33 @@ class HasCat (selectDim :: SelectDim (By Symbol Nat)) k (c :: k -> Type) (a :: k
   -- cat @('SelectDim ('ByName "feature")) [t]
   --   :: MonadThrow m =>
   --      m (Tensor
-  --           ('Gradient 'WithGradient)
-  --           ('Layout 'Dense)
-  --           ('Device 'CPU)
+  --           ('Gradient WithGradient)
+  --           ('Layout Dense)
+  --           ('Device CPU)
   --           ('DataType 'Float)
   --           ('Shape
-  --              '[ 'Dim ('Name "batch") ('Size 32),
-  --                 'Dim 'UncheckedName 'UncheckedSize]))
+  --              ['Dim ('Name "batch") ('Size 32),
+  --               'Dim UncheckedName UncheckedSize]))
   -- >>> :type cat @('SelectDim ( 'ByIndex 0)) [t]
   -- cat @('SelectDim ( 'ByIndex 0)) [t]
   --   :: MonadThrow m =>
   --      m (Tensor
-  --           ('Gradient 'WithGradient)
-  --           ('Layout 'Dense)
-  --           ('Device 'CPU)
+  --           ('Gradient WithGradient)
+  --           ('Layout Dense)
+  --           ('Device CPU)
   --           ('DataType 'Float)
   --           ('Shape
-  --              '[ 'Dim 'UncheckedName 'UncheckedSize,
-  --                 'Dim ('Name "feature") ('Size 8)]))
+  --              ['Dim UncheckedName UncheckedSize,
+  --               'Dim ('Name "feature") ('Size 8)]))
   -- >>> :type sCat (SUncheckedSelectDim (ByIndex 0)) [t]
   -- sCat (SUncheckedSelectDim (ByIndex 0)) [t]
   --   :: MonadThrow m =>
   --      m (Tensor
-  --           ('Gradient 'WithGradient)
-  --           ('Layout 'Dense)
-  --           ('Device 'CPU)
+  --           ('Gradient WithGradient)
+  --           ('Layout Dense)
+  --           ('Device CPU)
   --           ('DataType 'Float)
-  --           'UncheckedShape)
+  --           UncheckedShape)
   sCat :: forall m. MonadThrow m => SSelectDim selectDim -> c a -> m (CatF selectDim a c)
 
   cat :: forall m. (SingI selectDim, MonadThrow m) => c a -> m (CatF selectDim a c)
@@ -228,11 +228,11 @@ type family ReshapeF shape shape' where
 -- >>> :type output
 -- output
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)])
+--        ('Shape ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)])
 --
 -- At the value level, a single dimension may be '-1',
 -- in which case it is inferred from the remaining dimensions and the number of elements in the input:
@@ -241,11 +241,11 @@ type family ReshapeF shape shape' where
 -- >>> :type output'
 -- output'
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
---        'UncheckedShape
+--        UncheckedShape
 -- >>> getDims output'
 -- [Dim {dimName = "*", dimSize = 4}]
 sReshape,
@@ -315,16 +315,14 @@ type TransposeBy1Message by1 dims =
 -- TransposeF SelectBatch SelectFeature ('Shape Dims) :: Shape
 --                                                         [Dim (Name Symbol) (Size Natural)]
 -- = 'Shape
---     '[ 'Dim ('Name "feature") ('Size 8),
---        'Dim ('Name "batch") ('Size 10),
---        'Dim ('Name "anotherFeature") ('Size 12)]
+--     ['Dim ('Name "feature") ('Size 8), 'Dim ('Name "batch") ('Size 10),
+--      'Dim ('Name "anotherFeature") ('Size 12)]
 -- >>> :kind! TransposeF SelectFeature SelectBatch ('Shape Dims)
 -- TransposeF SelectFeature SelectBatch ('Shape Dims) :: Shape
 --                                                         [Dim (Name Symbol) (Size Natural)]
 -- = 'Shape
---     '[ 'Dim ('Name "feature") ('Size 8),
---        'Dim ('Name "batch") ('Size 10),
---        'Dim ('Name "anotherFeature") ('Size 12)]
+--     ['Dim ('Name "feature") ('Size 8), 'Dim ('Name "batch") ('Size 10),
+--      'Dim ('Name "anotherFeature") ('Size 12)]
 type TransposeF ::
   SelectDim (By Symbol Nat) ->
   SelectDim (By Symbol Nat) ->
@@ -392,22 +390,22 @@ type family TransposeIndexIndexDimsF index0 index1 dims where
 -- >>> :type output
 -- output
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "feature") ('Size 5),
---              'Dim ('Name "batch") ('Size 10)])
+--           ['Dim ('Name "feature") ('Size 5),
+--            'Dim ('Name "batch") ('Size 10)])
 -- >>> output <- sTranspose (SUncheckedSelectDim (ByIndex 0)) (SSelectDim (SByIndex @1)) input
 -- >>> :type output
 -- output
 --   :: Tensor
---        ('Gradient 'WithGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
---        'UncheckedShape
+--        UncheckedShape
 -- >>> getDims output
 -- [Dim {dimName = "feature", dimSize = 5},Dim {dimName = "batch", dimSize = 10}]
 sTranspose ::
@@ -580,7 +578,7 @@ type family SqueezeDimCheckF by dims result where
 --
 -- >>> :kind! SqueezeDimF ('SelectDim ('ByIndex 1)) ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 2)])
 -- ...
--- = 'Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)]
+-- = 'Shape ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)]
 type SqueezeDimF :: SelectDim (By Symbol Nat) -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
 type family SqueezeDimF selectDim shape where
   SqueezeDimF 'UncheckedSelectDim _ = 'UncheckedShape
@@ -594,13 +592,13 @@ type family SqueezeDimF selectDim shape where
 -- >>> :t result
 -- result
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2),
---              'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 2)])
+--           ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2),
+--            'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 2)])
 -- >>> result
 -- Tensor Float [2,2,1,2] [[[[ 1.0000   ,  1.0000   ]],
 --                          [[ 1.0000   ,  1.0000   ]]],
@@ -716,40 +714,36 @@ select = sSelect (sing @selectDim) (sing @index)
 --
 -- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4), 'Dim ('Name "feature") ('Size 1)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
 -- ...
--- = 'Just
---     '[ 'Dim ('Name "batch") ('Size 2),
---        'Dim ('Name "sequence") ('Size 4),
---        'Dim ('Name "feature") ('Size 1)]
+-- = Just
+--     ['Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4),
+--      'Dim ('Name "feature") ('Size 1)]
 -- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4), 'Dim ('Name "feature") ('Size 1)] '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "*") ('Size 1)]
 -- ...
--- = 'Just
---     '[ 'Dim ('Name "batch") ('Size 2),
---        'Dim ('Name "sequence") ('Size 4),
---        'Dim ('Name "feature") ('Size 1)]
+-- = Just
+--     ['Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4),
+--      'Dim ('Name "feature") ('Size 1)]
 -- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4), 'Dim ('Name "feature") ('Size 2)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
 -- ...
--- = 'Nothing
+-- = Nothing
 -- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 4), 'Dim ('Name "feature") ('Size 1)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "boo") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
 -- ...
--- = 'Nothing
+-- = Nothing
 -- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 0), 'Dim ('Name "feature") ('Size 1)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 2), 'Dim ('Name "feature") ('Size 1)]
 -- ...
--- = 'Nothing
+-- = Nothing
 -- >>> :kind! GatherDimImplF ('ByIndex 1) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
 -- ...
--- = 'Nothing
+-- = Nothing
 -- >>> :kind! GatherDimImplF ('ByIndex 2) '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 3)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 1)]
 -- ...
--- = 'Just
---     '[ 'Dim ('Name "batch") ('Size 2),
---        'Dim ('Name "sequence") ('Size 1),
---        'Dim ('Name "feature") ('Size 3)]
+-- = Just
+--     ['Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1),
+--      'Dim ('Name "feature") ('Size 3)]
 -- >>> :kind! GatherDimImplF ('ByName "feature") '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "feature") ('Size 3)] '[ 'Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1), 'Dim ('Name "*") ('Size 1)]
 -- ...
--- = 'Just
---     '[ 'Dim ('Name "batch") ('Size 2),
---        'Dim ('Name "sequence") ('Size 1),
---        'Dim ('Name "feature") ('Size 3)]
+-- = Just
+--     ['Dim ('Name "batch") ('Size 2), 'Dim ('Name "sequence") ('Size 1),
+--      'Dim ('Name "feature") ('Size 3)]
 type GatherDimImplF :: By Symbol Nat -> [Dim (Name Symbol) (Size Nat)] -> [Dim (Name Symbol) (Size Nat)] -> Maybe [Dim (Name Symbol) (Size Nat)]
 type family GatherDimImplF by indexDims inputDims where
   GatherDimImplF ('ByName dimName) indexDims inputDims = GatherDimByNameF (GetIndexByNameF dimName indexDims) (GetIndexByNameF dimName inputDims) indexDims inputDims
@@ -808,8 +802,8 @@ type family GatherDimCheckF by indexDims inputDims result where
 -- >>> :kind! GatherDimF ('SelectDim ('ByIndex 2)) ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 3)]) ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1), 'Dim ('Name "*") ('Size 1)])
 -- ...
 -- = 'Shape
---     '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1),
---        'Dim ('Name "*") ('Size 3)]
+--     ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 1),
+--      'Dim ('Name "*") ('Size 3)]
 type GatherDimF :: SelectDim (By Symbol Nat) -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)] -> Shape [Dim (Name Symbol) (Size Nat)]
 type family GatherDimF selectDim indexShape inputShape where
   GatherDimF 'UncheckedSelectDim _ _ = 'UncheckedShape
@@ -826,13 +820,12 @@ type family GatherDimF selectDim indexShape inputShape where
 -- >>> :t result
 -- result
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
 --        ('Shape
---           '[ 'Dim ('Name "*") 'UncheckedSize,
---              'Dim ('Name "*") 'UncheckedSize])
+--           ['Dim ('Name "*") UncheckedSize, 'Dim ('Name "*") UncheckedSize])
 -- >>> result
 -- Tensor Float [2,2] [[ 1.0000   ,  1.0000   ],
 --                     [ 4.0000   ,  3.0000   ]]
@@ -843,11 +836,11 @@ type family GatherDimF selectDim indexShape inputShape where
 -- >>> :t result
 -- result
 --   :: Tensor
---        ('Gradient 'WithoutGradient)
---        ('Layout 'Dense)
---        ('Device 'CPU)
+--        ('Gradient WithoutGradient)
+--        ('Layout Dense)
+--        ('Device CPU)
 --        ('DataType 'Float)
---        ('Shape '[ 'Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)])
+--        ('Shape ['Dim ('Name "*") ('Size 2), 'Dim ('Name "*") ('Size 2)])
 -- >>> result
 -- Tensor Float [2,2] [[ 1.0000   ,  1.0000   ],
 --                     [ 4.0000   ,  3.0000   ]]

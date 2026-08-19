@@ -14,6 +14,8 @@ import Foreign.C.Types (CBool)
 grad :: ForeignPtr Tensor -> ForeignPtr TensorList -> IO (ForeignPtr TensorList)
 grad = _cast2 Unmanaged.grad
 
+gradWithOptions :: Bool -> Bool -> Bool -> ForeignPtr Tensor -> ForeignPtr TensorList -> IO (ForeignPtr TensorList)
+gradWithOptions = _cast5 Unmanaged.gradWithOptions
 
 makeIndependent :: ForeignPtr Tensor -> CBool -> IO (ForeignPtr Tensor)
 makeIndependent = _cast2 Unmanaged.makeIndependent

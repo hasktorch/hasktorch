@@ -1,0 +1,36 @@
+cabal-version:       2.2
+name:                custom-autograd-function
+version:             0.2.0.0
+synopsis:            experimental project for hasktorch
+-- description:
+homepage:            https://github.com/hasktorch/hasktorch#readme
+license:             BSD-3-Clause
+author:              Austin Huang
+maintainer:          hasktorch@gmail.com
+copyright:           2019 Austin Huang
+category:            Machine Learning
+build-type:          Simple
+
+Flag gcc
+ Description: A flag to use gcc on macos
+ Default: False
+ Manual: True
+                     
+executable custom-autograd-function
+  main-is:             Cpu.hs
+  default-language:    Haskell2010
+  ghc-options:         -fplugin GHC.TypeLits.Normalise -fplugin GHC.TypeLits.KnownNat.Solver -fplugin GHC.TypeLits.Extra.Solver -fconstraint-solver-iterations=0 -rtsopts
+  build-depends:       base >= 4.7 && < 5
+                     , hasktorch
+                     , libtorch-ffi
+                     , inline-c
+                     , inline-c-cpp
+                     , ghc-typelits-extra
+                     , ghc-typelits-knownnat
+                     , ghc-typelits-natnormalise
+                     , mtl
+  if os(darwin)
+    ld-options: -Wl,-keep_dwarf_unwind
+    if !flag(gcc)
+      cxx-options:       -std=c++17
+      ghc-options:       -optcxx-std=c++17

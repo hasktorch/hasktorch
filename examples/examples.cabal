@@ -23,6 +23,8 @@ common config
                      , ghc-typelits-knownnat
                      , ghc-typelits-natnormalise
                      , mtl
+ default-extensions:  Strict
+                    , StrictData
 
 executable xor-mlp
   import:              config
@@ -80,14 +82,11 @@ executable typed-transformer
                      , constraints
                      , containers
                      , foldl
-                     , lens-family-core
                      , libtorch-ffi
                      , ordered-containers
                      , pipes
-                     , pipes-group
                      , pipes-random
                      , pipes-safe
-                     , pipes-text
                      , safe-exceptions
                      , text
                      , monad-control
@@ -139,6 +138,18 @@ executable serialization
   ghc-options:         -fno-warn-partial-type-signatures
   build-depends:       bytestring
                      , serialise
+
+executable kmeans
+  import:              config
+  hs-source-dirs:      kmeans
+  other-modules:       Plot
+  main-is:             Main.hs
+  ghc-options:         -fno-warn-partial-type-signatures
+  build-depends:       base >= 4.7 && < 5
+                     , text
+                     , hvega
+                     , hasktorch
+                     , libtorch-ffi
 
 executable optimizers
   hs-source-dirs:      optimizers

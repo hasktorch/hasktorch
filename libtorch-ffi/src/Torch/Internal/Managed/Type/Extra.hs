@@ -82,3 +82,15 @@ new_empty_tensor
   -> ForeignPtr TensorOptions
   -> IO (ForeignPtr Tensor)
 new_empty_tensor = _cast2 Unmanaged.new_empty_tensor
+
+
+tensor_dim_unsafe
+  :: ForeignPtr Tensor
+  -> IO (Int64)
+tensor_dim_unsafe = cast1 Unmanaged.tensor_dim_unsafe
+
+tensor_dim_c_unsafe
+  :: ForeignPtr Tensor
+  -> IO (Int64)
+tensor_dim_c_unsafe = cast1 Unmanaged.tensor_dim_c_unsafe
+                                                  

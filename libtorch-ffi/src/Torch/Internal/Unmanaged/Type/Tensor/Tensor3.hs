@@ -32,6 +32,51 @@ C.include "<vector>"
 
 
 
+tensor_bitwise_or_t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_bitwise_or_t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_or(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor_bitwise_or__s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor_bitwise_or__s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_or_(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor_bitwise_or__t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_bitwise_or__t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).bitwise_or_(
+    *$(at::Tensor* _other)));
+  }|]
+
+tensor___or___s
+  :: Ptr Tensor
+  -> Ptr Scalar
+  -> IO (Ptr Tensor)
+tensor___or___s _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__or__(
+    *$(at::Scalar* _other)));
+  }|]
+
+tensor___or___t
+  :: Ptr Tensor
+  -> Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor___or___t _obj _other =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).__or__(
+    *$(at::Tensor* _other)));
+  }|]
+
 tensor___ior___s
   :: Ptr Tensor
   -> Ptr Scalar
@@ -1015,15 +1060,6 @@ tensor_addcdiv__tts _obj _tensor1 _tensor2 _value =
   , *$(at::Scalar* _value)));
   }|]
 
-tensor_lstsq_t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-tensor_lstsq_t _obj _A =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).lstsq(
-    *$(at::Tensor* _A)));
-  }|]
-
 tensor_triangular_solve_tbbb
   :: Ptr Tensor
   -> Ptr Tensor
@@ -1037,41 +1073,6 @@ tensor_triangular_solve_tbbb _obj _A _upper _transpose _unitriangular =
   , $(bool _upper)
   , $(bool _transpose)
   , $(bool _unitriangular)));
-  }|]
-
-tensor_linalg_solve_triangular_tbbb
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> CBool
-  -> CBool
-  -> CBool
-  -> IO (Ptr Tensor)
-tensor_linalg_solve_triangular_tbbb _obj _B _upper _left _unitriangular =
-  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).linalg_solve_triangular(
-    *$(at::Tensor* _B)
-  , $(bool _upper)
-  , $(bool _left)
-  , $(bool _unitriangular)));
-  }|]
-
-tensor_symeig_bb
-  :: Ptr Tensor
-  -> CBool
-  -> CBool
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-tensor_symeig_bb _obj _eigenvectors _upper =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).symeig(
-    $(bool _eigenvectors)
-  , $(bool _upper)));
-  }|]
-
-tensor_eig_b
-  :: Ptr Tensor
-  -> CBool
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-tensor_eig_b _obj _eigenvectors =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).eig(
-    $(bool _eigenvectors)));
   }|]
 
 tensor_svd_bb
@@ -1147,15 +1148,6 @@ tensor_cholesky_solve_tb _obj _input2 _upper =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).cholesky_solve(
     *$(at::Tensor* _input2)
   , $(bool _upper)));
-  }|]
-
-tensor_solve_t
-  :: Ptr Tensor
-  -> Ptr Tensor
-  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
-tensor_solve_t _obj _A =
-  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).solve(
-    *$(at::Tensor* _A)));
   }|]
 
 tensor_cholesky_inverse_b
@@ -1772,6 +1764,19 @@ tensor_argsort_lb _obj _dim _descending =
   , $(bool _descending)));
   }|]
 
+tensor_argsort_blb
+  :: Ptr Tensor
+  -> CBool
+  -> Int64
+  -> CBool
+  -> IO (Ptr Tensor)
+tensor_argsort_blb _obj _stable _dim _descending =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).argsort(
+    $(bool _stable)
+  , $(int64_t _dim)
+  , $(bool _descending)));
+  }|]
+
 tensor_argsort_nb
   :: Ptr Tensor
   -> Ptr Dimname
@@ -1996,20 +2001,35 @@ tensor_isneginf _obj =
     ));
   }|]
 
--- tensor_special_polygamma_t
---   :: Ptr Tensor
---   -> Ptr Tensor
---   -> IO (Ptr Tensor)
--- tensor_special_polygamma_t _obj _self =
---   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).special_polygamma(
---     *$(at::Tensor* _self)));
---   }|]
-
 tensor_det
   :: Ptr Tensor
   -> IO (Ptr Tensor)
 tensor_det _obj =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).det(
+    ));
+  }|]
+
+tensor_slogdet
+  :: Ptr Tensor
+  -> IO (Ptr (StdTuple '(Tensor,Tensor)))
+tensor_slogdet _obj =
+  [C.throwBlock| std::tuple<at::Tensor,at::Tensor>* { return new std::tuple<at::Tensor,at::Tensor>((*$(at::Tensor* _obj)).slogdet(
+    ));
+  }|]
+
+tensor_logdet
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_logdet _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).logdet(
+    ));
+  }|]
+
+tensor_inverse
+  :: Ptr Tensor
+  -> IO (Ptr Tensor)
+tensor_inverse _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).inverse(
     ));
   }|]
 
@@ -2038,5 +2058,16 @@ tensor_ger_t
 tensor_ger_t _obj _vec2 =
   [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).ger(
     *$(at::Tensor* _vec2)));
+  }|]
+
+tensor_to_padded_tensor_dl
+  :: Ptr Tensor
+  -> CDouble
+  -> Ptr IntArray
+  -> IO (Ptr Tensor)
+tensor_to_padded_tensor_dl _obj _padding _output_size =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Tensor* _obj)).to_padded_tensor(
+    $(double _padding)
+  , *$(std::vector<int64_t>* _output_size)));
   }|]
 

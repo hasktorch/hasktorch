@@ -59,7 +59,7 @@ gelu = unsafePerformIO . cast1 ATen.gelu_t
 -- Google's BERT repo (and coincidentally also from OpenAI's GPT).
 -- See also https://arxiv.org/abs/1606.08415.
 --
--- >>> t <- sFull (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil)) 0.5
+-- >>> t <- sFull (TensorSpec (SGradient SWithGradient) (SLayout SDense) (SDevice SCPU) (SDataType SFloat) (SShape $ SNil)) (0.5 :: Prelude.Float)
 -- >>> t' <- geluNew t
 -- >>> fromTensor @Float t'
 -- 0.345714

@@ -62,3 +62,21 @@ class CppTuple5 m => CppTuple6 m where
   get5 :: m -> IO (F m)
   makeTuple6 :: (A m,B m,C m,D m,E m,F m) -> IO m
   makeTuple6 = error "makeTuple6 is not implemented."
+
+class CppTuple6 m => CppTuple7 m where
+  type G m
+  get6 :: m -> IO (G m)
+  makeTuple7 :: (A m,B m,C m,D m,E m,F m,G m) -> IO m
+  makeTuple7 = error "makeTuple7 is not implemented."
+
+class CppTuple7 m => CppTuple8 m where
+  type H m
+  get7 :: m -> IO (H m)
+  makeTuple8 :: (A m,B m,C m,D m,E m,F m,G m,H m) -> IO m
+  makeTuple8 = error "makeTuple8 is not implemented."
+
+class CppTuple8 m => CppTuple9 m where
+  type I m
+  get8 :: m -> IO (I m)
+  makeTuple9 :: (A m,B m,C m,D m,E m,F m,G m,H m,I m) -> IO m
+  makeTuple9 = error "makeTuple9 is not implemented."

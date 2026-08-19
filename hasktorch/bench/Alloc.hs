@@ -45,10 +45,6 @@ import qualified Weigh as W
 n :: Int
 n = 100
 
-instance NFData T.Tensor
-  where
-    rnf (T.Unsafe _) = ()
-
 instance NFData (ForeignPtr a)
   where
     rnf v = v `seq` ()

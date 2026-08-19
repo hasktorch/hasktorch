@@ -5,7 +5,7 @@
 
 module Main where
 
-import Control.Monad (when)
+import Control.Monad (when, foldM)
 import Control.Monad.State.Strict
 import Data.List
 import Elman

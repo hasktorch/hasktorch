@@ -11,7 +11,7 @@ USE_NIGHTLY=0
 USE_BINARY_FOR_CI=0
 COMPUTE_ARCH=cpu
 SKIP_DOWNLOAD=0
-VERSION=1.11.0
+VERSION=2.9.1
 
 if ! command -v unzip &> /dev/null
 then
@@ -51,7 +51,7 @@ fi
 
 
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu102" or "cu113"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu117" or "cu118" or "cu128" or "cu130"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
     echo "    # Use libtorch-$(VERSION)  w/o -l" 1>&2
     echo "" 1>&2
@@ -59,8 +59,10 @@ usage_exit() {
     echo "    # Download libtorch from pytorch's site w/o  -c" 1>&2
     echo "" 1>&2
     echo " -a cpu   # Use CPU without CUDA" 1>&2
-    echo " -a cu102 # Use CUDA-10.2" 1>&2
-    echo " -a cu113 # Use CUDA-11.3" 1>&2
+    echo " -a cu117 # Use CUDA-11.7 (download might be unavailable)" 1>&2
+    echo " -a cu118 # Use CUDA-11.8 (download might be unavailable)" 1>&2
+    echo " -a cu128 # Use CUDA-12.8" 1>&2
+    echo " -a cu130 # Use CUDA-13.0" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
@@ -103,49 +105,37 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
         unzip cpu-libtorch-macos-latest.zip
         rm cpu-libtorch-macos-latest.zip
       else
-        wget https://download.pytorch.org/libtorch/cpu/libtorch-macos-${VERSION}.zip
-        unzip libtorch-macos-${VERSION}.zip
-        rm libtorch-macos-${VERSION}.zip
+        wget -O libtorch-macos.zip https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-${VERSION}.zip
+        unzip libtorch-macos.zip
+        rm libtorch-macos.zip
       fi
-      wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_mac_2019.0.1.20181227.tgz
-      tar -xzf mklml_mac_2019.0.1.20181227.tgz
-      rm -f mklml_mac_2019.0.1.20181227.tgz
-      rm -f mklml_mac_2019.0.1.20181227.tgz.1
-      rm -rf mklml
-      mv mklml_mac_2019.0.1.20181227 mklml
-
       wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-macos.zip
       unzip libtokenizers-macos.zip
       ;;
     "Linux")
       if [ "$USE_NIGHTLY" = 1 ] ; then
-        wget https://download.pytorch.org/libtorch/nightly/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-latest.zip
-        unzip libtorch-cxx11-abi-shared-with-deps-latest.zip
-        rm libtorch-cxx11-abi-shared-with-deps-latest.zip
+        wget https://download.pytorch.org/libtorch/nightly/${COMPUTE_ARCH}/libtorch-shared-with-deps-latest.zip
+        unzip libtorch-shared-with-deps-latest.zip
+        rm libtorch-shared-with-deps-latest.zip
       elif [ "$USE_BINARY_FOR_CI" = 1 ] ; then
-        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
-        unzip ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
-        rm ${COMPUTE_ARCH}-libtorch-cxx11-abi-shared-with-deps-latest.zip
+        wget https://github.com/hasktorch/libtorch-binary-for-ci/releases/download/${VERSION}/${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
+        unzip ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
+        rm ${COMPUTE_ARCH}-libtorch-shared-with-deps-latest.zip
       else
 	case "${COMPUTE_ARCH}" in
-	      "cpu" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcpu.zip ;;
-	      "cu102" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu102.zip ;;
-	      "cu113" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-cxx11-abi-shared-with-deps-${VERSION}%2Bcu113.zip ;;
+	      "cpu" )     URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcpu.zip ;;
+	      "cu117" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu117.zip ;;
+	      "cu118" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu118.zip ;;
+	      "cu128" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu128.zip;;
+	      "cu130" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu130.zip;;
               *)
                   1>&2 printf "Error: invalid value '%s' passed to -a\n\n" "$COMPUTE_ARCH"
                   usage_exit
 	esac
-	wget -O libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip "$URL"
-        unzip libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
-        rm libtorch-cxx11-abi-shared-with-deps-${VERSION}.zip
+	wget -O libtorch-shared-with-deps-${VERSION}.zip "$URL"
+        unzip libtorch-shared-with-deps-${VERSION}.zip
+        rm libtorch-shared-with-deps-${VERSION}.zip
       fi
-      wget https://github.com/intel/mkl-dnn/releases/download/v0.17.2/mklml_lnx_2019.0.1.20181227.tgz
-      tar -xzf mklml_lnx_2019.0.1.20181227.tgz
-      rm -f mklml_lnx_2019.0.1.20181227.tgz
-      rm -f mklml_lnx_2019.0.1.20181227.tgz.1
-      rm -rf mklml
-      mv mklml_lnx_2019.0.1.20181227 mklml
-      ln -s libmklml_intel.so mklml/lib/libmklml.so
 
       wget https://github.com/hasktorch/tokenizers/releases/download/libtokenizers-v0.1/libtokenizers-linux.zip
       unzip libtokenizers-linux.zip
@@ -192,7 +182,7 @@ if ! ($PYTHON -c 'import typing_extensions') ; then
 fi
 
 # See https://github.com/pytorch/pytorch/blob/master/.circleci/scripts/cpp_doc_push_script.sh
-$PYTHON -m tools.codegen.gen \
+$PYTHON -m torchgen.gen \
         -s aten/src/ATen \
         -d build/aten/src/ATen
 

@@ -75,7 +75,7 @@ import Control.Applicative (Applicative (liftA2))
 import Control.Monad (MonadPlus, guard, unless, when)
 import Data.Kind (Constraint, Type)
 import Data.Proxy (Proxy (..))
-import Data.Singletons (Demote, SingKind, fromSing)
+import Data.Singletons (Demote, SingKind, fromSing, Sing(..))
 import Data.Type.Bool (If, type (||))
 import Data.Type.Equality (type (==))
 import GHC.Exts (Any)
@@ -188,13 +188,13 @@ type family Snd (t :: (k, k')) :: k' where
 --
 -- >>> :kind! Elem String '[]
 -- Elem String '[] :: Bool
--- = 'False
+-- = False
 -- >>> :kind! Elem String '[Int, String]
 -- Elem String '[Int, String] :: Bool
--- = 'True
+-- = True
 -- >>> :kind! Elem String '[Int, Bool]
 -- Elem String '[Int, Bool] :: Bool
--- = 'False
+-- = False
 type family Elem (e :: t) (es :: [t]) :: Bool where
   Elem _ '[] = 'False
   Elem x (x ': _) = 'True
@@ -276,13 +276,13 @@ type family Concat (xs :: [k]) (ys :: [k]) :: [k] where
 --
 -- >>> :kind! Contains (Either Int String) Int
 -- Contains (Either Int String) Int :: Bool
--- = 'True
+-- = True
 -- >>> :kind! Contains (Either Int String) Bool
 -- Contains (Either Int String) Bool :: Bool
--- = 'False
+-- = False
 -- >>> :kind! Contains (Either Int String) Either
 -- Contains (Either Int String) Either :: Bool
--- = 'True
+-- = True
 type Contains :: k -> k' -> Bool
 type family Contains (f :: k) (a :: k') :: Bool where
   Contains a a = 'True

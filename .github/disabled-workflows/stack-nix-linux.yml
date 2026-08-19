@@ -1,0 +1,66 @@
+name: stack-nix-linux
+
+on: [push, pull_request]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: free disk space
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo apt-get -y purge ghc* cabal-install* php* || true
+          sudo apt-get autoremove -y || true
+          sudo apt-get autoclean -y || true
+          docker rmi $(docker image ls -aq)
+          df -h
+      - name: Setup packages
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/sbt.list
+          sudo apt-get update -qq
+          sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install cmake curl wget unzip git libtinfo6 libncurses-dev python3 python3-yaml
+        ## Stack is preinstalled on the GHA runners
+        #  (wget -qO- https://get.haskellstack.org/ | sh) || true
+      - uses: cachix/install-nix-action@v23
+      - uses: cachix/cachix-action@v12
+        with:
+          name: hasktorch
+          signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+      - run: nix-env -iA cachix -f https://cachix.org/api/v1/install
+      - run: |
+          .github/workflows/setup-iohk-cache.sh
+      - name: Cache .stack
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.stack
+            .stack-work
+          key: "\
+            ${{ runner.os }}-stack\
+            -${{ hashFiles('**/stack.yaml.lock') }}\
+            -${{ hashFiles('**/package.yaml') }}\
+          "
+          restore-keys: |
+            ${{ runner.os }}-nix-stack-
+      - name: Build
+        run: |
+          sed -i -e 's/"x86_64-linux" "x86_64-darwin"/"x86_64-linux"/g' flake.nix
+          nix-shell nix/stack-shell.nix --command "stack --nix --system-ghc build \
+            libtorch-ffi \
+            libtorch-ffi-helper \
+            hasktorch \
+            codegen \
+            examples \
+            bounding-box \
+            dataloader-cifar10 \
+            untyped-nlp"
+      - name: Test
+        run: |
+          nix-shell nix/stack-shell.nix --command "\
+          stack --system-ghc --nix test codegen;\
+          stack --system-ghc --nix test libtorch-ffi;\
+          stack --system-ghc --nix test hasktorch;\
+          stack --system-ghc --nix exec codegen-exe;\
+          stack --system-ghc --nix exec xor-mlp"

@@ -53,6 +53,10 @@ type2type :: Type -> S.Parsable
 type2type typ =
   case dynamic_type' typ of
     S.TenType S.Scalar -> if type' typ == "Tensor" then S.TenType S.Tensor else S.TenType S.Scalar
+    S.TenType S.Tensor ->
+      if type' typ == "const std::optional<at::Tensor> &" || type' typ == "std::optional<at::Tensor>"
+        then S.TenType S.OptionalTensor
+        else S.TenType S.Tensor
     S.TenType (S.IntList s) ->
       case size' typ of
         Nothing -> S.TenType (S.IntList {S.dim = s})

@@ -6,60 +6,123 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      GHC: '9.8.4'
     steps:
-    - uses: actions/checkout@v2
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
     - name: Setup packages
       run: |
-        sudo apt update -qq
-        sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
-        sudo bash -c "echo deb [trusted=yes] https://apt-hasktorch.com/apt ./ > /etc/apt/sources.list.d/libtorch.list"
+        sudo apt-get update -qq
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install locales software-properties-common apt-transport-https
         sudo rm -f /etc/apt/sources.list.d/sbt.list
-        sudo apt update -qq
-        sudo apt -y purge ghc* cabal-install* php* || true
-        sudo apt -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev devscripts debhelper python3-pip cmake curl wget unzip git libtinfo-dev python3 python3-yaml
-        sudo apt -y install libtorch=1.11.0+cpu-1 libtokenizers=0.1-1
+        sudo apt-get update -qq
+        sudo apt-get -y purge ghc* cabal-install* php* || true
+        sudo apt-get -y --allow-downgrades --allow-remove-essential --allow-change-held-packages install build-essential zlib1g-dev liblapack-dev libblas-dev devscripts debhelper python3-pip cmake curl wget unzip git libtinfo6 libncurses-dev python3 python3-yaml
 
-        echo "$HOME/.cabal/bin" >> $GITHUB_PATH
-        echo "$HOME/.ghcup/bin" >> $GITHUB_PATH
-        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
-        ghcup install ghc 9.2.4
-        ghcup set ghc 9.2.4
-        ghcup install cabal
-    - name: Setup repos
+    - name: Setup Haskell
       run: |
-        git submodule init && git submodule update
-    - name: Cache .cabal
-      uses: actions/cache@v2
-      with:
-        path: |
-          ~/.cabal/store
-          dist-newstyle
-        key: ${{ runner.os }}-cabal-${{ hashFiles('**/fallible.cabal') }}
-        restore-keys: |
-          ${{ runner.os }}-cabal-
-    - name: Build
+        echo "$HOME/.ghcup/bin" >> "${GITHUB_PATH}"
+        ghcup install ghc --set ${{ env.GHC }}
+        mkdir -p ~/.cabal
+      # The presence of ~/.cabal should switch cabal 3.10 to not use the XDG layout.
+
+      ## GHCup is preinstalled on the GHA runners. This would be the magic incantation to install it:
+      # curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+      ## Cabal is preinstalled on the GHA runners
+      # ghcup install cabal
+
+    - name: Information about the Haskell setup
       run: |
-        source setenv
-        #APT installs libtorch and libtokenizers.
-        #pushd deps/ ; ./get-deps.sh -a cpu -c; popd
+        echo "PATH = ${PATH}"
+        echo "GHC is $(which ghc)"
+        echo "Cabal is $(which cabal)"
+        echo "GHC_VERSION=$(ghc --numeric-version)"     >> "${GITHUB_ENV}"
+        echo "CABAL_VERSION=$(cabal --numeric-version)" >> "${GITHUB_ENV}"
+
+    - name: Generate install-plan
+      run: |
         ./setup-cabal.sh
         cabal v2-update
-        cabal v2-install hspec-discover
-        cabal v2-build --jobs=2 all
-    - name: Test
-      run: |
-        source setenv
-        cabal v2-test --jobs=2 all
-        cabal v2-exec codegen-exe
-        cabal exec xor-mlp
-    - name: Benchmark
-      run: |
-        export PATH=/opt/ghc/bin:$PATH
-        source setenv
-        cabal bench hasktorch:runtime --benchmark-options='--output benchmark-runtime.html'
-        cabal bench hasktorch:alloc --benchmark-options='--output benchmark-alloc.html'
-    - name: Archive benchmark results
-      uses: actions/upload-artifact@v3
+        cabal v2-build --jobs=2 all --dry-run
+      ## The latter leaves a build plan in dist-newstyle/cache/plan.json
+
+    - name: Restore cached dependencies
+      uses: actions/cache/restore@v4
+      id:   cache
       with:
-        name: benchmark-report
-        path: hasktorch/benchmark*.html
+        # We don't cache dist-newstyle because it is fat and in practice hardly reused.
+        path: ~/.cabal/store
+        # Append the build plan to the cache key so that a new cache gets saved when dependencies update.
+        # `plan.json` is a good cache key because it does not contain time stamps (unlike `cabal.project.freeze`).
+        key:          ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-plan-${{ hashFiles('**/plan.json') }}
+        restore-keys: ${{ runner.os }}-cabal-${{ env.CABAL_VERSION }}-ghc-${{ env.GHC_VERSION }}-
+
+    - name: Install dependencies
+      run: |
+        cabal v2-build --jobs=2 all --only-dependencies
+
+    - name: Cache dependencies
+      if:   ${{ steps.cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cabal/store
+        key: ${{ steps.cache.outputs.cache-primary-key }}
+
+    - name: Build
+      run: |
+        cabal v2-build --jobs=2 all
+
+    - name: Tests
+      run: |
+        cabal v2-test --jobs=2 all
+
+    - name: Runs
+      run: |
+        cabal v2-exec codegen-exe
+        cabal v2-exec xor-mlp
+
+    - name: Build tutorial
+      run: |
+        # tintin (hasktorch's GHC 9.8/cabal fork) renders hasktorch/doc/;
+        # the documentation pages execute real hasktorch code via runghc.
+        git clone --depth 1 -b feature/ghc98-cabal https://github.com/hasktorch/tintin.git /tmp/tintin
+        (cd /tmp/tintin && cabal v2-build --jobs=2 exe:tintin exe:inlitpp)
+        (cd /tmp/tintin && cabal install --lib inliterate --package-env /tmp/inlit.env)
+        TINTIN=$(cd /tmp/tintin && cabal list-bin exe:tintin)
+        INLITPP_DIR=$(dirname "$(cd /tmp/tintin && cabal list-bin exe:inlitpp)")
+        # runghc needs a package environment in which both hasktorch (built
+        # in-place above) and inliterate (in the cabal store) are visible
+        sed "s|^package-db dist-newstyle/|package-db ${GITHUB_WORKSPACE}/dist-newstyle/|" .ghc.environment.* > /tmp/tutorial.env
+        grep -E "^package-db|^package-id inliterate" /tmp/inlit.env >> /tmp/tutorial.env
+        export GHC_ENVIRONMENT=/tmp/tutorial.env
+        export PATH="$INLITPP_DIR:$PATH"
+        export LD_LIBRARY_PATH="${GITHUB_WORKSPACE}/deps/libtorch/lib:${GITHUB_WORKSPACE}/deps/mklml/lib:${LD_LIBRARY_PATH}"
+        mkdir -p public/tutorial
+        (cd hasktorch && "$TINTIN" run --runghc --outputDirectory "${GITHUB_WORKSPACE}/public/tutorial")
+        ls public/tutorial
+
+    - name: Archive tutorial
+      uses: actions/upload-artifact@v4
+      with:
+        name: tutorial
+        path: public/tutorial
+
+    # The tutorial artifact uploaded above is consumed by
+    # hasktorch/hasktorch.github.io's deploy-pages workflow, which assembles
+    # the website (haddocks + tutorial) and deploys it branchlessly via
+    # actions/deploy-pages.  No deploy key is involved.
+
+    # - name: Benchmark
+    #   run: |
+    #     cabal v2-bench hasktorch:runtime --benchmark-options='--output benchmark-runtime.html'
+    #     cabal v2-bench hasktorch:alloc   --benchmark-options='--output benchmark-alloc.html'
+
+    # - name: Archive benchmark results
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: benchmark-report
+    #     path: hasktorch/benchmark*.html

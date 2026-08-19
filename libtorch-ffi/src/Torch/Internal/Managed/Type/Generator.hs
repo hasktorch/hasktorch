@@ -28,6 +28,10 @@ newCUDAGenerator
   -> IO (ForeignPtr Generator)
 newCUDAGenerator _device_index = _cast1 Unmanaged.newCUDAGenerator _device_index
 
+newMPSGenerator
+  :: IO (ForeignPtr Generator)
+newMPSGenerator = _cast0 Unmanaged.newMPSGenerator
+
 newCPUGenerator
   :: Word64
   -> IO (ForeignPtr Generator)
@@ -77,3 +81,8 @@ generator_is_hip
   :: ForeignPtr Generator
   -> IO CBool
 generator_is_hip _obj = _cast1 Unmanaged.generator_is_hip _obj
+
+generator_is_mps
+  :: ForeignPtr Generator
+  -> IO CBool
+generator_is_mps _obj = _cast1 Unmanaged.generator_is_mps _obj

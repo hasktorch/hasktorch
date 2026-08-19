@@ -178,7 +178,10 @@ instance
     KnownDType dtype,
     KnownDevice device,
     EigDTypeIsValid device dtype,
-    RandDTypeIsValid device dtype
+    RandDTypeIsValid device dtype,
+    KnownDType (ToComplexNumber dtype),
+    TensorOptions shape (ToComplexNumber dtype) device,
+    TensorOptions shape' (ToComplexNumber dtype) device
   ) =>
   Apply' EigSpec ((Proxy eigenvectors, (Proxy device, (Proxy dtype, Proxy n))), IO ()) (IO ())
   where
@@ -312,9 +315,8 @@ instance
     agg >> do
       b <- rand @m_k @dtype @device
       a <- rand @m_m
-      let (c, lu) = solve b a
+      let c = solve b a
       checkDynamicTensorAttributes c
-      checkDynamicTensorAttributes lu
 
 data TransposeSpec = TransposeSpec
 
@@ -538,6 +540,8 @@ spec' device =
               hfoldrM @IO lossSpec () (hproduct reductions (hattach cpu (hproduct standardFloatingPointDTypes standardShapes)))
             Device {deviceType = CUDA, deviceIndex = 0} ->
               hfoldrM @IO lossSpec () (hproduct reductions (hattach cuda0 (hproduct allFloatingPointDTypes standardShapes)))
+            Device {deviceType = MPS, deviceIndex = 0} ->
+              hfoldrM @IO lossSpec () (hproduct reductions (hattach mps (hproduct mpsFloatingPointDTypes standardShapes)))
       it "binaryCrossEntropy" $ dispatch BinaryCrossEntropySpec
       it "mseLoss" $ dispatch MSELossSpec
 
@@ -549,6 +553,8 @@ spec' device =
               hfoldrM @IO softmaxSpec () (hproduct softmaxDims (hattach cpu (hproduct standardFloatingPointDTypes standardShapes)))
             Device {deviceType = CUDA, deviceIndex = 0} ->
               hfoldrM @IO softmaxSpec () (hproduct softmaxDims (hattach cuda0 (hproduct allFloatingPointDTypes standardShapes)))
+            Device {deviceType = MPS, deviceIndex = 0} ->
+              hfoldrM @IO softmaxSpec () (hproduct softmaxDims (hattach mps (hproduct mpsFloatingPointDTypes standardShapes)))
       it "softmax" $ dispatch SoftmaxSpec
       it "logSoftmax" $ dispatch LogSoftmaxSpec
 
@@ -558,16 +564,22 @@ spec' device =
           hfoldrM @IO DotSpec () (hattach cpu (hproduct standardDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO DotSpec () (hattach cuda0 (hproduct allFloatingPointDTypes (Proxy @0 :. Proxy @1 :. Proxy @2 :. HNil)))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO DotSpec () (hattach mps (hproduct mpsFloatingPointDTypes (Proxy @1 :. Proxy @2 :. HNil)))
       it "inverse" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
           hfoldrM @IO InverseSpec () (hattach cpu (hproduct standardFloatingPointDTypes squareShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO InverseSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes (Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[1, 1, 1] :. Proxy @'[2, 2, 2] :. HNil)))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO InverseSpec () (hattach mps (hproduct mpsFloatingPointDTypes (Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[1, 1, 1] :. Proxy @'[2, 2, 2] :. HNil)))
       let dispatchSymeigSpec symeigSpec = case device of
             Device {deviceType = CPU, deviceIndex = 0} ->
               hfoldrM @IO symeigSpec () (hattach cpu (hproduct standardFloatingPointDTypes squareShapes))
             Device {deviceType = CUDA, deviceIndex = 0} ->
               hfoldrM @IO symeigSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes squareShapes))
+            Device {deviceType = MPS, deviceIndex = 0} ->
+              hfoldrM @IO symeigSpec () (hattach mps (hproduct mpsFloatingPointDTypes squareShapes))
       it "symeig" $ do
         dispatchSymeigSpec SymeigSpec
       it "symeigvalues" $ do
@@ -580,6 +592,8 @@ spec' device =
             hfoldrM @IO EigSpec () (hproduct eigenVectors (hattach cpu (hproduct standardFloatingPointDTypes ns)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO EigSpec () (hproduct eigenVectors (hattach cuda0 (hproduct standardFloatingPointDTypes ns)))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO EigSpec () (hproduct eigenVectors (hattach mps (hproduct mpsFloatingPointDTypes ns)))
       it "svd" $ do
         let svdShapes = Proxy @'[1, 1] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[1, 1, 1] :. Proxy @'[3, 2, 3] :. Proxy @'[3, 3, 2] :. HNil
             reducedSVD = Proxy @'ThinSVD :. Proxy @'FullSVD :. HNil
@@ -588,11 +602,15 @@ spec' device =
             hfoldrM @IO SVDSpec () (hproduct reducedSVD (hattach cpu (hproduct standardFloatingPointDTypes svdShapes)))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO SVDSpec () (hproduct reducedSVD (hattach cuda0 (hproduct standardFloatingPointDTypes svdShapes)))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO SVDSpec () (hproduct reducedSVD (hattach mps (hproduct mpsFloatingPointDTypes svdShapes)))
       it "cholesky" $ case device of
         Device {deviceType = CPU, deviceIndex = 0} ->
           hfoldrM @IO CholeskySpec () (hattach cpu (hproduct standardFloatingPointDTypes squareShapes))
         Device {deviceType = CUDA, deviceIndex = 0} ->
           hfoldrM @IO CholeskySpec () (hattach cuda0 (hproduct standardFloatingPointDTypes squareShapes))
+        Device {deviceType = MPS, deviceIndex = 0} ->
+          hfoldrM @IO CholeskySpec () (hattach mps (hproduct mpsFloatingPointDTypes squareShapes))
       it "choleskyInverse" $ do
         let choleskyInverseShapes = Proxy @'[1, 1] :. Proxy @'[2, 2] :. HNil
         case device of
@@ -600,6 +618,8 @@ spec' device =
             hfoldrM @IO CholeskyInverseSpec () (hattach cpu (hproduct standardFloatingPointDTypes choleskyInverseShapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO CholeskyInverseSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes choleskyInverseShapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO CholeskyInverseSpec () (hattach mps (hproduct mpsFloatingPointDTypes choleskyInverseShapes))
       it "choleskySolve" $ do
         let choleskySolveShapes =
               hzip
@@ -610,16 +630,20 @@ spec' device =
             hfoldrM @IO CholeskySolveSpec () (hattach cpu (hproduct standardFloatingPointDTypes choleskySolveShapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO CholeskySolveSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes choleskySolveShapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO CholeskySolveSpec () (hattach mps (hproduct mpsFloatingPointDTypes choleskySolveShapes))
       it "solve" $ do
         let solveShapes =
               hzip
-                (Proxy @'[1, 0] :. Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
-                (Proxy @'[1, 1] :. Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
+                (Proxy @'[1, 2] :. Proxy @'[2, 1] :. Proxy @'[3, 1, 2] :. HNil)
+                (Proxy @'[1, 1] :. Proxy @'[2, 2] :. Proxy @'[3, 1, 1] :. HNil)
         case device of
           Device {deviceType = CPU, deviceIndex = 0} ->
             hfoldrM @IO SolveSpec () (hattach cpu (hproduct standardFloatingPointDTypes solveShapes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO SolveSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes solveShapes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO SolveSpec () (hattach mps (hproduct mpsFloatingPointDTypes solveShapes))
 
     describe "boolean algebra" $ do
       do
@@ -628,6 +652,8 @@ spec' device =
                 hfoldrM @IO anyAllSpec () (hattach cpu standardShapes)
               Device {deviceType = CUDA, deviceIndex = 0} ->
                 hfoldrM @IO anyAllSpec () (hattach cuda0 standardShapes)
+              Device {deviceType = MPS, deviceIndex = 0} ->
+                hfoldrM @IO anyAllSpec () (hattach mps standardShapes)
         it "all" $ dispatch AllSpec
         it "any" $ dispatch AnySpec
       do
@@ -650,6 +676,14 @@ spec' device =
                   ( hproduct
                       (hproduct anyPrimeAllPrimeDims keepOrDropDims)
                       (hattach cuda0 anyPrimeAllPrimeShapes)
+                  )
+              Device {deviceType = MPS, deviceIndex = 0} ->
+                hfoldrM @IO
+                  anyPrimeAllPrimeSpec
+                  ()
+                  ( hproduct
+                      (hproduct anyPrimeAllPrimeDims keepOrDropDims)
+                      (hattach mps anyPrimeAllPrimeShapes)
                   )
         it "allDim" $ dispatch AllPrimeSpec
         it "anyDim" $ dispatch AnyPrimeSpec
@@ -690,6 +724,8 @@ spec' device =
             hfoldrM @IO LstmCellSpec () (hattach cpu (hproduct standardFloatingPointDTypes sizes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO LstmCellSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes sizes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO LstmCellSpec () (hattach mps (hproduct mpsFloatingPointDTypes sizes))
       it "gruCell op" $ do
         let sizes =
               hzip3
@@ -701,3 +737,5 @@ spec' device =
             hfoldrM @IO GruCellSpec () (hattach cpu (hproduct standardFloatingPointDTypes sizes))
           Device {deviceType = CUDA, deviceIndex = 0} ->
             hfoldrM @IO GruCellSpec () (hattach cuda0 (hproduct standardFloatingPointDTypes sizes))
+          Device {deviceType = MPS, deviceIndex = 0} ->
+            hfoldrM @IO GruCellSpec () (hattach mps (hproduct mpsFloatingPointDTypes sizes))

@@ -44,7 +44,7 @@ import Torch.Internal.Type
 import Torch.Internal.Class
 
 import qualified Language.C.Inline.Cpp as C
-import qualified Language.C.Inline.Cpp.Exceptions as C
+import qualified Language.C.Inline.Cpp.Unsafe as C
 import qualified Language.C.Inline.Context as C
 import qualified Language.C.Types as C
 import qualified Data.Map as Map
@@ -133,6 +133,42 @@ instance CppTuple5 (Ptr #{withParens $ tupleToHs typ_}) where
 |]
 renderCppTuple5 _ = ""
 
+renderCppTuple6 :: PT.Tuple -> Text
+renderCppTuple6 typ_@(PT.Tuple (_ : _ : _ : _ : _ : f : _)) =
+  [st|
+instance CppTuple6 (Ptr #{withParens $ tupleToHs typ_}) where
+  type F (Ptr #{withParens $ tupleToHs typ_}) = #{toHs f}
+  get5 v = #{bra}C.throwBlock| #{toCpp f} { return #{toCpp' f}(std::get<5>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+|]
+renderCppTuple6 _ = ""
+
+renderCppTuple7 :: PT.Tuple -> Text
+renderCppTuple7 typ_@(PT.Tuple (_ : _ : _ : _ : _ : _ : g : _)) =
+  [st|
+instance CppTuple7 (Ptr #{withParens $ tupleToHs typ_}) where
+  type G (Ptr #{withParens $ tupleToHs typ_}) = #{toHs g}
+  get6 v = #{bra}C.throwBlock| #{toCpp g} { return #{toCpp' g}(std::get<6>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+|]
+renderCppTuple7 _ = ""
+
+renderCppTuple8 :: PT.Tuple -> Text
+renderCppTuple8 typ_@(PT.Tuple (_ : _ : _ : _ : _ : _ : _ : h : _)) =
+  [st|
+instance CppTuple8 (Ptr #{withParens $ tupleToHs typ_}) where
+  type H (Ptr #{withParens $ tupleToHs typ_}) = #{toHs h}
+  get7 v = #{bra}C.throwBlock| #{toCpp h} { return #{toCpp' h}(std::get<7>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+|]
+renderCppTuple8 _ = ""
+
+renderCppTuple9 :: PT.Tuple -> Text
+renderCppTuple9 typ_@(PT.Tuple (_ : _ : _ : _ : _ : _ : _ : _ : i : _)) =
+  [st|
+instance CppTuple9 (Ptr #{withParens $ tupleToHs typ_}) where
+  type I (Ptr #{withParens $ tupleToHs typ_}) = #{toHs i}
+  get8 v = #{bra}C.throwBlock| #{toCpp i} { return #{toCpp' i}(std::get<8>(*$(#{tupleToCpp typ_}* v)));}|#{cket}
+|]
+renderCppTuple9 _ = ""
+
 renderManagedCppTuple2 :: PT.Tuple -> Text
 renderManagedCppTuple2 typ_@(PT.Tuple (a : b : _)) =
   [st|
@@ -171,6 +207,42 @@ instance CppTuple5 (ForeignPtr #{withParens $ tupleToHs typ_}) where
 |]
 renderManagedCppTuple5 _ = ""
 
+renderManagedCppTuple6 :: PT.Tuple -> Text
+renderManagedCppTuple6 typ_@(PT.Tuple (_ : _ : _ : _ : _ : f : _)) =
+  [st|
+instance CppTuple6 (ForeignPtr #{withParens $ tupleToHs typ_}) where
+  type F (ForeignPtr #{withParens $ tupleToHs typ_}) = #{toManagedHs f}
+  get5 v = cast1 (get5 :: Ptr #{withParens $ tupleToHs typ_} -> IO (#{toHs f})) v
+|]
+renderManagedCppTuple6 _ = ""
+
+renderManagedCppTuple7 :: PT.Tuple -> Text
+renderManagedCppTuple7 typ_@(PT.Tuple (_ : _ : _ : _ : _ : _ : g : _)) =
+  [st|
+instance CppTuple7 (ForeignPtr #{withParens $ tupleToHs typ_}) where
+  type G (ForeignPtr #{withParens $ tupleToHs typ_}) = #{toManagedHs g}
+  get6 v = cast1 (get6 :: Ptr #{withParens $ tupleToHs typ_} -> IO (#{toHs g})) v
+|]
+renderManagedCppTuple7 _ = ""
+
+renderManagedCppTuple8 :: PT.Tuple -> Text
+renderManagedCppTuple8 typ_@(PT.Tuple (_ : _ : _ : _ : _ : _ : _ : h : _)) =
+  [st|
+instance CppTuple8 (ForeignPtr #{withParens $ tupleToHs typ_}) where
+  type H (ForeignPtr #{withParens $ tupleToHs typ_}) = #{toManagedHs h}
+  get7 v = cast1 (get7 :: Ptr #{withParens $ tupleToHs typ_} -> IO (#{toHs h})) v
+|]
+renderManagedCppTuple8 _ = ""
+
+renderManagedCppTuple9 :: PT.Tuple -> Text
+renderManagedCppTuple9 typ_@(PT.Tuple (_ : _ : _ : _ : _ : _ : _ : _ : i : _)) =
+  [st|
+instance CppTuple9 (ForeignPtr #{withParens $ tupleToHs typ_}) where
+  type I (ForeignPtr #{withParens $ tupleToHs typ_}) = #{toManagedHs i}
+  get8 v = cast1 (get8 :: Ptr #{withParens $ tupleToHs typ_} -> IO (#{toHs i})) v
+|]
+renderManagedCppTuple9 _ = ""
+
 renderTuples :: Bool -> [PT.Tuple] -> Text
 renderTuples True [] = ""
 renderTuples True (x : xs) =
@@ -178,6 +250,10 @@ renderTuples True (x : xs) =
     <> renderManagedCppTuple3 x
     <> renderManagedCppTuple4 x
     <> renderManagedCppTuple5 x
+    <> renderManagedCppTuple6 x
+    <> renderManagedCppTuple7 x
+    <> renderManagedCppTuple8 x
+    <> renderManagedCppTuple9 x
     <> renderTuples True xs
 renderTuples False [] = ""
 renderTuples False (x : xs) =
@@ -186,6 +262,10 @@ renderTuples False (x : xs) =
     <> renderCppTuple3 x
     <> renderCppTuple4 x
     <> renderCppTuple5 x
+    <> renderCppTuple6 x
+    <> renderCppTuple7 x
+    <> renderCppTuple8 x
+    <> renderCppTuple9 x
     <> renderTuples False xs
 
 decodeAndCodeGen :: String -> String -> IO ()

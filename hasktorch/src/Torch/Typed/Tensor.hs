@@ -23,6 +23,8 @@ module Torch.Typed.Tensor where
 
 import Control.Arrow
 import Control.Category
+import qualified Numeric.Half as N
+import Data.Complex
 import Data.Finite
 import Data.Kind
   ( Constraint,
@@ -37,6 +39,7 @@ import Foreign.ForeignPtr
 import Foreign.Storable
 import GHC.Exts
 import GHC.Generics
+import Data.Functor.Compose (Compose)
 import GHC.TypeLits
 import qualified Torch.DType as D
 import qualified Torch.Device as D
@@ -91,11 +94,23 @@ instance KnownDType 'D.Int64 where
 instance KnownDType 'D.Half where
   dtypeVal = D.Half
 
+instance KnownDType 'D.BFloat16 where
+  dtypeVal = D.BFloat16
+
 instance KnownDType 'D.Float where
   dtypeVal = D.Float
 
 instance KnownDType 'D.Double where
   dtypeVal = D.Double
+
+instance KnownDType 'D.ComplexHalf where
+  dtypeVal = D.ComplexHalf
+
+instance KnownDType 'D.ComplexFloat where
+  dtypeVal = D.ComplexFloat
+
+instance KnownDType 'D.ComplexDouble where
+  dtypeVal = D.ComplexDouble
 
 type family ComputeDType (dtype' :: dtype) :: D.DType where
   ComputeDType Bool = D.Bool
@@ -106,10 +121,18 @@ type family ComputeDType (dtype' :: dtype) :: D.DType where
   ComputeDType D.Int32 = D.Int32
   ComputeDType Int = D.Int64
   ComputeDType D.Int64 = D.Int64
+  ComputeDType N.Half = D.Half
+  ComputeDType D.Half = D.Half
   ComputeDType Float = D.Float
   ComputeDType D.Float = D.Float
   ComputeDType Double = D.Double
   ComputeDType D.Double = D.Double
+  ComputeDType (Complex N.Half) = D.ComplexHalf
+  ComputeDType D.ComplexHalf = D.ComplexHalf
+  ComputeDType (Complex Float) = D.ComplexFloat
+  ComputeDType D.ComplexFloat = D.ComplexFloat
+  ComputeDType (Complex Double) = D.ComplexDouble
+  ComputeDType D.ComplexDouble = D.ComplexDouble
   ComputeDType dtype' = TypeError (Text "Unsupported tensor type " :<>: ShowType dtype')
 
 class KnownDevice (device :: (D.DeviceType, Nat)) where
@@ -120,6 +143,9 @@ instance (KnownNat n) => KnownDevice '( 'D.CPU, n) where
 
 instance (KnownNat n) => KnownDevice '( 'D.CUDA, n) where
   deviceVal = D.Device D.CUDA (natValInt16 @n)
+
+instance (KnownNat n) => KnownDevice '( 'D.MPS, n) where
+  deviceVal = D.Device D.MPS (natValInt16 @n)
 
 type Size = Type -> Type
 
@@ -135,6 +161,9 @@ type family ToNat (shape :: Size) :: Nat where
   ToNat (K1 _ _) = 1
   ToNat U1 = 1
   ToNat (Vector n) = n
+  -- A composed dimension is the product of its factors, following
+  -- hasktorch-naperian's @Size (Compose f g) = Size f * Size g@.
+  ToNat (Compose f g) = ToNat f * ToNat g
   ToNat a = ToNat (Rep (a ()))
 
 type family ToNats (shape :: Shape) :: [Nat] where
@@ -187,6 +216,8 @@ data Tensor (device :: (D.DeviceType, Nat)) (dtype :: D.DType) (shape :: [Nat]) 
 type CPUTensor = Tensor '( 'D.CPU, 0)
 
 type CUDATensor deviceIndex = Tensor '( 'D.CUDA, deviceIndex)
+
+type MPSTensor deviceIndex = Tensor '( 'D.MPS, 0)
 
 data UnknownShapeTensor device dtype = forall shape. UnknownShapeTensor (Tensor device dtype shape)
 
@@ -291,6 +322,7 @@ someDevice D.Device {..} = case someNatVal (fromIntegral deviceIndex) of
   Just (SomeNat (Proxy :: Proxy n)) -> case deviceType of
     D.CPU -> SomeDevice $ Proxy @'( 'D.CPU, n)
     D.CUDA -> SomeDevice $ Proxy @'( 'D.CUDA, n)
+    D.MPS -> SomeDevice $ Proxy @'( 'D.MPS, n)
 
 withTensor ::
   D.Tensor ->
@@ -362,6 +394,7 @@ type family BasicArithmeticDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
   BasicArithmeticDTypeIsValid '( 'D.CUDA, _) dtype = ()
+  BasicArithmeticDTypeIsValid '( 'D.MPS, 0) dtype = ()
   BasicArithmeticDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 add,
@@ -389,6 +422,7 @@ type family ComparisonDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.D
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
   ComparisonDTypeIsValid '( 'D.CUDA, _) dtype = ()
+  ComparisonDTypeIsValid '( 'D.MPS, 0) dtype = ()
   ComparisonDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 gt,
@@ -424,6 +458,38 @@ ne a b = UnsafeMkTensor $ D.ne (toDynamic a) (toDynamic b)
 (==.) = eq
 (/=.) = ne
 
+gtScalar,
+  ltScalar,
+  geScalar,
+  leScalar,
+  eqScalar,
+  neScalar,
+  (.>),
+  (.<),
+  (.>=),
+  (.<=),
+  (.==),
+  (./=) ::
+    forall shape dtype device.
+    ( ComparisonDTypeIsValid device dtype,
+      StandardFloatingPointDTypeValidation device dtype
+    ) =>
+    Tensor device dtype shape ->
+    Float ->
+    Tensor device 'D.Bool shape
+gtScalar a s = UnsafeMkTensor $ D.gtScalar (toDynamic a) s
+ltScalar a s = UnsafeMkTensor $ D.ltScalar (toDynamic a) s
+geScalar a s = UnsafeMkTensor $ D.geScalar (toDynamic a) s
+leScalar a s = UnsafeMkTensor $ D.leScalar (toDynamic a) s
+eqScalar a s = UnsafeMkTensor $ D.eqScalar (toDynamic a) s
+neScalar a s = UnsafeMkTensor $ D.neScalar (toDynamic a) s
+(.>) = gtScalar
+(.<) = ltScalar
+(.>=) = geScalar
+(.<=) = leScalar
+(.==) = eqScalar
+(./=) = neScalar
+
 type family ComputeMatMul (reversedShape :: [Nat]) (reversedShape' :: [Nat]) :: Maybe [Nat] where
   ComputeMatMul (k ': '[]) (k ': '[]) = Just '[]
   ComputeMatMul (k ': '[]) (m ': k ': reversedBroadcastShape') = AppendToMaybe m (ComputeBroadcast '[] reversedBroadcastShape')
@@ -449,6 +515,7 @@ type family MatMulDTypeIsValid (device :: (D.DeviceType, Nat)) (dtype :: D.DType
       DTypeIsNotHalf '( 'D.CPU, 0) dtype
     )
   MatMulDTypeIsValid '( 'D.CUDA, deviceIndex) dtype = DTypeIsFloatingPoint '( 'D.CUDA, deviceIndex) dtype
+  MatMulDTypeIsValid '( 'D.MPS, 0) dtype = DTypeIsFloatingPoint '( 'D.MPS, 0) dtype
   MatMulDTypeIsValid '(deviceType, _) dtype = UnsupportedDTypeForDevice deviceType dtype
 
 -- | matrix multiplication
@@ -484,6 +551,27 @@ selectIdx ::
   Finite n ->
   Tensor device dtype shape'
 selectIdx t idx = UnsafeMkTensor $ D.select (natValI @dim) (getFiniteI idx) (toDynamic t)
+
+type family CheckIndexSelectDim (dim :: Nat) (shape :: [Nat]) (result :: Maybe [Nat]) :: [Nat] where
+  CheckIndexSelectDim dim shape 'Nothing = TypeError (Text "Dim " :<>: ShowType dim :<>: Text " not found in shape " :<>: ShowType shape)
+  CheckIndexSelectDim dim shape ('Just shape') = shape'
+
+type IndexSelectDim (dim :: Nat) (shape :: [Nat]) (numIndices :: Nat) = CheckIndexSelectDim dim shape (ReplaceDim dim shape numIndices)
+
+-- | Returns a new tensor which indexes the input tensor along dimension dim using the entries in index which is a tensor of datatype Int64.
+-- The returned tensor has the same number of dimensions as the original tensor (input).
+-- The dimth dimension has the same size as the length of index; other dimensions have the same size as in the original tensor.
+-- 
+-- See https://pytorch.org/docs/stable/generated/torch.index_select.html for more information.
+indexSelectDim ::
+  forall (dim :: Nat) (shape :: [Nat]) (shape' :: [Nat]) (indexLength :: Nat) dtype device.
+  ( KnownNat dim,
+    shape' ~ IndexSelectDim dim shape indexLength
+  ) =>
+  Tensor device D.Int64 '[indexLength]
+  -> Tensor device dtype shape
+  -> Tensor device dtype shape'
+indexSelectDim index inputs = UnsafeMkTensor $ D.indexSelect (natValI @dim) (toDynamic index) (toDynamic inputs)
 
 type family Numel (shape :: [Nat]) :: Nat where
   Numel '[] = 1
@@ -616,6 +704,14 @@ toCUDA ::
   Tensor device dtype shape ->
   CUDATensor 0 dtype shape
 toCUDA t = UnsafeMkTensor $ D.toCUDA (toDynamic t)
+
+-- | move tensor to the first MPS device
+-- TODO: what if this fails?
+toMPS ::
+  forall device' device shape dtype.
+  Tensor device dtype shape ->
+  MPSTensor 0 dtype shape
+toMPS t = UnsafeMkTensor $ D.toMPS (toDynamic t)
 
 -- | move tensor to device
 -- TODO: what if this fails?

@@ -22,8 +22,11 @@ import Torch.Internal.Unmanaged.Helper
 
 C.context $ C.cppCtx <> mempty {C.ctxTypesTable = typeTable}
 
+C.include "<fstream>"
 C.include "<vector>"
 C.include "<tuple>"
+
+C.include "hasktorch_profile.h"
 
 C.include "<torch/types.h>"
 
@@ -258,10 +261,17 @@ lbfgs lr max_iter max_eval tolerance_grad tolerance_change history_size (Just li
     return dynamic_cast<torch::optim::Optimizer*>(optimizer);
   }|]
 
-getParams :: Ptr Optimizer -> IO (Ptr TensorList) 
+getParams :: Ptr Optimizer -> IO (Ptr TensorList)
 getParams optimizer =
   [C.throwBlock| std::vector<at::Tensor>* {
-    return new std::vector<at::Tensor>($(torch::optim::Optimizer* optimizer)->param_groups().at(0).params());
+    auto optimizer = $(torch::optim::Optimizer* optimizer);
+    std::vector<at::Tensor>* result = new std::vector<at::Tensor>();
+    for(auto& group : optimizer->param_groups()){
+      for(auto& p : group.params()){
+        result->push_back(p);
+      }
+    }
+    return result;
   }|]
 
 step :: Ptr Optimizer -> (Ptr TensorList -> IO (Ptr Tensor)) -> IO (Ptr Tensor)
@@ -277,7 +287,13 @@ step optimizer lossFunc =
         auto func = (Func)tfunc;
         auto v = optimizer->step([&]{
           optimizer->zero_grad();
-          auto loss = func(&(optimizer->param_groups().at(0).params()));
+          std::vector<at::Tensor> all_params;
+          for(auto& group : optimizer->param_groups()){
+            for(auto& p : group.params()){
+              all_params.push_back(p);
+            }
+          }
+          auto loss = func(&all_params);
           loss->backward();
           return *loss;
         });
@@ -301,7 +317,13 @@ stepWithGenerator optimizer generator lossFunc =
         auto func = (Func)tfunc;
         auto v = optimizer->step([&]{
           optimizer->zero_grad();
-          auto lossWithGenerator = func(&(optimizer->param_groups().at(0).params()),&generator);
+          std::vector<at::Tensor> all_params;
+          for(auto& group : optimizer->param_groups()){
+            for(auto& p : group.params()){
+              all_params.push_back(p);
+            }
+          }
+          auto lossWithGenerator = func(&all_params,&generator);
           auto loss = std::get<0>(*lossWithGenerator);
           generator = std::get<1>(*lossWithGenerator);
           loss.backward();
@@ -323,7 +345,13 @@ unsafeStep optimizer loss =
     optimizer->zero_grad();
     loss->backward();
     optimizer->step();
-    return new std::vector<at::Tensor>(optimizer->param_groups().at(0).params());
+    std::vector<at::Tensor>* result = new std::vector<at::Tensor>();
+    for(auto& group : optimizer->param_groups()){
+      for(auto& p : group.params()){
+        result->push_back(p);
+      }
+    }
+    return result;
   }|]
 
 save :: Ptr Optimizer -> Ptr StdString -> IO ()
@@ -338,4 +366,104 @@ load optimizer filename =
   [C.throwBlock| void {
     std::ifstream input(*$(std::string* filename));
     torch::load(*$(torch::optim::Optimizer* optimizer),input);
+  }|]
+
+adamwWithParamGroups
+  :: CDouble
+  -> CDouble
+  -> CDouble
+  -> CDouble
+  -> CDouble
+  -> CBool
+  -> Ptr TensorList
+  -> Ptr TensorList
+  -> IO (Ptr Optimizer)
+adamwWithParamGroups adamLr adamBetas0 adamBetas1 adamEps adamWeightDecay adamAmsgrad decayParams noDecayParams =
+  [C.throwBlock| torch::optim::Optimizer* {
+    std::vector<at::Tensor>* decay_params = $(std::vector<at::Tensor>* decayParams);
+    std::vector<at::Tensor>* no_decay_params = $(std::vector<at::Tensor>* noDecayParams);
+    std::vector<at::Tensor> dp;
+    for(int i=0;i<decay_params->size();i++){
+      dp.push_back((*decay_params)[i].detach().set_requires_grad(true));
+    }
+    std::vector<at::Tensor> ndp;
+    for(int i=0;i<no_decay_params->size();i++){
+      ndp.push_back((*no_decay_params)[i].detach().set_requires_grad(true));
+    }
+    auto options_decay = torch::optim::AdamWOptions()
+      .lr($(double adamLr))
+      .betas(std::make_tuple($(double adamBetas0),$(double adamBetas1)))
+      .eps($(double adamEps))
+      .weight_decay($(double adamWeightDecay))
+      .amsgrad($(bool adamAmsgrad));
+    auto options_no_decay = torch::optim::AdamWOptions()
+      .lr($(double adamLr))
+      .betas(std::make_tuple($(double adamBetas0),$(double adamBetas1)))
+      .eps($(double adamEps))
+      .weight_decay(0.0)
+      .amsgrad($(bool adamAmsgrad));
+    std::vector<torch::optim::OptimizerParamGroup> param_groups;
+    param_groups.emplace_back(torch::optim::OptimizerParamGroup(ndp, std::make_unique<torch::optim::AdamWOptions>(options_no_decay)));
+    param_groups.emplace_back(torch::optim::OptimizerParamGroup(dp, std::make_unique<torch::optim::AdamWOptions>(options_decay)));
+    torch::optim::AdamW* optimizer = new torch::optim::AdamW(param_groups);
+    optimizer->zero_grad();
+    return dynamic_cast<torch::optim::Optimizer*>(optimizer);
+  }|]
+
+getAllParams :: Ptr Optimizer -> IO (Ptr TensorList)
+getAllParams optimizer =
+  [C.throwBlock| std::vector<at::Tensor>* {
+    auto optimizer = $(torch::optim::Optimizer* optimizer);
+    std::vector<at::Tensor>* result = new std::vector<at::Tensor>();
+    for(auto& group : optimizer->param_groups()){
+      for(auto& p : group.params()){
+        result->push_back(p);
+      }
+    }
+    return result;
+  }|]
+
+stepOnly :: Ptr Optimizer -> IO ()
+stepOnly optimizer =
+  [C.throwBlock| void {
+    $(torch::optim::Optimizer* optimizer)->step();
+  }|]
+
+zeroGrad :: Ptr Optimizer -> IO ()
+zeroGrad optimizer =
+  [C.throwBlock| void {
+    $(torch::optim::Optimizer* optimizer)->zero_grad();
+  }|]
+
+setParamGrads :: Ptr Optimizer -> Ptr TensorList -> IO ()
+setParamGrads optimizer grads =
+  [C.throwBlock| void {
+    auto optimizer = $(torch::optim::Optimizer* optimizer);
+    auto grads = $(std::vector<at::Tensor>* grads);
+    int idx = 0;
+    for(auto& group : optimizer->param_groups()){
+      for(auto& p : group.params()){
+        p.mutable_grad() = (*grads)[idx];
+        idx++;
+      }
+    }
+  }|]
+
+setLr :: Ptr Optimizer -> CDouble -> IO ()
+setLr optimizer newLr =
+  [C.throwBlock| void {
+    auto optimizer = $(torch::optim::Optimizer* optimizer);
+    for(auto& group : optimizer->param_groups()){
+      auto& options = static_cast<torch::optim::AdamWOptions&>(group.options());
+      options.lr($(double newLr));
+    }
+  }|]
+
+setGroupLr :: Ptr Optimizer -> CInt -> CDouble -> IO ()
+setGroupLr optimizer groupIdx lr =
+  [C.throwBlock| void {
+    auto optimizer = $(torch::optim::Optimizer* optimizer);
+    auto& group = optimizer->param_groups()[(size_t)$(int groupIdx)];
+    auto& options = static_cast<torch::optim::AdamWOptions&>(group.options());
+    options.lr($(double lr));
   }|]

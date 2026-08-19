@@ -54,13 +54,13 @@ import qualified Torch.Internal.Managed.TensorFactories as ATen
 -- sOnes $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
 --   :: MonadThrow m =>
 --      m (Tensor
---           ('Gradient 'WithoutGradient)
---           ('Layout 'Dense)
---           ('Device 'CPU)
---           ('DataType 'Int64)
+--           ('Gradient WithoutGradient)
+--           ('Layout Dense)
+--           ('Device CPU)
+--           ('DataType Int64)
 --           ('Shape
---              '[ 'Dim ('Name "batch") ('Size 32),
---                 'Dim 'UncheckedName 'UncheckedSize]))
+--              ['Dim ('Name "batch") ('Size 32),
+--               'Dim UncheckedName UncheckedSize]))
 sOnes ::
   forall gradient layout device dataType shape m.
   MonadThrow m =>
@@ -95,13 +95,13 @@ ones = sOnes $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing @
 -- sZeros $ TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape
 --   :: MonadThrow m =>
 --      m (Tensor
---           ('Gradient 'WithoutGradient)
---           ('Layout 'Dense)
---           ('Device 'CPU)
---           ('DataType 'Int64)
+--           ('Gradient WithoutGradient)
+--           ('Layout Dense)
+--           ('Device CPU)
+--           ('DataType Int64)
 --           ('Shape
---              '[ 'Dim ('Name "batch") ('Size 32),
---                 'Dim 'UncheckedName 'UncheckedSize]))
+--              ['Dim ('Name "batch") ('Size 32),
+--               'Dim UncheckedName UncheckedSize]))
 sZeros ::
   forall gradient layout device dataType shape m.
   MonadThrow m =>
@@ -137,13 +137,13 @@ zeros = sZeros $ TensorSpec (sing @gradient) (sing @layout) (sing @device) (sing
 -- sFull (TensorSpec (SGradient SWithoutGradient) (SLayout SDense) (SDevice SCPU) (SDataType SInt64) shape) input
 --   :: MonadThrow m =>
 --      m (Tensor
---           ('Gradient 'WithoutGradient)
---           ('Layout 'Dense)
---           ('Device 'CPU)
---           ('DataType 'Int64)
+--           ('Gradient WithoutGradient)
+--           ('Layout Dense)
+--           ('Device CPU)
+--           ('DataType Int64)
 --           ('Shape
---              '[ 'Dim ('Name "batch") ('Size 32),
---                 'Dim 'UncheckedName 'UncheckedSize]))
+--              ['Dim ('Name "batch") ('Size 32),
+--               'Dim UncheckedName UncheckedSize]))
 sFull ::
   forall gradient layout device dataType shape input m.
   (MonadThrow m, Scalar input) =>
