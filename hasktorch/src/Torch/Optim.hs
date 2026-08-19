@@ -8,7 +8,7 @@ import Torch.Autograd
 import Torch.Functional
 import Torch.Internal.GC (mallocTrim)
 import Torch.NN
-import System.IO.Unsafe          (unsafePerformIO)
+import System.IO.Unsafe (unsafePerformIO)
 import Control.Debounce
 import Torch.Tensor
 import Torch.TensorFactories
