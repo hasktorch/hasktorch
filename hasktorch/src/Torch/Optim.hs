@@ -26,6 +26,11 @@ grad' :: Loss -> [Parameter] -> Gradients
 grad' t p = Gradients (grad t p)
 
 -- | Action that performs garbage collection with a minimum waiting time between calls to `performGC`. This prevents a space leak, that occurs when calling `performGC` too frequently.
+--
+-- The debounced action is created once as a CAF and shared across all calls.
+-- The @NOINLINE@ pragma is required: without it GHC may inline\/duplicate this
+-- CAF, yielding several independent debouncers that each track their own timer,
+-- which would defeat the rate limiting and reintroduce the space leak.
 performGC' :: IO ()
 performGC' = unsafePerformIO $ do
   mkDebounce defaultDebounceSettings
@@ -33,6 +38,7 @@ performGC' = unsafePerformIO $ do
     , debounceEdge = leadingEdge
     , debounceFreq = 1000000
     }
+{-# NOINLINE performGC' #-}
 
 class Optimizer optimizer where
   step :: LearningRate -> Gradients -> [Tensor] -> optimizer -> ([Tensor], optimizer)
