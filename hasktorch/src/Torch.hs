@@ -10,6 +10,7 @@ module Torch
     module Torch.Random,
     module Torch.Scalar,
     module Torch.Serialize,
+    module Torch.StateDict,
     module Torch.Tensor,
     module Torch.TensorFactories,
     module Torch.TensorOptions,
@@ -30,6 +31,7 @@ import Torch.Random
 import Torch.Scalar
 import Torch.Script
 import Torch.Serialize
+import Torch.StateDict
 import Torch.Tensor
 import Torch.TensorFactories
 import Torch.TensorOptions

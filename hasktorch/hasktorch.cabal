@@ -52,6 +52,7 @@ library
                     , Torch.Cast
                     , Torch.Dimname
                     , Torch.Serialize
+                    , Torch.StateDict
                     , Torch.Random
                     , Torch.Script
                     , Torch.HList
@@ -86,6 +87,9 @@ library
                     , Torch.Typed.Optim
                     , Torch.Typed.Optim.CppOptim
                     , Torch.Typed.Serialize
+                    , Torch.Typed.StateDict
+                    , Torch.Typed.Buffer
+                    , Torch.Typed.Config
                     , Torch.Typed.Vision
                     , Torch.Typed.Lens
                     , Torch.Typed.NamedTensor
@@ -179,6 +183,8 @@ test-suite spec
                     , Torch.Typed.TensorSpec0
                     , Torch.Typed.TensorSpec1
                     , Torch.Typed.FactoriesSpec
+                    , Torch.Typed.BufferSpec
+                    , Torch.Typed.ConfigSpec
                     , Torch.Typed.RandomSpec
                     , Torch.Typed.FunctionalSpec0
                     , Torch.Typed.FunctionalSpec1
@@ -206,6 +212,7 @@ test-suite spec
                     , Torch.Typed.SerializeSpec
                     , SerializeSpec
                     , RandomSpec
+                    , StateDictSpec
                     , VisionSpec
                     , Torch.Distributions.ConstraintsSpec
                     , Torch.Distributions.BernoulliSpec
@@ -216,6 +223,7 @@ test-suite spec
   if os(darwin)
    cpp-options:       -D__APPLE__
   build-depends:      base
+                    , containers
                     , ghc-typelits-extra
                     , ghc-typelits-knownnat
                     , ghc-typelits-natnormalise
