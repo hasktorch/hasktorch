@@ -43,19 +43,14 @@ calculateFan ::
   [Dim String Integer] ->
   (Integer, Integer)
 calculateFan shape
-  | dimT < 2 = error $ errorPrefix <> "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-  | dimT == 2 =
-    ( numInputFmaps,
-      numOutputFmaps
-    )
+  | length shape < 2 = error $ errorPrefix <> "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
   | otherwise =
     ( numInputFmaps * receptiveFieldSize,
       numOutputFmaps * receptiveFieldSize
     )
   where
-    dimT = length shape
     numOutputFmaps : numInputFmaps : _ = dimSize <$> shape
-    receptiveFieldSize = product $ dimSize <$> tail shape
+    receptiveFieldSize = product $ dimSize <$> drop 2 shape -- kernel dims only, as in PyTorch shape[2:]
 
 -- | Xavier uniform initialization
 sXavierUniform ::

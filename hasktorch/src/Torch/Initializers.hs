@@ -22,14 +22,12 @@ calculateGain (LeakyRelu param) = sqrt (2.0 / (1.0 + param ^^ 2))
 -- | Fan-in / Fan-out scaling calculation
 calculateFan :: [Int] -> (Int, Int)
 calculateFan shape
-  | dimT < 2 = error "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-  | dimT == 2 = (shape !! 1, head shape)
+  | length shape < 2 = error "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
   | otherwise = (numInputFmaps * receptiveFieldSize, numOutputFmaps * receptiveFieldSize)
   where
-    dimT = length shape
     numInputFmaps = shape !! 1 -- size t 1
     numOutputFmaps = head shape -- size t 0
-    receptiveFieldSize = product $ tail shape
+    receptiveFieldSize = product $ drop 2 shape -- kernel dims only, as in PyTorch shape[2:]
 
 -- | Xavier Initialization - Uniform
 xavierUniform :: Float -> [Int] -> IO Tensor
