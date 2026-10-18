@@ -50,7 +50,6 @@ main = defaultMainWithHooks $ simpleUserHooks
             OSX -> return $ lbi { withPrograms = addLdClassicFlag (withPrograms lbi) }
             _ -> return $ lbi
         Just libtorchDir -> do
-          libtorchDir <- getLocalUserLibtorchDir
           let libDir     = libtorchDir </> "lib"
               includeDir = libtorchDir </> "include"
 
