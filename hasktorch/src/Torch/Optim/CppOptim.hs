@@ -12,11 +12,10 @@ module Torch.Optim.CppOptim where
 
 import Data.Default.Class
 import Foreign.ForeignPtr
-import System.Mem (performGC)
+import Torch.Optim.GC (defaultGcPolicy, runGcPolicy)
 import Torch.Autograd
 import Torch.Internal.Cast
 import Torch.Internal.Class (Castable (..), CppObject (..), CppTuple2 (..), CppTuple3 (..), CppTuple4 (..))
-import Torch.Internal.GC (mallocTrim)
 import qualified Torch.Internal.Managed.Optim as LibTorch
 import qualified Torch.Internal.Type as ATen
 import Torch.NN
@@ -68,8 +67,7 @@ class CppOptimizer option where
 instance {-# OVERLAPS #-} CppOptimizer option => Optim.Optimizer (CppOptimizerState option) where
   step = error "step is not implemented for CppOptimizer."
   runStep paramState optState lossValue lr = do
-    performGC
-    mallocTrim 0
+    runGcPolicy defaultGcPolicy
     unsafeStep paramState optState lossValue
 
   runStep' = error "runStep' is not implemented for CppOptimizer."
