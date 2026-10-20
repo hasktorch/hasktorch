@@ -51,7 +51,7 @@ fi
 
 
 usage_exit() {
-    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu117" or "cu118" or "cu128" or "cu130"] [-s]" 1>&2
+    echo "Usage: $0 [-n] [-c] [-a "cpu" or "cu117" or "cu118" or "cu128" or "cu130" or "cu132"] [-s]" 1>&2
     echo " -n # Use nightly libtorch w/  -l" 1>&2
     echo "    # Use libtorch-$(VERSION)  w/o -l" 1>&2
     echo "" 1>&2
@@ -63,6 +63,7 @@ usage_exit() {
     echo " -a cu118 # Use CUDA-11.8 (download might be unavailable)" 1>&2
     echo " -a cu128 # Use CUDA-12.8" 1>&2
     echo " -a cu130 # Use CUDA-13.0" 1>&2
+    echo " -a cu132 # Use CUDA-13.2 (download unavailable for some VERSIONs, e.g. 2.9.1)" 1>&2
     echo "" 1>&2
     echo " -s # Skip download" 1>&2
     echo "" 1>&2
@@ -128,6 +129,7 @@ if [ "$SKIP_DOWNLOAD" = 0 ] ; then
 	      "cu118" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu118.zip ;;
 	      "cu128" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu128.zip;;
 	      "cu130" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu130.zip;;
+	      "cu132" )   URL=https://download.pytorch.org/libtorch/${COMPUTE_ARCH}/libtorch-shared-with-deps-${VERSION}%2Bcu132.zip;;
               *)
                   1>&2 printf "Error: invalid value '%s' passed to -a\n\n" "$COMPUTE_ARCH"
                   usage_exit
