@@ -35,6 +35,17 @@ The package automatically downloads and configures libtorch during the build pro
 - **Use case**: When you have libtorch already installed system-wide
 - **Example**: `export LIBTORCH_SKIP_DOWNLOAD=1`
 
+#### `LIBTORCH_USE_SYSTEM`
+- **Default**: Not set
+- **Description**: When set (to any value), builds against an existing libtorch installation instead of downloading one. The include and library paths are taken from `LIBTORCH_SYSTEM_PREFIX`.
+- **Use case**: A distribution package (e.g. Arch Linux's `python-pytorch-cuda`) or a manually unpacked libtorch
+- **Example**: `export LIBTORCH_USE_SYSTEM=1`
+
+#### `LIBTORCH_SYSTEM_PREFIX`
+- **Default**: `/usr`
+- **Description**: Prefix of the libtorch installation used with `LIBTORCH_USE_SYSTEM`; it must contain `lib/` and `include/` subdirectories
+- **Example**: `export LIBTORCH_SYSTEM_PREFIX=/opt/libtorch`
+
 ### Directory Structure
 
 The downloaded libtorch is stored in a platform-specific directory structure:

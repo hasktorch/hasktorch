@@ -116,7 +116,17 @@ ensureLibtorch = do
   isSandbox <- isNixSandbox
   if isSandbox
     then return Nothing
-    else downloadLibtorch
+    else do
+      -- Use a system-wide libtorch (e.g. a distro package such as Arch's
+      -- python-pytorch-cuda) instead of downloading a private copy. The prefix
+      -- must contain @lib/@ and @include/@ subdirectories (default @/usr@).
+      mSystem <- lookupEnv "LIBTORCH_USE_SYSTEM"
+      case mSystem of
+        Just _ -> do
+          prefix <- fromMaybe "/usr" <$> lookupEnv "LIBTORCH_SYSTEM_PREFIX"
+          putStrLn $ "LIBTORCH_USE_SYSTEM set; using system libtorch at " <> prefix
+          pure (Just prefix)
+        Nothing -> downloadLibtorch
 
 isNixSandbox :: IO Bool
 isNixSandbox = do
