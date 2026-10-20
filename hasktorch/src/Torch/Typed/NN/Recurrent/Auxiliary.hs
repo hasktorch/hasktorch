@@ -18,18 +18,15 @@ data RNNInitialization
 -- | Fan-in / Fan-out scaling calculation
 calculateFan :: [Int] -> (Int, Int)
 calculateFan shape
-  | dimT < 2 =
+  | length shape < 2 =
     error
       "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
-  | dimT == 2 =
-    (numInputFmaps, numOutputFmaps)
   | otherwise =
     (numInputFmaps * receptiveFieldSize, numOutputFmaps * receptiveFieldSize)
   where
-    dimT = length shape
     numInputFmaps = shape !! 1
     numOutputFmaps = shape !! 0
-    receptiveFieldSize = product $ tail shape
+    receptiveFieldSize = product $ drop 2 shape -- kernel dims only, as in PyTorch shape[2:]
 
 -- | Xavier Initialization - Uniform
 xavierUniformFIXME :: Tensor -> Float -> [Int] -> IO Tensor
