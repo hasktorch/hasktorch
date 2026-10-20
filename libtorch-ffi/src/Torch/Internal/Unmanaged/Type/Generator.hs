@@ -28,6 +28,7 @@ C.include "<ATen/detail/CUDAHooksInterface.h>"
 C.include "<ATen/detail/MPSHooksInterface.h>"
 C.include "<ATen/CPUGeneratorImpl.h>"
 C.include "<ATen/core/Generator.h>"
+C.include "<ATen/core/Tensor.h>"
 C.include "<torch/version.h>"
 
 C.include "<vector>"
@@ -76,6 +77,28 @@ generator_clone
 generator_clone _obj =
   [C.throwBlock| at::Generator* { return new at::Generator((*$(at::Generator* _obj)).clone(
     ));
+  }|]
+
+-- | Snapshot the full RNG state (seed + stream position) as a CPU ByteTensor.
+-- Unlike 'generator_current_seed' this preserves the offset, so a restore
+-- resumes the stream exactly (CPU MT19937 and CUDA Philox both supported).
+generator_get_state
+  :: Ptr Generator
+  -> IO (Ptr Tensor)
+generator_get_state _obj =
+  [C.throwBlock| at::Tensor* { return new at::Tensor((*$(at::Generator* _obj)).get_state(
+    ));
+  }|]
+
+-- | Restore a full RNG state previously produced by 'generator_get_state',
+-- resuming the stream from the exact captured position (mutates the generator).
+generator_set_state
+  :: Ptr Generator
+  -> Ptr Tensor
+  -> IO (())
+generator_set_state _obj _state =
+  [C.throwBlock| void { (*$(at::Generator* _obj)).set_state(
+    *$(at::Tensor* _state));
   }|]
 
 generator_get_device

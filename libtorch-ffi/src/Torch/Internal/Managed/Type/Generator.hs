@@ -62,6 +62,17 @@ generator_clone
   -> IO (ForeignPtr Generator)
 generator_clone _obj = _cast1 Unmanaged.generator_clone _obj
 
+generator_get_state
+  :: ForeignPtr Generator
+  -> IO (ForeignPtr Tensor)
+generator_get_state = _cast1 Unmanaged.generator_get_state
+
+generator_set_state
+  :: ForeignPtr Generator
+  -> ForeignPtr Tensor
+  -> IO ()
+generator_set_state = _cast2 Unmanaged.generator_set_state
+
 generator_get_device
   :: ForeignPtr Generator
   -> IO Int64

@@ -17,6 +17,10 @@ module Torch.Random
     mkPureGenerator,
     withPureGenerator,
     multinomial,
+    getGeneratorState,
+    setGeneratorState,
+    getPureGeneratorState,
+    setPureGeneratorState,
   )
 where
 
@@ -239,3 +243,40 @@ multinomial ::
   (Tensor, PureGenerator)
 multinomial probs numSamples replacement gen =
   withPureGenerator gen (\g -> cast4 ATen.multinomial_tlbG probs numSamples replacement g)
+
+-- | Snapshot the full RNG state (seed + stream offset) of a 'PureGenerator' as a
+-- CPU ByteTensor. Restoring it with 'setPureGeneratorState' resumes the exact
+-- stream position, unlike re-seeding which only preserves the seed. Works for
+-- CPU (MT19937) and CUDA (Philox) generators.
+getPureGeneratorState :: PureGenerator -> IO Tensor
+getPureGeneratorState (UnsafePureGenerator g) = cast1 ATen.generator_get_state g
+
+-- | Build a 'PureGenerator' resuming from a state captured by
+-- 'getPureGeneratorState'. The source generator is left untouched (the state is
+-- applied to a clone, matching the immutable-threading discipline).
+setPureGeneratorState :: PureGenerator -> Tensor -> IO PureGenerator
+setPureGeneratorState (UnsafePureGenerator g) st = do
+  g' <- ATen.generator_clone g
+  (cast2 ATen.generator_set_state g' st :: IO ())
+  pure (UnsafePureGenerator g')
+
+-- | Snapshot the full RNG state of a threaded 'Generator' as a CPU ByteTensor,
+-- materializing the generator on its recorded device if it was de-materialized.
+getGeneratorState :: Generator -> IO Tensor
+getGeneratorState (UnsafeGenerator ref) = do
+  v <- atomically $ readTVar ref
+  g <- case v of
+    Right g'        -> pure g'
+    Left (seed, dv) -> newGeneratorPtr dv seed
+  cast1 ATen.generator_get_state g
+
+-- | Restore a 'Generator' from a state captured by 'getGeneratorState', yielding
+-- a generator that resumes the exact stream position.
+setGeneratorState :: Generator -> Tensor -> IO Generator
+setGeneratorState (UnsafeGenerator ref) st = do
+  v <- atomically $ readTVar ref
+  g <- case v of
+    Right g'        -> ATen.generator_clone g'
+    Left (seed, dv) -> newGeneratorPtr dv seed
+  (cast2 ATen.generator_set_state g st :: IO ())
+  UnsafeGenerator <$> newTVarIO (Right g)
