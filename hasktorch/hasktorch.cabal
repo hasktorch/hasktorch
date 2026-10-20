@@ -41,6 +41,7 @@ library
                     , Torch.Autograd
                     , Torch.Optim
                     , Torch.Optim.CppOptim
+                    , Torch.Optim.GC
                     , Torch.Vision
                     , Torch.NN
                     , Torch.NN.Recurrent.Cell.Elman

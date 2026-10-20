@@ -17,13 +17,12 @@ module Torch.Typed.Optim where
 
 import Control.Monad.State
 import Data.Kind
-import System.Mem (performGC)
+import Torch.Optim.GC (defaultGcPolicy, runGcPolicy)
 import qualified Torch.DType as D
 import qualified Torch.Device as D
 import Torch.HList
 import qualified Torch.Internal.Cast as ATen
 import qualified Torch.Internal.Class as ATen
-import Torch.Internal.GC (mallocTrim)
 import qualified Torch.Tensor as D
 import Torch.Typed.Autograd
 import Torch.Typed.Auxiliary
@@ -73,8 +72,7 @@ runStep ::
   LearningRate device dtype ->
   IO (model, optim)
 runStep model optim loss learningRate = do
-  performGC
-  mallocTrim 0
+  runGcPolicy defaultGcPolicy
   let parameters = flattenParameters model
       gradients = grad loss parameters
       tensors = hmap' ToDependent parameters
@@ -98,8 +96,7 @@ runStep' ::
   HList gradients ->
   IO (model, optim)
 runStep' model optim learningRate gradients = do
-  performGC
-  mallocTrim 0
+  runGcPolicy defaultGcPolicy
   let parameters = flattenParameters model
       tensors = hmap' ToDependent parameters
       (tensors', optim') = step learningRate gradients tensors optim

@@ -5,11 +5,10 @@ module Torch.Optim where
 
 import Control.Monad.State
 import Control.Monad (foldM)
-import System.Mem (performGC)
 import Torch.Autograd
 import Torch.Functional
-import Torch.Internal.GC (mallocTrim)
 import Torch.NN
+import Torch.Optim.GC (GcPolicy, defaultGcPolicy, runGcPolicy)
 import Torch.Tensor
 import Torch.TensorFactories
 import Prelude hiding (sqrt)
@@ -35,16 +34,21 @@ class Optimizer optimizer where
   runStep paramState optState lossValue = runStep' paramState optState (grad' lossValue $ flattenParameters paramState)
 
   -- | run a single iteration of an optimizer, returning new parameters and updated optimizer state
+  --
+  -- Uses 'defaultGcPolicy'; see "Torch.Optim.GC" and 'runStepWith'.
   runStep' :: (Parameterized model) => model -> optimizer -> Gradients -> LearningRate -> IO (model, optimizer)
-  runStep' paramState optState gradients lr = do
-    performGC
-    mallocTrim 0
-    let (flatParameters', optState') = step lr gradients depParameters optState
-    newFlatParam <- mapM makeIndependent flatParameters'
-    pure (replaceParameters paramState newFlatParam, optState')
-    where
-      flatParameters = flattenParameters paramState
-      depParameters = fmap toDependent flatParameters
+  runStep' = runStepWith defaultGcPolicy
+
+-- | Like 'runStep'', with an explicit garbage-collection policy applied before the update.
+runStepWith :: (Optimizer optimizer, Parameterized model) => GcPolicy -> model -> optimizer -> Gradients -> LearningRate -> IO (model, optimizer)
+runStepWith gcPolicy paramState optState gradients lr = do
+  runGcPolicy gcPolicy
+  let (flatParameters', optState') = step lr gradients depParameters optState
+  newFlatParam <- mapM makeIndependent flatParameters'
+  pure (replaceParameters paramState newFlatParam, optState')
+  where
+    flatParameters = flattenParameters paramState
+    depParameters = fmap toDependent flatParameters
 
 --
 -- Gradient Descent
