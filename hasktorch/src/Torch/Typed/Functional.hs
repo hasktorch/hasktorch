@@ -44,6 +44,7 @@ import Torch.Functional
     isUpper,
     kOne,
   )
+import qualified Torch.Functional.Internal as Internal
 import Torch.HList
 import qualified Torch.Internal.Cast as ATen
 import qualified Torch.Internal.Class as ATen
@@ -6183,3 +6184,41 @@ upsample_nearest2d _input = unsafePerformIO $ (ATen.cast2 ATen.Managed.upsample_
 
 -- im2col :: Tensor device dtype shape -> (Int,Int) -> (Int,Int) -> (Int,Int) -> (Int,Int) -> Tensor device dtype shape
 -- im2col _input _kernel_size _dilation _padding _stride = unsafePerformIO $ (ATen.cast5 ATen.Managed.im2col_tllll) _input _kernel_size _dilation _padding _stride
+
+-- | The fused scaled-dot-product-attention kernel
+-- (@at::scaled_dot_product_attention@) — flash\/memory-efficient attention
+-- where the backend provides it, math fallback where it does not.  The whole
+-- attention core is one call:
+--
+-- \[softmax(Q K^T / \sqrt{d} + mask) V\]
+--
+-- The optional additive mask broadcasts over batch and heads; @isCausal@
+-- applies causal masking inside the kernel (pass 'Nothing' for the mask when
+-- using it).  Dropout is fixed at zero here — thread a probability through a
+-- 'Torch.Typed.NN.Dropout' layer if you need it stochastic.
+scaledDotProductAttention ::
+  forall batch heads seqQ seqK headDim dtype device.
+  KnownNat headDim =>
+  -- | query
+  Tensor device dtype '[batch, heads, seqQ, headDim] ->
+  -- | key
+  Tensor device dtype '[batch, heads, seqK, headDim] ->
+  -- | value
+  Tensor device dtype '[batch, heads, seqK, headDim] ->
+  -- | additive attention mask
+  Maybe (Tensor device dtype '[seqQ, seqK]) ->
+  -- | causal masking
+  Bool ->
+  -- | output
+  Tensor device dtype '[batch, heads, seqQ, headDim]
+scaledDotProductAttention q k v attnMask isCausal =
+  UnsafeMkTensor $
+    Internal.scaled_dot_product_attention
+      (toDynamic q)
+      (toDynamic k)
+      (toDynamic v)
+      (toDynamic <$> attnMask)
+      0
+      isCausal
+      (1 / Prelude.sqrt (fromIntegral (natValI @headDim)))
+      False
