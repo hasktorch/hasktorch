@@ -22,6 +22,7 @@ C.include "<vector>"
 C.include "<torch/types.h>"
 C.include "<torch/csrc/autograd/variable.h>"
 C.include "<torch/csrc/autograd/engine.h>"
+C.include "<torch/csrc/autograd/functions/basic_ops.h>"
 C.include "<ATen/core/functional.h>"
 
 grad :: Ptr Tensor -> Ptr TensorList -> IO (Ptr TensorList)
@@ -54,7 +55,11 @@ gradWithOptions keepGraph createGraph accumulateGrad y inputs = [C.throwBlock| s
         throw std::runtime_error("One of the differentiated Tensors does not require grad");
       }
       if (!grad_fn) {
-        output_edges.emplace_back();
+        // The input has no grad accumulator, so it is unreachable from y. The engine dereferences every output
+        // edge's function, so the edge points to a placeholder node instead of nullptr (as torch.autograd.grad
+        // does, see NOTE [ Autograd Unreachable Input ] in torch/csrc/autograd/python_engine.cpp). The gradient
+        // for this input is an undefined tensor.
+        output_edges.emplace_back(std::make_shared<torch::autograd::Identity>(), 0);
       } else {
         output_edges.emplace_back(grad_fn, output_nr);
       }
